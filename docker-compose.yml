@@ -1,0 +1,38 @@
+services:
+  web:
+    build: .
+    container_name: union-web
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./media:/app/media
+    command: gunicorn --bind 0.0.0.0:8000 --workers 5 --threads 4 --worker-class gthread --timeout 180 --max-requests 1000 --max-requests-jitter 100 union.wsgi:application
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          memory: 512M
+    networks: [edge, data]
+
+  worker:
+    build: .
+    container_name: union-worker
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./media:/app/media
+    command: celery -A union worker -l info --concurrency=2 --max-tasks-per-child=100
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    networks: [edge, data]
+
+networks:
+  edge:
+    external: true
+  data:
+    external: true

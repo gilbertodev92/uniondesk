@@ -1,0 +1,10 @@
+media/
+staticfiles/
+.git/
+venv/
+__pycache__/
+*.pyc
+*.sql
+*.tar.gz
+.env
+.env.original
