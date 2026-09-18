@@ -1,0 +1,386 @@
+/* tudo do cofre começa com .cofre- pra não zoar o restante do site */
+.cofre-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 18px 18px 30px;
+}
+
+.cofre-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.cofre-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+.cofre-subtitle {
+  margin: 4px 0 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* botões */
+.cofre-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 10px;
+  padding: 7px 14px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 13px;
+}
+.cofre-btn-primary {
+  background: linear-gradient(135deg, #1f6feb 0%, #2667d6 100%);
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(31, 111, 235, 0.3);
+}
+.cofre-btn-secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+.cofre-full { width: 100%; }
+
+/* painel do cofre */
+.cofre-lock-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.cofre-panel {
+  display: flex;
+  width: 450px;
+  min-height: 240px;
+  background: radial-gradient(circle at top, #f3f5f8, #d5dbe3);
+  border-radius: 18px;
+  box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.4);
+  transition: transform .5s ease, box-shadow .5s ease;
+}
+.cofre-panel.cofre-unlocked {
+  transform: translateY(2px);
+  box-shadow: 0 20px 40px rgba(46, 132, 255, 0.28);
+}
+
+/* lado esquerdo - "porta" do cofre */
+.cofre-left {
+  flex: 1;
+  background: radial-gradient(circle at 30% 30%, #cdd4da 0%, #aeb7c1 40%, #909aa6 70%, #7b8691 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.cofre-ring {
+  width: 150px;
+  height: 150px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 40% 40%, #ffffff 0%, #d1d7dd 45%, #a9b3be 70%, #7a8691 100%);
+  box-shadow: inset -10px -10px 20px rgba(0,0,0,0.12);
+  position: relative;
+  transition: transform 1s cubic-bezier(.2,.9,.2,1);
+}
+.cofre-unlocked .cofre-ring {
+  transform: rotate(140deg);
+}
+.cofre-ring-inner {
+  position: absolute;
+  inset: 24px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255,255,255,0.2), rgba(127,137,147,0));
+}
+.cofre-led {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #ef4444; /* vermelho bloqueado */
+  box-shadow: 0 0 12px rgba(239,68,68,0.6);
+  transition: background .3s, box-shadow .3s;
+}
+.cofre-unlocked .cofre-led {
+  background: #22c55e;
+  box-shadow: 0 0 18px rgba(34,197,94,0.8);
+}
+
+/* lado direito - keypad */
+.cofre-right {
+  width: 190px;
+  padding: 14px 14px 14px 12px;
+  background: rgba(250, 250, 250, 0.9);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cofre-display {
+  height: 38px;
+  background: #111827;
+  color: #fff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 4px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.cofre-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.cofre-key {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .05s;
+}
+.cofre-key:active { transform: translateY(1px); }
+.cofre-key-light {
+  background: #e5e7eb;
+}
+.cofre-hint {
+  font-size: 10px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* conteúdo desbloqueado */
+.cofre-content {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.04);
+  animation: cofre-fade .35s ease;
+}
+@keyframes cofre-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.cofre-hidden { display: none; }
+
+.cofre-content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.cofre-content-header h2 {
+  font-size: 15px;
+  margin: 0;
+}
+.cofre-content-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cofre-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+/* card de senha */
+.cofre-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px 12px;
+  box-shadow: 0 6px 16px rgba(15,23,42,0.03);
+}
+.cofre-card h3 {
+  font-size: 14px;
+  margin: 0 0 4px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+.cofre-card small {
+  color: #9ca3af;
+  font-size: 10px;
+}
+.cofre-card p {
+  margin: 2px 0;
+  font-size: 12px;
+  color: #4b5563;
+}
+.cofre-mask {
+  font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  background: #f3f4f6;
+  padding: 3px 6px;
+  border-radius: 6px;
+  display: inline-block;
+}
+.cofre-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.cofre-card-actions .cofre-reveal {
+  background: #111827;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.cofre-card-actions .cofre-edit {
+  background: #e5e7eb;
+  color: #111827;
+  border-radius: 6px;
+  padding: 5px 8px;
+  text-decoration: none;
+  font-size: 12px;
+}
+.cofre-alert {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .cofre-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .cofre-panel {
+    width: 100%;
+  }
+  .cofre-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.cofre-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+.cofre-textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  resize: vertical;
+}
+.cofre-content label {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 3px;
+  display: inline-block;
+}
+
+/* form de cadastro/edição */
+.cofre-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cofre-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.cofre-form-group label {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: block;
+}
+.cofre-form-group input,
+.cofre-form-group select,
+.cofre-form-group textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  background: #fff;
+}
+.cofre-textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  resize: vertical;
+  background: #fff;
+}
+.cofre-form-inline {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+.cofre-help {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+.cofre-form-actions {
+  margin-top: 4px;
+}
+
+/* modo painel mini (depois que abre) */
+.cofre-page.cofre-opened #cofre-lock-section {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  z-index: 40;
+  width: 310px;
+  pointer-events: auto;
+}
+
+.cofre-page.cofre-opened .cofre-panel {
+  width: 100%;
+  min-height: 200px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+}
+
+.cofre-page.cofre-opened .cofre-left {
+  display: none; /* tira a parte da esquerda pra ficar compacto */
+}
+
+.cofre-page.cofre-opened .cofre-right {
+  width: 100%;
+}
+
+.cofre-page.cofre-opened .cofre-hint {
+  text-align: left;
+}
+
+/* se esconder o painel */
+.cofre-page.cofre-opened.cofre-panel-hidden #cofre-lock-section {
+  display: none;
+}
+
+/* em telas pequenas: deixa embaixo normal */
+@media (max-width: 768px) {
+  .cofre-page.cofre-opened #cofre-lock-section {
+    position: static;
+    width: 100%;
+  }
+}
+

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+    .vault-bg {
+        background-color: #030405;
+        background-image:
+            radial-gradient(circle at 50% 30%, rgba(240, 180, 41, 0.05) 0%, transparent 45%),
+            linear-gradient(rgba(240, 180, 41, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(240, 180, 41, 0.02) 1px, transparent 1px);
+        background-size: 100% 100%, 38px 38px, 38px 38px;
+    }
+
+    .vault-card {
+        background: rgba(8, 9, 12, 0.9);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(240, 180, 41, 0.18);
+    }
+
+    @keyframes scanline {
+        0% { transform: translateY(-100%); }
+        100% { transform: translateY(100%); }
+    }
+    .scanline {
+        position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit;
+    }
+    .scanline::before {
+        content: '';
+        position: absolute; left: 0; right: 0; height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(240, 180, 41, 0.5), transparent);
+        animation: scanline 4s linear infinite;
+    }
+
+    @keyframes flicker {
+        0%, 100% { opacity: 1; }
+        92% { opacity: 1; }
+        93% { opacity: 0.4; }
+        94% { opacity: 1; }
+    }
+    .flicker { animation: flicker 6s infinite; }
+
+    .eye-icon { filter: drop-shadow(0 0 12px rgba(240, 180, 41, 0.4)); }
+</style>
+
+<div class="vault-bg min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+
+    <div class="vault-card relative w-full max-w-md rounded-2xl p-9 text-center overflow-hidden">
+        <div class="scanline"></div>
+
+        <div class="relative z-10">
+            <i class="fa-solid fa-eye eye-icon text-4xl text-[#f0b429] mb-5 flicker"></i>
+
+            <p class="font-mono text-[10px] text-[#f0b429]/70 uppercase tracking-[0.3em] mb-2">Setor Restrito</p>
+            <h1 class="font-display text-2xl font-semibold text-white tracking-tight mb-5">Raio-X</h1>
+
+            <div class="text-left bg-black/40 border border-white/5 rounded-xl p-4 mb-7 space-y-2.5">
+                <p class="text-[12.5px] text-slate-400 leading-relaxed">
+                    <span class="text-slate-200 font-medium">O que é:</span> painel interno de auditoria de performance da equipe — consolida produtividade, atendimentos e avaliações em um único placar.
+                </p>
+                <p class="text-[12.5px] text-slate-400 leading-relaxed">
+                    <span class="text-slate-200 font-medium">Quem acessa:</span> apenas liderança e detentores da senha mestra. O acesso individual é registrado.
+                </p>
+            </div>
+
+            <form method="POST" class="space-y-4">
+                {% csrf_token %}
+                <div class="relative group">
+                    <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-[#f0b429] transition-colors text-sm"></i>
+                    <input type="password" name="senha_mestra" required placeholder="SENHA MESTRA"
+                        class="w-full bg-black/60 border border-white/10 text-white rounded-xl py-3.5 pl-11 pr-4 focus:border-[#f0b429]/60 focus:ring-1 focus:ring-[#f0b429]/30 outline-none text-center tracking-[0.25em] font-mono text-sm transition-all placeholder:tracking-[0.15em] placeholder:text-slate-700">
+                </div>
+
+                <button type="submit" class="w-full bg-[#f0b429] hover:bg-[#f5c559] text-black font-semibold text-xs py-3.5 rounded-xl uppercase tracking-widest transition-all">
+                    Desbloquear
+                </button>
+            </form>
+
+            {% if messages %}
+                <div class="mt-5 space-y-2">
+                    {% for message in messages %}
+                        <p class="text-[11px] font-medium text-red-400 bg-red-950/40 border border-red-500/20 py-2 rounded-lg uppercase tracking-widest">{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <p class="font-mono text-[9px] text-slate-700 uppercase tracking-[0.2em] mt-7">Tentativas são registradas · UnionDESK Core</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

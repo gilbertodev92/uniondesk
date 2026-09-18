@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falha de Comunicação | Lógica.Desk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f111a; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-center text-slate-200 overflow-hidden relative">
+
+    <div class="relative z-10 flex flex-col items-center text-center p-8 max-w-md w-full mx-4">
+        
+        <div class="w-16 h-16 bg-slate-800/50 border border-slate-700 text-slate-400 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+            <i class="fa-solid fa-network-wired text-2xl text-amber-500/80"></i>
+        </div>
+
+        <h1 class="text-5xl font-bold tracking-tight text-white mb-2">502</h1>
+        <h2 class="text-lg font-semibold text-slate-300 mb-4">Falha de Comunicação</h2>
+        
+        <p class="text-sm text-slate-500 mb-8 leading-relaxed">
+            O servidor proxy não conseguiu se comunicar com a aplicação principal. O sistema pode estar sendo reiniciado ou passando por uma rápida manutenção. Tente novamente em alguns segundos.
+        </p>
+
+        <div class="flex gap-3 justify-center w-full">
+            <button onclick="window.location.reload()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm px-6 py-2.5 rounded-lg transition-colors shadow-sm flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> Tentar Novamente
+            </button>
+        </div>
+    </div>
+
+    <div class="absolute bottom-6 text-slate-600 text-xs font-medium">
+        Lógica Mais Tecnologia
+    </div>
+
+</body>
+</html>

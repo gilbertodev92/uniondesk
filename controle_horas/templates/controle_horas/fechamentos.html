@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8 p-4">
+
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-slate-800 pb-8">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'controle_horas:painel' %}" class="p-3 bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 hover:text-white transition-all">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="text-3xl font-black text-white italic tracking-tighter uppercase">Fechamento Mensal</h1>
+                <p class="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold">Lógica Tecnologia • Consolidação de Folha</p>
+            </div>
+        </div>
+        
+        <div class="flex flex-wrap gap-2 bg-slate-900 p-2 rounded-2xl border border-slate-800">
+            {% for mes_opt in opcoes_meses %}
+            <a href="?competencia={{ mes_opt.valor }}" 
+               class="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all 
+               {% if competencia == mes_opt.valor %} bg-indigo-600 text-white shadow-lg {% else %} text-slate-500 hover:bg-slate-800 {% endif %}">
+                {{ mes_opt.label }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4">
+        {% for r in resumo %}
+        <div class="bg-slate-900 border border-slate-800 rounded-[2rem] p-6 shadow-xl transition-all hover:border-slate-700">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                
+                <div class="flex items-center gap-4 min-w-[250px]">
+                    <div class="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 text-xl font-black border border-blue-500/20">
+                        {{ r.usuario__username|first|upper }}
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black text-white uppercase">{{ r.usuario__first_name }} {{ r.usuario__last_name }}</h3>
+                        <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Competência: {{ mes }}/{{ ano }}</p>
+                    </div>
+                </div>
+
+                <div class="flex-1 flex gap-4 max-w-md">
+                    <div class="flex-1 bg-slate-950 p-4 rounded-2xl border border-slate-800/50 text-center">
+                        <span class="text-[8px] block text-slate-600 font-black uppercase mb-1">Total Horas</span>
+                        <span class="text-xl font-black text-white">{{ r.total_h|floatformat:2 }}h</span>
+                    </div>
+                    <div class="flex-1 bg-emerald-500/5 p-4 rounded-2xl border border-emerald-500/10 text-center">
+                        <span class="text-[8px] block text-emerald-500/60 font-black uppercase mb-1">Total Extras</span>
+                        <span class="text-xl font-black text-emerald-400">{{ r.extra_h|floatformat:2 }}h</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <span class="px-3 py-1 bg-yellow-500/10 text-yellow-500 text-[9px] font-black rounded-full uppercase border border-yellow-500/20">
+                        {{ r.status|default:"Em Aberto" }}
+                    </span>
+                    <div class="flex gap-2">
+                        <a href="{% url 'controle_horas:export_csv_mes' ano mes %}" class="p-3 bg-slate-800 text-slate-400 rounded-xl hover:text-white" title="CSV">
+                            <i class="fa-solid fa-file-csv"></i>
+                        </a>
+                        <a href="{% url 'controle_horas:relatorio_espelho_mes_pdf' %}?competencia={{ competencia }}" class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-lg" title="Espelho de Ponto">
+                            <i class="fa-solid fa-calendar-check"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

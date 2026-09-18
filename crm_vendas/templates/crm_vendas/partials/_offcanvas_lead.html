@@ -1,0 +1,1068 @@
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   FICHA DO LEAD — painel lateral
+   Usa os tokens do crm_base. Nenhuma cor cravada.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.fic-overlay{
+  position:fixed; inset:0; z-index:1000;
+  background:rgba(0,0,0,.55); backdrop-filter:blur(3px);
+  display:none; justify-content:flex-end;
+}
+.fic-overlay.is-open{display:flex;}
+
+.fic-painel{
+  width:min(1080px, 94vw); height:100%;
+  background:rgb(var(--c-bg));
+  border-left:1px solid rgb(var(--c-line));
+  display:flex; flex-direction:column;
+  box-shadow:-24px 0 60px -20px rgba(0,0,0,.6);
+  animation:ficEntra .24s cubic-bezier(.32,.72,.24,1);
+}
+@keyframes ficEntra{from{transform:translateX(28px); opacity:.4;} to{transform:none; opacity:1;}}
+
+/* ── cabeçalho ── */
+.fic-head{
+  flex-shrink:0; padding:16px 20px;
+  background:rgb(var(--c-deep));
+  border-bottom:1px solid rgb(var(--c-line));
+  display:flex; align-items:flex-start; gap:14px;
+}
+.fic-head__info{flex:1; min-width:0;}
+.fic-title{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:19px; font-weight:600; color:rgb(var(--c-ink));
+  letter-spacing:-.35px; line-height:1.25; margin-bottom:3px;
+  word-break:break-word;
+}
+.fic-sub{font-size:12.5px; color:rgb(var(--c-ink-faint)); display:flex; align-items:center; gap:6px;}
+.fic-head__acoes{display:flex; gap:7px; flex-shrink:0;}
+
+.fic-abtn{
+  width:36px; height:36px; border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid rgb(var(--c-line)); background:rgb(var(--c-panel));
+  color:rgb(var(--c-ink-soft)); cursor:pointer; font-size:13px;
+  transition:all .15s;
+}
+.fic-abtn:hover{background:rgb(var(--c-line)); color:rgb(var(--c-ink));}
+.fic-abtn--edit.is-saving{background:rgb(var(--c-success)); border-color:rgb(var(--c-success)); color:#fff;}
+.fic-abtn--ganho:hover{background:rgb(var(--c-success)); border-color:rgb(var(--c-success)); color:#fff;}
+.fic-abtn--perda:hover{background:rgb(var(--c-danger)); border-color:rgb(var(--c-danger)); color:#fff;}
+.fic-abtn.is-disabled{opacity:.32; pointer-events:none;}
+
+/* ── corpo: duas colunas ── */
+.fic-body{flex:1; display:grid; grid-template-columns:1.35fr 1fr; gap:0; overflow:hidden;}
+.fic-col{overflow-y:auto; padding:20px;}
+.fic-col--dados{border-right:1px solid rgb(var(--c-line));}
+.fic-col--hist{background:rgb(var(--c-deep) / .45); display:flex; flex-direction:column;}
+
+.fic-secao{margin-bottom:22px;}
+.fic-secao__titulo{
+  font-size:10px; font-weight:700; color:rgb(var(--c-ink-faint));
+  text-transform:uppercase; letter-spacing:.13em;
+  padding-bottom:9px; margin-bottom:14px;
+  border-bottom:1px solid rgb(var(--c-line));
+  display:flex; align-items:center; gap:7px;
+}
+
+.fic-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.fic-campo{min-width:0;}
+.fic-campo--full{grid-column:1 / -1;}
+.fic-label{
+  display:block; font-size:9.5px; font-weight:700;
+  color:rgb(var(--c-ink-faint)); text-transform:uppercase;
+  letter-spacing:.1em; margin-bottom:4px;
+}
+.fic-valor{
+  font-size:13.5px; color:rgb(var(--c-ink)); font-weight:500;
+  word-break:break-word;
+}
+.fic-valor--money{font-family:'JetBrains Mono',monospace; font-weight:700; color:rgb(var(--c-success));}
+.fic-valor--vazio{color:rgb(var(--c-ink-faint)); font-style:italic; font-weight:400;}
+
+/* bloco de valor destacado */
+.fic-bloco{
+  background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line));
+  border-radius:10px; padding:12px 14px;
+}
+
+/* caixa de texto longo */
+.fic-texto{
+  background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line));
+  border-radius:10px; padding:11px 13px;
+  font-size:13px; color:rgb(var(--c-ink-soft));
+  white-space:pre-wrap; max-height:150px; overflow-y:auto; line-height:1.55;
+}
+
+/* ── campos de edição ── */
+.fic-input, .fic-select, .fic-textarea{
+  width:100%; font-family:inherit; font-size:13px;
+  background:rgb(var(--c-bg)); color:rgb(var(--c-ink));
+  border:1px solid rgb(var(--c-line)); border-radius:8px;
+  padding:8px 11px; outline:none; transition:border-color .14s;
+}
+.fic-input:focus, .fic-select:focus, .fic-textarea:focus{
+  border-color:rgb(var(--c-accent) / .6);
+  box-shadow:0 0 0 3px rgb(var(--c-accent) / .1);
+}
+.fic-textarea{resize:vertical; min-height:76px;}
+.fic-select{
+  appearance:none; cursor:pointer; padding-right:28px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23808a99' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center;
+}
+.fic-select option{background:rgb(var(--c-deep)); color:rgb(var(--c-ink));}
+
+/* alternância ver / editar */
+.view-mode, .edit-mode{}
+.edit-mode{display:none;}
+
+/* ── itens da proposta ── */
+.fic-itens{display:flex; flex-direction:column; gap:6px; margin-top:8px;}
+.fic-item{
+  display:flex; align-items:center; gap:9px;
+  background:rgb(var(--c-bg)); border:1px solid rgb(var(--c-line));
+  border-radius:8px; padding:7px 10px; font-size:12.5px;
+}
+.fic-item__qtd{
+  flex-shrink:0; min-width:26px; text-align:center;
+  background:rgb(var(--c-line)); color:rgb(var(--c-ink-soft));
+  border-radius:5px; padding:1px 5px; font-size:11px; font-weight:700;
+}
+.fic-item__nome{flex:1; min-width:0; color:rgb(var(--c-ink)); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.fic-item__val{font-family:'JetBrains Mono',monospace; font-weight:700; color:rgb(var(--c-ink)); font-size:12px; flex-shrink:0;}
+.fic-item__acoes{display:flex; gap:4px; flex-shrink:0;}
+.fic-ibtn{
+  width:22px; height:22px; border-radius:5px; border:none; cursor:pointer;
+  background:rgb(var(--c-line)); color:rgb(var(--c-ink-faint));
+  display:flex; align-items:center; justify-content:center; font-size:9px;
+  transition:all .14s;
+}
+.fic-ibtn:hover{background:rgb(var(--c-accent)); color:#fff;}
+.fic-ibtn--del:hover{background:rgb(var(--c-danger)); color:#fff;}
+
+.fic-add{display:flex; gap:6px; margin-top:8px;}
+.fic-add input{
+  font-family:inherit; font-size:12px;
+  background:rgb(var(--c-bg)); color:rgb(var(--c-ink));
+  border:1px solid rgb(var(--c-line)); border-radius:7px;
+  padding:7px 9px; outline:none; min-width:0;
+}
+.fic-add input:focus{border-color:rgb(var(--c-accent) / .6);}
+.fic-add__btn{
+  flex-shrink:0; width:32px; border-radius:7px; border:none; cursor:pointer;
+  background:rgb(var(--c-accent)); color:#fff; font-size:11px;
+}
+.fic-add__btn:hover{background:rgb(var(--c-accent-soft));}
+
+/* ── histórico / timeline ── */
+.fic-nota{
+  flex-shrink:0; background:rgb(var(--c-panel));
+  border:1px solid rgb(var(--c-line)); border-radius:11px;
+  padding:11px 12px; margin-bottom:15px;
+}
+.fic-nota textarea{
+  width:100%; background:transparent; border:none; outline:none; resize:none;
+  color:rgb(var(--c-ink)); font-family:inherit; font-size:13px; min-height:52px;
+}
+.fic-nota textarea::placeholder{color:rgb(var(--c-ink-faint));}
+.fic-nota__acoes{display:flex; justify-content:flex-end; gap:7px; padding-top:8px; border-top:1px solid rgb(var(--c-line));}
+.fic-nota__btn{
+  width:30px; height:30px; border-radius:7px; cursor:pointer;
+  border:1px solid rgb(var(--c-line)); background:rgb(var(--c-bg));
+  color:rgb(var(--c-ink-faint)); display:flex; align-items:center; justify-content:center;
+  font-size:12px; transition:all .14s;
+}
+.fic-nota__btn:hover{color:rgb(var(--c-ink)); border-color:rgb(var(--c-ink-faint));}
+.fic-nota__btn--send{background:rgb(var(--c-accent)); border-color:rgb(var(--c-accent)); color:#fff;}
+.fic-nota__btn--send:hover{background:rgb(var(--c-accent-soft));}
+
+.fic-timeline{flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:9px;}
+.tl-item{
+  background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line));
+  border-left:2.5px solid rgb(var(--c-ink-faint));
+  border-radius:9px; padding:10px 12px;
+}
+.tl-item.anotacao{border-left-color:rgb(var(--c-accent));}
+.tl-item.arquivo{border-left-color:rgb(var(--c-success));}
+.tl-item.sistema{border-left-color:rgb(var(--c-ink-faint));}
+.tl-header{display:flex; justify-content:space-between; align-items:center; gap:9px; margin-bottom:5px;}
+.tl-author{font-size:11.5px; font-weight:600; color:rgb(var(--c-ink-soft)); display:flex; align-items:center; gap:5px;}
+.tl-date{font-size:10.5px; color:rgb(var(--c-ink-faint)); flex-shrink:0;}
+.tl-text{font-size:13px; color:rgb(var(--c-ink)); white-space:pre-wrap; line-height:1.5; word-break:break-word;}
+.tl-text a{color:rgb(var(--c-accent-soft)); text-decoration:underline;}
+
+/* ── botão gerar proposta ── */
+.fic-proposta{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; padding:11px; border-radius:10px; cursor:pointer;
+  background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line));
+  color:rgb(var(--c-ink)); font-family:inherit; font-size:13px; font-weight:600;
+  transition:all .15s;
+}
+.fic-proposta:hover{border-color:rgb(var(--c-accent) / .5); background:rgb(var(--c-accent) / .07);}
+
+/* ═══════════ MODAIS DE GANHO / PERDA ═══════════ */
+.fic-modal{
+  position:fixed; inset:0; z-index:1100;
+  background:rgba(0,0,0,.6); backdrop-filter:blur(3px);
+  display:none; align-items:center; justify-content:center; padding:18px;
+}
+.fic-modal.is-open{display:flex;}
+.fic-modal__box{
+  width:100%; max-width:460px;
+  background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line));
+  border-radius:14px; overflow:hidden;
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.7);
+  animation:ficEntra .2s ease;
+}
+.fic-modal__head{
+  padding:16px 20px; border-bottom:1px solid rgb(var(--c-line));
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.fic-modal__head h3{
+  font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600;
+  display:flex; align-items:center; gap:9px;
+}
+.fic-modal__head--ganho h3{color:rgb(var(--c-success));}
+.fic-modal__head--perda h3{color:rgb(var(--c-danger));}
+.fic-modal__body{padding:20px; max-height:64vh; overflow-y:auto;}
+.fic-modal__foot{
+  padding:14px 20px; border-top:1px solid rgb(var(--c-line));
+  display:flex; justify-content:flex-end; gap:10px;
+  background:rgb(var(--c-bg) / .5);
+}
+
+.fic-tags{display:flex; flex-wrap:wrap; gap:7px;}
+.fic-tag{
+  padding:6px 12px; border-radius:20px; cursor:pointer;
+  background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line));
+  color:rgb(var(--c-ink-soft)); font-size:12px; font-weight:600;
+  transition:all .14s;
+}
+.fic-tag:hover{border-color:rgb(var(--c-danger) / .5); color:rgb(var(--c-ink));}
+.fic-tag.is-sel{background:rgb(var(--c-danger)); border-color:rgb(var(--c-danger)); color:#fff;}
+
+.fic-prazos{display:flex; gap:7px; margin-top:9px;}
+.fic-prazo{
+  flex:1; padding:8px; border-radius:8px; cursor:pointer;
+  background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line));
+  color:rgb(var(--c-ink-soft)); font-family:inherit; font-size:11.5px; font-weight:700;
+  transition:all .14s;
+}
+.fic-prazo:hover{border-color:rgb(var(--c-accent) / .5);}
+.fic-prazo.is-sel{background:rgb(var(--c-accent)); border-color:rgb(var(--c-accent)); color:#fff;}
+
+.fic-check{
+  display:flex; align-items:center; gap:9px; cursor:pointer;
+  font-size:13px; color:rgb(var(--c-ink-soft));
+}
+.fic-check input{width:16px; height:16px; accent-color:rgb(var(--c-accent)); cursor:pointer;}
+
+/* ═══════════ RESPONSIVO ═══════════ */
+@media (max-width:980px){
+  .fic-painel{width:100%;}
+  .fic-body{grid-template-columns:1fr; overflow-y:auto;}
+  .fic-col{overflow:visible;}
+  .fic-col--dados{border-right:none; border-bottom:1px solid rgb(var(--c-line));}
+  .fic-col--hist{min-height:420px;}
+  .fic-timeline{overflow:visible;}
+}
+@media (max-width:640px){
+  .fic-head{padding:13px 14px; flex-wrap:wrap;}
+  .fic-title{font-size:16px;}
+  .fic-col{padding:15px;}
+  .fic-grid{grid-template-columns:1fr; gap:12px;}
+  .fic-add{flex-wrap:wrap;}
+  .fic-add input{flex:1 1 100%;}
+  .fic-modal__box{max-width:100%;}
+}
+</style>
+
+
+<!-- ═════════════════════ FICHA DO LEAD ═════════════════════ -->
+<div id="offcanvasLead" class="fic-overlay" onmousedown="fecharFichaLead(event)">
+  <div class="fic-painel" onclick="event.stopPropagation()">
+
+    <!-- cabeçalho -->
+    <header class="fic-head">
+      <div class="fic-head__info">
+        <div style="margin-bottom:7px">
+          <span id="drawer-etapa" class="crm-chip crm-chip--accent view-mode">Carregando...</span>
+          <select id="edit-etapa" class="fic-select edit-mode" style="max-width:230px">
+            <option value="1_LEAD">1. Lead Recebido</option>
+            <option value="2_CONTATO">2. Primeiro Contato</option>
+            <option value="3_DIAGNOSTICO">3. Diagnóstico Técnico</option>
+            <option value="4_PROPOSTA">4. Proposta Enviada</option>
+            <option value="5_NEGOCIACAO">5. Negociação</option>
+          </select>
+        </div>
+
+        <h2 id="drawer-empresa" class="fic-title view-mode">...</h2>
+        <input type="text" id="edit-empresa" class="fic-input edit-mode" placeholder="Nome da empresa" style="margin-bottom:7px">
+
+        <p id="drawer-contato" class="fic-sub view-mode">
+          <i class="fa-regular fa-user"></i> <span>...</span>
+        </p>
+        <input type="text" id="edit-contato" class="fic-input edit-mode" placeholder="Nome do contato">
+      </div>
+
+      <div class="fic-head__acoes">
+        <button class="fic-abtn fic-abtn--edit" id="btnEditLead" onclick="toggleEditMode()" title="Editar informações">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button class="fic-abtn fic-abtn--ganho" id="btnGanhoMini" onclick="abrirModalGanho()" title="Marcar como ganho">
+          <i class="fa-solid fa-check"></i>
+        </button>
+        <button class="fic-abtn fic-abtn--perda" id="btnPerdaMini" onclick="abrirModalPerda()" title="Marcar como perdido">
+          <i class="fa-solid fa-thumbs-down"></i>
+        </button>
+        <button class="fic-abtn" onclick="fecharFichaLead(null, true)" title="Fechar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- corpo -->
+    <div class="fic-body">
+
+      <!-- coluna esquerda: dados -->
+      <div class="fic-col fic-col--dados">
+
+        <section class="fic-secao">
+          <h3 class="fic-secao__titulo"><i class="fa-solid fa-circle-info"></i> Visão geral</h3>
+          <div class="fic-grid">
+            <div class="fic-campo">
+              <span class="fic-label">Vendedor responsável</span>
+              <span class="fic-valor view-mode" id="drawer-vendedor">-</span>
+              <select id="edit-vendedor" class="fic-select edit-mode"></select>
+            </div>
+            <div class="fic-campo">
+              <span class="fic-label">Segmento</span>
+              <span class="fic-valor view-mode" id="drawer-segmento">-</span>
+              <select id="edit-segmento" class="fic-select edit-mode"></select>
+            </div>
+            <div class="fic-campo">
+              <span class="fic-label">Telefone</span>
+              <span class="fic-valor view-mode" id="drawer-telefone">-</span>
+              <input type="text" id="edit-telefone" class="fic-input edit-mode">
+            </div>
+            <div class="fic-campo">
+              <span class="fic-label">CNPJ</span>
+              <span class="fic-valor view-mode" id="drawer-cnpj">-</span>
+              <input type="text" id="edit-cnpj" class="fic-input edit-mode">
+            </div>
+            <div class="fic-campo">
+              <span class="fic-label">Cidade</span>
+              <span class="fic-valor view-mode" id="drawer-cidade">-</span>
+              <input type="text" id="edit-cidade" class="fic-input edit-mode">
+            </div>
+            <div class="fic-campo">
+              <span class="fic-label">Urgência</span>
+              <span class="fic-valor view-mode" id="drawer-urgencia">-</span>
+              <select id="edit-urgencia" class="fic-select edit-mode">
+                <option value="BAIXA">Baixa</option>
+                <option value="MEDIA">Média</option>
+                <option value="ALTA">Alta</option>
+              </select>
+            </div>
+            <div class="fic-campo fic-campo--full">
+              <span class="fic-label">Necessidade / observação geral</span>
+              <div class="fic-texto view-mode" id="drawer-dor">-</div>
+              <textarea id="edit-dor" class="fic-textarea edit-mode" rows="4"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="fic-secao">
+          <h3 class="fic-secao__titulo"><i class="fa-solid fa-sack-dollar"></i> Investimento</h3>
+
+          <!-- produtos -->
+          <div class="fic-bloco" style="margin-bottom:11px">
+            <span class="fic-label">Produtos / equipamentos</span>
+            <span class="fic-valor fic-valor--money view-mode" id="drawer-valor">-</span>
+            <div id="view-lista-PRODUTO" class="fic-itens view-mode"></div>
+            <div class="edit-mode">
+              <div id="edit-lista-PRODUTO" class="fic-itens"></div>
+              <div class="fic-add">
+                <input type="number" id="add-qtd-PRODUTO" style="width:52px" placeholder="Qtd" value="1" min="1">
+                <input type="text" id="add-nome-PRODUTO" style="flex:2" placeholder="Ex: Computador i3">
+                <input type="number" step="0.01" id="add-valor-PRODUTO" style="flex:1" placeholder="R$ un.">
+                <button type="button" class="fic-add__btn" onclick="adicionarItemProposta('PRODUTO')" title="Adicionar"><i class="fa-solid fa-plus"></i></button>
+              </div>
+              <input type="number" step="0.01" id="edit-equipamentos" class="fic-input" style="margin-top:8px" placeholder="Total geral (se não quiser listar itens)">
+            </div>
+          </div>
+
+          <!-- serviços -->
+          <div class="fic-bloco" style="margin-bottom:11px">
+            <span class="fic-label">Serviços / implantação</span>
+            <span class="fic-valor fic-valor--money view-mode" id="drawer-servicos">-</span>
+            <div id="view-lista-SERVICO" class="fic-itens view-mode"></div>
+            <div class="edit-mode">
+              <div id="edit-lista-SERVICO" class="fic-itens"></div>
+              <div class="fic-add">
+                <input type="number" id="add-qtd-SERVICO" style="width:52px" placeholder="Qtd" value="1" min="1">
+                <input type="text" id="add-nome-SERVICO" style="flex:2" placeholder="Ex: Treinamento">
+                <input type="number" step="0.01" id="add-valor-SERVICO" style="flex:1" placeholder="R$ un.">
+                <button type="button" class="fic-add__btn" onclick="adicionarItemProposta('SERVICO')" title="Adicionar"><i class="fa-solid fa-plus"></i></button>
+              </div>
+              <input type="number" step="0.01" id="edit-servicos" class="fic-input" style="margin-top:8px" placeholder="Total geral (se não quiser listar itens)">
+            </div>
+          </div>
+
+          <!-- mensalidade -->
+          <div class="fic-bloco">
+            <span class="fic-label">Mensalidade (recorrente)</span>
+            <span class="fic-valor fic-valor--money view-mode" id="drawer-mensalidade">-</span>
+            <div id="view-lista-MENSALIDADE" class="fic-itens view-mode"></div>
+            <div class="edit-mode">
+              <div id="edit-lista-MENSALIDADE" class="fic-itens"></div>
+              <div class="fic-add">
+                <input type="number" id="add-qtd-MENSALIDADE" style="width:52px" placeholder="Qtd" value="1" min="1">
+                <input type="text" id="add-nome-MENSALIDADE" style="flex:2" placeholder="Ex: Plano Pro 5 usuários">
+                <input type="number" step="0.01" id="add-valor-MENSALIDADE" style="flex:1" placeholder="R$ un.">
+                <button type="button" class="fic-add__btn" onclick="adicionarItemProposta('MENSALIDADE')" title="Adicionar"><i class="fa-solid fa-plus"></i></button>
+              </div>
+              <input type="number" step="0.01" id="edit-mensalidade" class="fic-input" style="margin-top:8px" placeholder="Total geral (se não quiser listar itens)">
+            </div>
+          </div>
+
+          <div class="fic-grid" style="margin-top:14px">
+            <div class="fic-campo">
+              <span class="fic-label">Forma de pagamento</span>
+              <span class="fic-valor view-mode" id="drawer-forma-pagamento">-</span>
+              <input type="text" id="edit-forma-pagamento" class="fic-input edit-mode" placeholder="Boleto, Pix, cartão">
+            </div>
+            <div class="fic-campo">
+              <span class="fic-label">Prazo de pagamento</span>
+              <span class="fic-valor view-mode" id="drawer-prazo-pagamento">-</span>
+              <input type="text" id="edit-prazo-pagamento" class="fic-input edit-mode" placeholder="À vista, 30/60">
+            </div>
+          </div>
+
+          <button class="fic-proposta view-mode" style="margin-top:16px" onclick="imprimirProposta()">
+            <i class="fa-solid fa-file-pdf"></i> Gerar proposta para assinatura
+          </button>
+        </section>
+      </div>
+
+      <!-- coluna direita: histórico -->
+      <div class="fic-col fic-col--hist">
+        <h3 class="fic-secao__titulo"><i class="fa-solid fa-clock-rotate-left"></i> Histórico de registros</h3>
+
+        <div class="fic-nota">
+          <textarea id="novaNotaTexto" placeholder="Registre um novo passo do negócio..."></textarea>
+          <div class="fic-nota__acoes">
+            <label for="arquivoUploadLead" class="fic-nota__btn" title="Anexar arquivo" style="cursor:pointer">
+              <i class="fa-solid fa-paperclip"></i>
+            </label>
+            <input type="file" id="arquivoUploadLead" style="display:none" onchange="uploadArquivo()">
+            <button class="fic-nota__btn fic-nota__btn--send" onclick="salvarNota()" title="Salvar anotação">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="fic-timeline" id="drawer-timeline">
+          <div style="text-align:center; padding:26px; color:rgb(var(--c-ink-faint)); font-size:13px">Carregando...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ═════════════════════ MODAL: GANHO ═════════════════════ -->
+<div id="modalGanho" class="fic-modal">
+  <div class="fic-modal__box">
+    <div class="fic-modal__head fic-modal__head--ganho">
+      <h3><i class="fa-solid fa-trophy"></i> Confirmar venda</h3>
+      <button class="fic-abtn" onclick="fecharModal('modalGanho')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="fic-modal__body">
+      <span class="fic-label">Detalhes do fechamento (opcional)</span>
+      <textarea id="detalheGanhoTexto" class="fic-textarea" rows="4"
+                placeholder="Como foi fechado? Alguma condição especial combinada?"></textarea>
+    </div>
+    <div class="fic-modal__foot">
+      <button class="crm-btn" onclick="fecharModal('modalGanho')">Cancelar</button>
+      <button class="crm-btn crm-btn--primary crm-btn-confirm-ganho"
+              style="background:rgb(var(--c-success)); border-color:rgb(var(--c-success))"
+              onclick="confirmarFechamento('GANHO')">
+        <i class="fa-solid fa-check"></i> Confirmar venda
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═════════════════════ MODAL: PERDA ═════════════════════ -->
+<div id="modalPerda" class="fic-modal">
+  <div class="fic-modal__box">
+    <div class="fic-modal__head fic-modal__head--perda">
+      <h3><i class="fa-solid fa-circle-xmark"></i> Registrar perda</h3>
+      <button class="fic-abtn" onclick="fecharModal('modalPerda')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="fic-modal__body">
+      <span class="fic-label">Motivo da perda</span>
+      <div class="fic-tags" style="margin-bottom:16px">
+        {% for motivo in motivos_perda %}
+          <div class="fic-tag" data-id="{{ motivo.id }}" onclick="selecionarTagPerda(this)">{{ motivo.nome }}</div>
+        {% endfor %}
+      </div>
+      <input type="hidden" id="motivoPerdaInput">
+
+      <span class="fic-label">Detalhes (opcional)</span>
+      <textarea id="detalhePerdaTexto" class="fic-textarea" rows="3"
+                placeholder="O que aconteceu? Ajuda a equipe a aprender com o caso."></textarea>
+
+      <div style="margin-top:16px; padding-top:14px; border-top:1px solid rgb(var(--c-line))">
+        <label class="fic-check">
+          <input type="checkbox" id="checkResgatar" onchange="toggleResgateSet(this.checked)">
+          <span>Agendar retomada deste contato mais adiante</span>
+        </label>
+        <div id="blocoResgate" style="display:none; margin-top:11px">
+          <span class="fic-label">Retomar em</span>
+          <div class="fic-prazos">
+            <button type="button" class="fic-prazo" data-dias="30" onclick="selectPrazo(this)">30 dias</button>
+            <button type="button" class="fic-prazo" data-dias="60" onclick="selectPrazo(this)">60 dias</button>
+            <button type="button" class="fic-prazo" data-dias="90" onclick="selectPrazo(this)">90 dias</button>
+          </div>
+          <input type="hidden" id="inputPrazoResgate">
+        </div>
+      </div>
+    </div>
+    <div class="fic-modal__foot">
+      <button class="crm-btn" onclick="fecharModal('modalPerda')">Cancelar</button>
+      <button class="crm-btn crm-btn--danger crm-btn-confirm-perda" onclick="confirmarFechamento('PERDIDO')">
+        <i class="fa-solid fa-thumbs-down"></i> Confirmar perda
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ESTADO
+   ═══════════════════════════════════════════════════════════════ */
+let leadAbertoId = null;
+let modoEdicao = false;
+let etapaAtualBackend = null;
+let itensPropostaGlobais = [];
+
+function getCSRFToken(){
+  const el = document.querySelector('[name=csrfmiddlewaretoken]');
+  return el ? el.value : '';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ABRIR / FECHAR
+   ═══════════════════════════════════════════════════════════════ */
+function abrirFichaLead(id){
+  leadAbertoId = id;
+  modoEdicao = false;
+  document.getElementById('offcanvasLead').classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+  carregarDetalhesLead(id);
+}
+
+function fecharFichaLead(e, forcar){
+  // só fecha se o clique foi no fundo (ou se veio do botão X)
+  if (!forcar && e && e.target !== e.currentTarget) return;
+  document.getElementById('offcanvasLead').classList.remove('is-open');
+  document.body.style.overflow = '';
+  leadAbertoId = null;
+  modoEdicao = false;
+}
+
+function fecharModal(id){ document.getElementById(id).classList.remove('is-open'); }
+
+document.addEventListener('keydown', function(e){
+  if (e.key !== 'Escape') return;
+  const mg = document.getElementById('modalGanho');
+  const mp = document.getElementById('modalPerda');
+  if (mg && mg.classList.contains('is-open')) { fecharModal('modalGanho'); return; }
+  if (mp && mp.classList.contains('is-open')) { fecharModal('modalPerda'); return; }
+  fecharFichaLead(null, true);
+});
+
+function imprimirProposta(){
+  if (leadAbertoId) window.open(`/comercial/lead/${leadAbertoId}/proposta/`, '_blank');
+}
+
+function abrirModalGanho(){
+  const el = document.getElementById('detalheGanhoTexto');
+  if (el) el.value = '';
+  document.getElementById('modalGanho').classList.add('is-open');
+}
+
+function abrirModalPerda(){
+  document.getElementById('motivoPerdaInput').value = '';
+  document.getElementById('detalhePerdaTexto').value = '';
+  document.getElementById('checkResgatar').checked = false;
+  document.getElementById('inputPrazoResgate').value = '';
+  toggleResgateSet(false);
+  document.querySelectorAll('#modalPerda .fic-tag.is-sel').forEach(t => t.classList.remove('is-sel'));
+  document.querySelectorAll('#modalPerda .fic-prazo.is-sel').forEach(t => t.classList.remove('is-sel'));
+  document.getElementById('modalPerda').classList.add('is-open');
+}
+
+function selecionarTagPerda(el){
+  document.querySelectorAll('#modalPerda .fic-tag').forEach(t => t.classList.remove('is-sel'));
+  el.classList.add('is-sel');
+  document.getElementById('motivoPerdaInput').value = el.dataset.id;
+}
+
+function toggleResgateSet(mostrar){
+  document.getElementById('blocoResgate').style.display = mostrar ? 'block' : 'none';
+}
+
+function selectPrazo(el){
+  document.querySelectorAll('#modalPerda .fic-prazo').forEach(b => b.classList.remove('is-sel'));
+  el.classList.add('is-sel');
+  document.getElementById('inputPrazoResgate').value = el.dataset.dias;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FECHAR NEGÓCIO (ganho / perda)
+   ═══════════════════════════════════════════════════════════════ */
+async function confirmarFechamento(status){
+  const payload = { status };
+  const btnGanho = document.querySelector('.crm-btn-confirm-ganho');
+  const btnPerda = document.querySelector('.crm-btn-confirm-perda');
+
+  if (status === 'GANHO'){
+    payload.observacao = document.getElementById('detalheGanhoTexto').value;
+    if (btnGanho) btnGanho.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+  } else if (status === 'PERDIDO'){
+    const motivoId = document.getElementById('motivoPerdaInput').value;
+    if (!motivoId){ alert("Selecione o motivo da perda."); return; }
+    payload.motivo_id = motivoId;
+    payload.detalhe = document.getElementById('detalhePerdaTexto').value;
+
+    const resgatar = document.getElementById('checkResgatar').checked;
+    payload.resgatar = resgatar;
+    if (resgatar){
+      const prazo = document.getElementById('inputPrazoResgate').value;
+      if (!prazo){ alert("Escolha em quanto tempo retomar: 30, 60 ou 90 dias."); return; }
+      payload.prazo_resgate = prazo;
+    }
+    if (btnPerda) btnPerda.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+  }
+
+  try{
+    const r = await fetch(`/comercial/api/lead/${leadAbertoId}/fechar/`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':getCSRFToken()},
+      body: JSON.stringify(payload)
+    });
+    const json = await r.json();
+    if (json.status === 'sucesso'){
+      window.location.reload();
+    } else {
+      alert("Erro ao fechar negócio: " + (json.message || ''));
+      if (btnGanho) btnGanho.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar venda';
+      if (btnPerda) btnPerda.innerHTML = '<i class="fa-solid fa-thumbs-down"></i> Confirmar perda';
+    }
+  }catch(e){
+    alert("Erro de conexão. A página será recarregada.");
+    window.location.reload();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ITENS DA PROPOSTA
+   ═══════════════════════════════════════════════════════════════ */
+const brlFic = v => (v || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+
+function adicionarItemProposta(tipo){
+  const qtdEl   = document.getElementById(`add-qtd-${tipo}`);
+  const nomeEl  = document.getElementById(`add-nome-${tipo}`);
+  const valorEl = document.getElementById(`add-valor-${tipo}`);
+
+  const nome  = (nomeEl.value || '').trim();
+  const valor = parseFloat(valorEl.value);
+  const qtd   = parseInt(qtdEl.value) || 1;
+
+  if (!nome || isNaN(valor)){ alert("Informe a descrição e o valor do item."); return; }
+
+  itensPropostaGlobais.push({ tipo, nome, valor, quantidade: qtd });
+
+  nomeEl.value = ''; valorEl.value = ''; qtdEl.value = 1;
+  renderItensProposta();
+}
+
+function removerItemProposta(indice){
+  itensPropostaGlobais.splice(indice, 1);
+  renderItensProposta();
+}
+
+function editarItemProposta(indice, tipo){
+  const item = itensPropostaGlobais[indice];
+  if (!item) return;
+  document.getElementById(`add-qtd-${tipo}`).value   = item.quantidade || 1;
+  document.getElementById(`add-nome-${tipo}`).value  = item.nome;
+  document.getElementById(`add-valor-${tipo}`).value = item.valor;
+  itensPropostaGlobais.splice(indice, 1);
+  renderItensProposta();
+  document.getElementById(`add-nome-${tipo}`).focus();
+}
+
+function renderItensProposta(){
+  ['PRODUTO','SERVICO','MENSALIDADE'].forEach(tipo => {
+    const boxView = document.getElementById(`view-lista-${tipo}`);
+    const boxEdit = document.getElementById(`edit-lista-${tipo}`);
+    if (boxView) boxView.innerHTML = '';
+    if (boxEdit) boxEdit.innerHTML = '';
+
+    let total = 0;
+
+    itensPropostaGlobais.forEach((item, indice) => {
+      if (item.tipo !== tipo) return;
+      const qtd = item.quantidade || 1;
+      const sub = (parseFloat(item.valor) || 0) * qtd;
+      total += sub;
+
+      if (boxView){
+        boxView.insertAdjacentHTML('beforeend', `
+          <div class="fic-item">
+            <span class="fic-item__qtd">${qtd}x</span>
+            <span class="fic-item__nome" title="${item.nome}">${item.nome}</span>
+            <span class="fic-item__val">${brlFic(sub)}</span>
+          </div>`);
+      }
+      if (boxEdit){
+        boxEdit.insertAdjacentHTML('beforeend', `
+          <div class="fic-item">
+            <span class="fic-item__qtd">${qtd}x</span>
+            <span class="fic-item__nome" title="${item.nome}">${item.nome}</span>
+            <span class="fic-item__val">${brlFic(sub)}</span>
+            <div class="fic-item__acoes">
+              <button type="button" class="fic-ibtn" onclick="editarItemProposta(${indice}, '${tipo}')" title="Editar">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button type="button" class="fic-ibtn fic-ibtn--del" onclick="removerItemProposta(${indice})" title="Excluir">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>`);
+      }
+    });
+
+    // se há itens listados, o total geral passa a ser a soma deles
+    if (total > 0){
+      const mapa = {PRODUTO:'edit-equipamentos', SERVICO:'edit-servicos', MENSALIDADE:'edit-mensalidade'};
+      const campo = document.getElementById(mapa[tipo]);
+      if (campo) campo.value = total.toFixed(2);
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CARREGAR DADOS
+   ═══════════════════════════════════════════════════════════════ */
+async function carregarDetalhesLead(id){
+  document.getElementById('drawer-timeline').innerHTML =
+    '<div style="text-align:center;padding:26px;color:rgb(var(--c-ink-faint))"><i class="fa-solid fa-spinner fa-spin"></i> Buscando dados...</div>';
+
+  const set = (elId, valor) => { const el = document.getElementById(elId); if (el) el.innerText = valor; };
+  const setVal = (elId, valor) => { const el = document.getElementById(elId); if (el) el.value = valor ?? ''; };
+
+  try{
+    const r = await fetch(`/comercial/api/lead/${id}/`);
+    const json = await r.json();
+    if (json.status !== 'sucesso') return;
+
+    const d = json.data;
+    etapaAtualBackend = d.etapa_raw;
+    itensPropostaGlobais = d.itens_proposta || [];
+    renderItensProposta();
+
+    // selects dependentes
+    const selVend = document.getElementById('edit-vendedor');
+    if (selVend){
+      selVend.innerHTML = '';
+      (d.vendedores_disp || []).forEach(v => {
+        selVend.innerHTML += `<option value="${v.id}" ${v.id == d.vendedor_id ? 'selected' : ''}>${v.nome}</option>`;
+      });
+      selVend.disabled = (!d.is_supervisor && d.vendedor_id && d.vendedor_id != d.current_user_id);
+    }
+    const selSeg = document.getElementById('edit-segmento');
+    if (selSeg){
+      selSeg.innerHTML = '<option value="">Sem segmento</option>';
+      (d.segmentos_disp || []).forEach(s => {
+        selSeg.innerHTML += `<option value="${s.id}" ${s.id == d.segmento_id ? 'selected' : ''}>${s.nome}</option>`;
+      });
+    }
+
+    // modo visualização
+    set('drawer-empresa', d.nome_empresa);
+    const cont = document.querySelector('#drawer-contato span');
+    if (cont) cont.innerText = d.nome_contato || '-';
+    set('drawer-etapa', d.etapa_display);
+    set('drawer-vendedor', d.vendedor || 'Sem dono');
+    set('drawer-segmento', d.segmento_nome || '-');
+    set('drawer-telefone', d.telefone || '-');
+    set('drawer-cnpj', d.cnpj || '-');
+    set('drawer-cidade', d.cidade || '-');
+    set('drawer-forma-pagamento', d.forma_pagamento || '-');
+    set('drawer-prazo-pagamento', d.prazo_pagamento || '-');
+    set('drawer-valor', brlFic(d.valor_equipamentos_raw));
+    set('drawer-servicos', brlFic(d.valor_servicos_raw));
+    set('drawer-mensalidade', brlFic(d.valor_mensalidade));
+
+    const dor = document.getElementById('drawer-dor');
+    if (dor){
+      dor.innerText = d.dor_principal || 'Nenhuma necessidade registrada.';
+      dor.classList.toggle('fic-valor--vazio', !d.dor_principal);
+    }
+
+    // urgência colorida
+    const urg = document.getElementById('drawer-urgencia');
+    if (urg){
+      urg.innerText = d.urgencia_display || '-';
+      const cor = d.urgencia_display === 'Alta' ? 'var(--c-danger)'
+                : d.urgencia_display === 'Média' ? 'var(--c-warn)'
+                : 'var(--c-success)';
+      urg.style.color = `rgb(${cor})`;
+      urg.style.fontWeight = '700';
+    }
+
+    // etiqueta da etapa reflete a situação
+    const badge = document.getElementById('drawer-etapa');
+    if (badge){
+      badge.className = 'crm-chip view-mode';
+      if (d.esta_atrasado){
+        badge.classList.add('crm-chip--danger');
+        badge.innerText = `${d.etapa_display} · atrasado`;
+      } else if (d.motivo_extensao_sla){
+        badge.classList.add('crm-chip--warn');
+        badge.innerText = `${d.etapa_display} · prorrogado`;
+      } else {
+        badge.classList.add('crm-chip--accent');
+      }
+    }
+
+    // modo edição
+    setVal('edit-empresa', d.nome_empresa);
+    setVal('edit-contato', d.nome_contato);
+    setVal('edit-etapa', d.etapa_raw);
+    setVal('edit-urgencia', d.urgencia_raw);
+    setVal('edit-equipamentos', d.valor_equipamentos_raw);
+    setVal('edit-servicos', d.valor_servicos_raw);
+    setVal('edit-mensalidade', d.valor_mensalidade);
+    setVal('edit-forma-pagamento', d.forma_pagamento);
+    setVal('edit-prazo-pagamento', d.prazo_pagamento);
+    setVal('edit-telefone', d.telefone);
+    setVal('edit-cnpj', d.cnpj);
+    setVal('edit-cidade', d.cidade);
+    setVal('edit-dor', d.dor_principal);
+
+    // botões conforme a etapa e a permissão
+    const emProspeccao = d.etapa_raw === '0_PROSPECCAO';
+    const btnGanho = document.getElementById('btnGanhoMini');
+    const btnPerda = document.getElementById('btnPerdaMini');
+    const btnProp  = document.querySelector('.fic-proposta');
+    if (btnGanho) btnGanho.style.display = emProspeccao ? 'none' : 'flex';
+    if (btnPerda) btnPerda.style.display = emProspeccao ? 'none' : 'flex';
+    if (btnProp)  btnProp.style.display  = emProspeccao ? 'none' : 'inline-flex';
+
+    const btnEdit = document.getElementById('btnEditLead');
+    if (btnEdit) btnEdit.style.display = d.pode_editar ? 'flex' : 'none';
+
+    renderizarTimeline(d.timeline || []);
+    atualizarLayoutEdicao();
+
+  }catch(e){
+    console.error(e);
+    document.getElementById('drawer-timeline').innerHTML =
+      '<div style="text-align:center;padding:22px;color:rgb(var(--c-danger));font-size:13px">Não foi possível carregar os dados.</div>';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TIMELINE
+   ═══════════════════════════════════════════════════════════════ */
+function renderizarTimeline(itens){
+  const box = document.getElementById('drawer-timeline');
+  box.innerHTML = '';
+
+  if (!itens.length){
+    box.innerHTML = '<div style="text-align:center;padding:26px;color:rgb(var(--c-ink-faint));font-size:13px">Nenhum registro ainda.</div>';
+    return;
+  }
+
+  itens.forEach(item => {
+    const div = document.createElement('div');
+    div.className = `tl-item ${item.tipo}`;
+
+    let icone = '<i class="fa-solid fa-gear"></i>';
+    if (item.tipo === 'anotacao') icone = '<i class="fa-solid fa-user-pen" style="color:rgb(var(--c-accent))"></i>';
+    if (item.tipo === 'arquivo')  icone = '<i class="fa-solid fa-paperclip" style="color:rgb(var(--c-success))"></i>';
+
+    const conteudo = item.tipo === 'arquivo'
+      ? `<a href="${item.url}" target="_blank" class="tl-text"><i class="fa-solid fa-download"></i> ${item.texto}</a>`
+      : `<div class="tl-text">${item.texto}</div>`;
+
+    div.innerHTML = `
+      <div class="tl-header">
+        <span class="tl-author">${icone} ${item.vendedor}</span>
+        <span class="tl-date">${item.data}</span>
+      </div>
+      ${conteudo}
+      ${item.detalhes ? `<div class="tl-text" style="font-size:11.5px;color:rgb(var(--c-ink-faint));margin-top:6px">${item.detalhes}</div>` : ''}
+    `;
+    box.appendChild(div);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MODO EDIÇÃO
+   ═══════════════════════════════════════════════════════════════ */
+function toggleEditMode(){
+  if (!modoEdicao){ modoEdicao = true; atualizarLayoutEdicao(); }
+  else { salvarEdicao(); }
+}
+
+function atualizarLayoutEdicao(){
+  const btnEdit  = document.getElementById('btnEditLead');
+  const btnGanho = document.getElementById('btnGanhoMini');
+  const btnPerda = document.getElementById('btnPerdaMini');
+
+  document.querySelectorAll('#offcanvasLead .view-mode').forEach(el => el.style.display = modoEdicao ? 'none' : '');
+  document.querySelectorAll('#offcanvasLead .edit-mode').forEach(el => el.style.display = modoEdicao ? 'block' : 'none');
+
+  if (modoEdicao){
+    if (btnEdit){ btnEdit.innerHTML = '<i class="fa-solid fa-floppy-disk"></i>'; btnEdit.classList.add('is-saving'); btnEdit.title = 'Salvar alterações'; }
+    if (btnGanho) btnGanho.classList.add('is-disabled');
+    if (btnPerda) btnPerda.classList.add('is-disabled');
+  } else {
+    if (btnEdit){ btnEdit.innerHTML = '<i class="fa-solid fa-pen"></i>'; btnEdit.classList.remove('is-saving'); btnEdit.title = 'Editar informações'; }
+
+    // ganho/perda não fazem sentido em prospecção nem em lead recém-chegado
+    const cedoDemais = ['0_PROSPECCAO','1_LEAD'].includes(etapaAtualBackend) || !etapaAtualBackend;
+    if (btnGanho) btnGanho.classList.toggle('is-disabled', cedoDemais);
+    if (btnPerda) btnPerda.classList.toggle('is-disabled', cedoDemais);
+
+    const btnProp = document.querySelector('.fic-proposta');
+    if (btnProp) btnProp.style.display = (etapaAtualBackend === '0_PROSPECCAO' || !etapaAtualBackend) ? 'none' : 'inline-flex';
+  }
+}
+
+async function salvarEdicao(){
+  const btnEdit = document.getElementById('btnEditLead');
+  const val = id => document.getElementById(id)?.value || '';
+  btnEdit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+  try{
+    const payload = {
+      etapa: val('edit-etapa'),
+      vendedor_responsavel_id: val('edit-vendedor'),
+      segmento_id: val('edit-segmento'),
+      nome_empresa: val('edit-empresa'),
+      nome_contato: val('edit-contato'),
+      valor_equipamentos: val('edit-equipamentos') || 0,
+      valor_servicos: val('edit-servicos') || 0,
+      valor_mensalidade: val('edit-mensalidade') || 0,
+      forma_pagamento: val('edit-forma-pagamento'),
+      prazo_pagamento: val('edit-prazo-pagamento'),
+      telefone: val('edit-telefone'),
+      cnpj: val('edit-cnpj'),
+      cidade: val('edit-cidade'),
+      urgencia: val('edit-urgencia') || 'MEDIA',
+      dor_principal: val('edit-dor'),
+      itens_proposta: itensPropostaGlobais,
+    };
+
+    const r = await fetch(`/comercial/api/lead/${leadAbertoId}/edit/`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':getCSRFToken()},
+      body: JSON.stringify(payload)
+    });
+    const json = await r.json();
+
+    if (json.status === 'sucesso'){
+      modoEdicao = false;
+      carregarDetalhesLead(leadAbertoId);
+
+      // reflete a mudança no cartão do funil, sem recarregar a página
+      // (classes do kanban novo: .k-card, .k-card__title, .k-card__contact)
+      const card = document.querySelector(`.k-card[data-id="${leadAbertoId}"]`);
+      if (card){
+        const titulo = card.querySelector('.k-card__title');
+        if (titulo) titulo.innerText = payload.nome_empresa;
+
+        const contato = card.querySelector('.k-card__contact');
+        if (contato) contato.innerHTML = `<i class="fa-regular fa-user"></i> ${payload.nome_contato}`;
+
+        // valores do cartão (venda única = equipamentos + serviços)
+        const unico = (parseFloat(payload.valor_equipamentos) || 0) + (parseFloat(payload.valor_servicos) || 0);
+        card.dataset.unico  = unico;
+        card.dataset.mensal = parseFloat(payload.valor_mensalidade) || 0;
+
+        // move o cartão se a etapa mudou
+        const destino = document.getElementById(`col-${payload.etapa}`);
+        if (destino && card.closest('.k-col__body') !== destino) destino.appendChild(card);
+
+        if (window.atualizarTotaisColunas) window.atualizarTotaisColunas();
+      }
+    } else {
+      alert("Não foi possível salvar as alterações.");
+      btnEdit.innerHTML = '<i class="fa-solid fa-floppy-disk"></i>';
+    }
+  }catch(e){
+    console.error(e);
+    alert("Erro de conexão ao salvar.");
+    btnEdit.innerHTML = '<i class="fa-solid fa-floppy-disk"></i>';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NOTA E ARQUIVO
+   ═══════════════════════════════════════════════════════════════ */
+async function salvarNota(){
+  const area = document.getElementById('novaNotaTexto');
+  const texto = area.value.trim();
+  if (!texto) return;
+
+  try{
+    const r = await fetch(`/comercial/api/lead/${leadAbertoId}/nota/`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':getCSRFToken()},
+      body: JSON.stringify({texto})
+    });
+    if ((await r.json()).status === 'sucesso'){
+      area.value = '';
+      carregarDetalhesLead(leadAbertoId);
+    }
+  }catch(e){ alert("Erro ao salvar a anotação."); }
+}
+
+async function uploadArquivo(){
+  const input = document.getElementById('arquivoUploadLead');
+  if (!input.files.length) return;
+
+  const fd = new FormData();
+  fd.append('arquivo', input.files[0]);
+
+  try{
+    const r = await fetch(`/comercial/api/lead/${leadAbertoId}/arquivo/`, {
+      method:'POST',
+      headers:{'X-CSRFToken':getCSRFToken()},
+      body: fd
+    });
+    if ((await r.json()).status === 'sucesso') carregarDetalhesLead(leadAbertoId);
+  }catch(e){ alert("Erro ao enviar o arquivo."); }
+
+  input.value = '';
+}
+
+/* atalho: Ctrl+Enter salva a anotação */
+document.getElementById('novaNotaTexto')?.addEventListener('keydown', function(e){
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') salvarNota();
+});
+</script>

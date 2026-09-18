@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    /* COMPONENTE FORM CORE - ALINHADO COM O LISTAR */
+    .kb-form-root {
+        font-family: 'Inter', system-ui, sans-serif;
+        background: rgb(var(--c-bg));
+        color: rgb(var(--c-ink));
+        min-height: calc(100vh - 1rem);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .kb-form-panel {
+        background: rgb(var(--c-panel));
+        border: 1px solid rgb(var(--c-line));
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    /* INPUTS, SELECTS E TEXTAREAS PADRÃO HIGH-CONTRAST */
+    .kb-form-panel input[type="text"],
+    .kb-form-panel input[type="number"],
+    .kb-form-panel select,
+    .kb-form-panel textarea {
+        width: 100%;
+        background-color: rgb(var(--c-bg)) !important;
+        border: 1px solid rgb(var(--c-line)) !important;
+        color: rgb(var(--c-ink)) !important;
+        border-radius: 8px !important;
+        padding: 10px 14px !important;
+        font-size: 13px !important;
+        font-weight: 500;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    .kb-form-panel input:focus,
+    .kb-form-panel select:focus,
+    .kb-form-panel textarea:focus {
+        border-color: rgb(var(--c-accent)) !important;
+        box-shadow: 0 0 0 2px rgba(59,130,246,0.15) !important;
+    }
+
+    .kb-form-panel select option {
+        background-color: rgb(var(--c-bg));
+        color: rgb(var(--c-ink));
+    }
+
+    /* LABELS REFINADAS */
+    .kb-label-sub {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgb(var(--c-ink-faint));
+        margin-bottom: 6px;
+        display: block;
+    }
+
+    /* SEÇÕES DIVISORAS ESTILO KANBAN */
+    .kb-section-divider {
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgb(var(--c-ink-faint));
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .kb-section-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgb(var(--c-line));
+    }
+
+    /* PRO CHECKBOXES ENGINE */
+    .kb-checkbox-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgb(var(--c-bg));
+        padding: 12px 14px;
+        border-radius: 8px;
+        border: 1px solid rgb(var(--c-line));
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+        user-select: none;
+    }
+    .kb-checkbox-card:hover {
+        border-color: rgb(var(--c-line));
+        background: rgb(var(--c-panel));
+    }
+
+    .kb-checkbox-card input[type="checkbox"] {
+        appearance: none;
+        background-color: rgb(var(--c-bg));
+        margin: 0;
+        width: 18px;
+        height: 17px;
+        border: 1px solid rgb(var(--c-ink-faint));
+        border-radius: 4px;
+        display: grid;
+        place-content: center;
+        cursor: pointer;
+        transition: all 0.15s;
+        flex-shrink: 0;
+    }
+    .kb-checkbox-card input[type="checkbox"]::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        transform: scale(0);
+        transition: 120ms transform ease-in-out;
+        box-shadow: inset 1em 1em rgb(var(--c-accent));
+        background-color: rgb(var(--c-accent));
+        clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    }
+    .kb-checkbox-card input[type="checkbox"]:checked::before { transform: scale(1); }
+    .kb-checkbox-card input[type="checkbox"]:checked {
+        border-color: rgb(var(--c-accent));
+    }
+
+    /* CUSTOMIZAÇÃO DE CORES DAS CAIXAS DE SELEÇÃO */
+    .kb-checkbox-card--impl input[type="checkbox"]:checked::before { box-shadow: inset 1em 1em rgb(var(--c-special)); background-color: rgb(var(--c-special)); }
+    .kb-checkbox-card--impl input[type="checkbox"]:checked { border-color: rgb(var(--c-special)); }
+    
+    .kb-checkbox-card--trein input[type="checkbox"]:checked::before { box-shadow: inset 1em 1em rgb(var(--c-success)); background-color: rgb(var(--c-success)); }
+    .kb-checkbox-card--trein input[type="checkbox"]:checked { border-color: rgb(var(--c-success)); }
+
+    .kb-checkbox-card--cs input[type="checkbox"]:checked::before { box-shadow: inset 1em 1em rgb(var(--c-success)); background-color: rgb(var(--c-success)); }
+    .kb-checkbox-card--cs input[type="checkbox"]:checked { border-color: rgb(var(--c-success)); }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 4px; }
+</style>
+
+<div class="kb-form-root p-4 md:p-6">
+    <div class="max-w-5xl mx-auto w-full space-y-4">
+
+        <!-- HEADER DA PAGINA -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-core-panel p-5 rounded-xl border border-core-line shadow-md gap-4">
+            <div class="flex items-center gap-4">
+                <a href="{% url 'atendimentos_chamados:listar' %}" class="w-9 h-9 flex items-center justify-center bg-core-bg rounded-lg border border-core-line text-ink-soft hover:text-ink hover:bg-core-deep transition-all">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </a>
+                <div>
+                    <h1 class="text-18px font-bold text-ink tracking-tight flex items-center gap-2">
+                        <i class="fa-solid fa-square-plus text-accent"></i> Abertura de Atendimento
+                    </h1>
+                    <p class="text-11px font-semibold text-ink-faint uppercase tracking-wider mt-0.5">Defina o escopo, tarefas e parâmetros operacionais do chamado</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOTIFICAÇÕES DE ERRO -->
+        {% if form.errors %}
+        <div class="bg-red-950/40 border border-red-500/30 rounded-xl p-5 shadow-sm">
+            <h3 class="text-red-400 font-bold text-xs uppercase tracking-wider mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i> Inconsistência de dados detectada:
+            </h3>
+            <ul class="text-12px text-red-300 list-disc pl-5 space-y-1 font-medium font-mono">
+                {% for field in form %}{% for error in field.errors %}<li><strong>{{ field.label }}:</strong> {{ error }}</li>{% endfor %}{% endfor %}
+                {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- CONTAINER DO FORMULÁRIO -->
+        <div class="kb-form-panel p-6 md:p-8 relative overflow-hidden">
+            <form method="post" autocomplete="off">
+                {% csrf_token %}
+
+                <!-- SEÇÃO 1: VINCULAR CLIENTE -->
+                <div class="mb-6 bg-core-bg p-5 rounded-xl border border-core-line">
+                    <label class="kb-label-sub flex items-center gap-2">
+                        <i class="fa-solid fa-building text-accent"></i> Identificação e Vínculo do Cliente Base
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                            <i class="fa-solid fa-magnifying-glass text-ink-faint text-sm"></i>
+                        </div>
+                        <input type="text" id="cliente-busca" class="!pl-11 !text-sm" placeholder="DIGITE A RAZÃO SOCIAL OU O CNPJ PARA PESQUISAR..." autocomplete="off">
+                    </div>
+                    
+                    <!-- CORREÇÃO: INPUT MANUAL COM O ID CORRETO PARA O JAVASCRIPT -->
+                    <input type="hidden" name="cliente" id="cliente-id" required>
+                    
+                    <div id="cliente-resultados" class="hidden absolute z-50 w-[calc(100%-7rem)] mt-2 bg-core-panel border border-core-line rounded-xl shadow-2xl max-h-56 overflow-y-auto custom-scrollbar"></div>
+                </div>
+
+                <!-- SEÇÃO 2: DADOS ESSENCIAIS -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+                    <div class="md:col-span-6">
+                        <label class="kb-label-sub">Assunto Principal / Título do Atendimento</label>
+                        {{ form.titulo }}
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="kb-label-sub">WhatsApp do Responsável</label>
+                        {{ form.whatsapp_contato }}
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="kb-label-sub">Nº do Chamado Auxiliar</label>
+                        {{ form.numero_os }}
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="kb-label-sub">Diagnóstico Operacional / Descrição Detalhada</label>
+                    {{ form.descricao }}
+                </div>
+
+                <!-- SEÇÃO 3: DIRECIONAMENTO -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 pb-6 border-b border-core-line">
+                    <div>
+                        <label class="kb-label-sub">Fila de Atendimento (Setor)</label>
+                        {{ form.setor_atual }}
+                    </div>
+                    <div>
+                        <label class="kb-label-sub">Nível de Prioridade</label>
+                        {{ form.prioridade }}
+                    </div>
+                    <div>
+                        <label class="kb-label-sub">Modalidade das Aulas</label>
+                        {{ form.tipo_treinamento }}
+                    </div>
+                </div>
+
+                <!-- SEÇÃO 4: ESCOPO TÉCNICO -->
+                <div class="mb-6">
+                    <div class="kb-section-divider">
+                        <i class="fa-solid fa-screwdriver-wrench text-blue-400"></i> Serviços Técnicos e Infraestrutura
+                    </div>
+                    <!-- Alterado para lg:grid-cols-6 para caber os 6 perfeitamente -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                        <label class="kb-checkbox-card !px-3 !py-2.5">
+                            {{ form.flag_conversao_dados }}
+                            <span class="text-[9px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Conv. Dados</span>
+                        </label>
+                        <label class="kb-checkbox-card !px-3 !py-2.5">
+                            {{ form.flag_instalacao_equip }}
+                            <span class="text-[9px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Instal. Equip.</span>
+                        </label>
+                        <label class="kb-checkbox-card !px-3 !py-2.5">
+                            {{ form.flag_tef_incluso }}
+                            <span class="text-[9px] font-bold uppercase tracking-wide text-ink-soft leading-tight">TEF Incluso</span>
+                        </label>
+                        <label class="kb-checkbox-card !px-3 !py-2.5">
+                            {{ form.flag_mobilidade }}
+                            <span class="text-[9px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Mobilidade</span>
+                        </label>
+                        <label class="kb-checkbox-card !px-3 !py-2.5">
+                            {{ form.flag_backup }}
+                            <span class="text-[9px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Backup Lógica</span>
+                        </label>
+                        <label class="kb-checkbox-card !px-3 !py-2.5">
+                            {{ form.flag_data_center }}
+                            <span class="text-[9px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Data Center</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO 5: TRAVA DE ESCOPO DE TREINAMENTO -->
+                <div class="mb-6">
+                    <div class="kb-section-divider">
+                        <i class="fa-solid fa-graduation-cap text-amber-500"></i> Módulos Contratados para Treinamento (Grade Fechada)
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <label class="kb-checkbox-card kb-checkbox-card--impl !px-3 !py-2.5">
+                            {{ form.trein_cadastros }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Cadastros & Estoque</span>
+                        </label>
+                        <label class="kb-checkbox-card kb-checkbox-card--impl !px-3 !py-2.5">
+                            {{ form.trein_entrada_nf }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Entrada de NF</span>
+                        </label>
+                        <label class="kb-checkbox-card kb-checkbox-card--impl !px-3 !py-2.5">
+                            {{ form.trein_saida_nf }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Saída de NF</span>
+                        </label>
+                        <label class="kb-checkbox-card kb-checkbox-card--impl !px-3 !py-2.5">
+                            {{ form.trein_nfce }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Cupom NFC-e</span>
+                        </label>
+                        <label class="kb-checkbox-card kb-checkbox-card--impl !px-3 !py-2.5">
+                            {{ form.trein_estoque }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Controle de Estoque</span>
+                        </label>
+                        <label class="kb-checkbox-card kb-checkbox-card--impl !px-3 !py-2.5">
+                            {{ form.trein_financeiro }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Módulo Financeiro</span>
+                        </label>
+                        <label class="kb-checkbox-card kb-checkbox-card--impl !px-3 !py-2.5">
+                            {{ form.trein_boletos }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Emissão de Boletos</span>
+                        </label>
+                        <label class="kb-checkbox-card kb-checkbox-card--impl !px-3 !py-2.5">
+                            {{ form.trein_os_service }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-ink-soft leading-tight">OS-Service</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO 6: GATILHOS ORIGINAIS (Aproveitando para aplicar a mesma correção de fonte) -->
+                <div class="mb-8">
+                    <div class="kb-section-divider">
+                        <i class="fa-solid fa-sliders text-ink-soft"></i> Automações e Fluxos Posteriores
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <label class="kb-checkbox-card kb-checkbox-card--trein !px-3 !py-2.5">
+                            {{ form.implantacao_cliente_novo }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Nova Implantação</span>
+                        </label>
+                        <label class="kb-checkbox-card kb-checkbox-card--trein !px-3 !py-2.5">
+                            {{ form.implantacao_modulo_novo }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Adicional de Módulo</span>
+                        </label>
+                        <label class="kb-checkbox-card kb-checkbox-card--trein !px-3 !py-2.5">
+                            {{ form.possui_treinamento }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-ink-soft leading-tight">Requer Treinamento</span>
+                        </label>
+                        <label class="kb-checkbox-card kb-checkbox-card--cs !px-3 !py-2.5">
+                            {{ form.abrir_cs_pos_atendimento }}
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-success leading-tight">Gatilho CS Automático</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- BOTÃO DE SUBMIT -->
+                <div class="flex justify-end pt-4 border-t border-core-line">
+                    <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-ink px-10 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest shadow-md transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-check text-base"></i> Abrir Chamado Técnico
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const input = document.getElementById("cliente-busca");
+    const resultadosDiv = document.getElementById("cliente-resultados");
+    const clienteIdInput = document.getElementById("cliente-id");
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const clienteIdDaUrl = urlParams.get('cliente_id');
+    const clienteNomeDaUrl = urlParams.get('cliente_nome');
+
+    if (clienteIdDaUrl && clienteNomeDaUrl) {
+        input.value = clienteNomeDaUrl; 
+        clienteIdInput.value = clienteIdDaUrl; 
+        input.classList.add("!border-success", "!text-success", "!bg-success/10");
+        input.setAttribute("readonly", true);
+    }
+
+    let timeout = null;
+    input.addEventListener("keyup", function() {
+        if (input.hasAttribute("readonly")) return; 
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            const termo = this.value;
+            if (termo.length < 2) {
+                resultadosDiv.classList.add("hidden");
+                return;
+            }
+            fetch(`/atendimentos/autocomplete-cliente/?q=${termo}`)
+                .then(response => response.json())
+                .then(data => {
+                    resultadosDiv.innerHTML = "";
+                    if (data.length === 0) {
+                        const empty = document.createElement("div");
+                        empty.className = "p-4 text-11px font-bold uppercase tracking-widest text-ink-faint text-center";
+                        empty.textContent = "Nenhum cliente localizado.";
+                        resultadosDiv.appendChild(empty);
+                        resultadosDiv.classList.remove("hidden");
+                        return;
+                    }
+                    data.forEach(cliente => {
+                        const item = document.createElement("div");
+                        item.className = "p-3.5 hover:bg-blue-600 hover:text-ink cursor-pointer text-xs font-semibold text-ink-soft uppercase tracking-wide border-b border-core-line last:border-0 transition-colors flex justify-between items-center";
+                        item.innerHTML = `<span>${cliente.nome}</span><span class="text-10px font-mono bg-black/30 px-2 py-0.5 rounded">ID: ${cliente.id}</span>`;
+                        item.onclick = () => {
+                            input.value = cliente.nome;
+                            clienteIdInput.value = cliente.id;
+                            resultadosDiv.classList.add("hidden");
+                            input.classList.add("!border-success", "!text-success", "!bg-success/10");
+                        };
+                        resultadosDiv.appendChild(item);
+                    });
+                    resultadosDiv.classList.remove("hidden");
+                });
+        }, 300);
+    });
+
+    document.addEventListener("click", function(event) {
+        if (!input.contains(event.target) && !resultadosDiv.contains(event.target)) {
+            resultadosDiv.classList.add("hidden");
+        }
+    });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<div class="min-h-screen bg-[rgb(var(--c-deep))] text-ink-soft p-6 font-['Inter'] space-y-6">
+
+    <div class="bg-[rgb(var(--c-panel))] border border-core-line rounded-2xl p-8 shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
+        <div class="absolute right-0 top-0 w-64 h-64 bg-blue-500/5 blur-3xl rounded-full pointer-events-none"></div>
+
+        <div class="flex-1 z-10">
+            <a href="{% url 'cs_satisfacao:painel_cs' %}" class="text-ink-soft hover:text-ink text-xs font-bold uppercase tracking-widest flex items-center mb-5 transition-colors">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Voltar ao Painel
+            </a>
+            
+            <h1 class="text-3xl font-black text-ink mb-2 tracking-tight">{{ cliente.razao_social }}</h1>
+            
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-ink-soft mb-6 uppercase tracking-wider">
+                <span>Cód: {{ cliente.pk }}</span> <span class="text-ink-soft">|</span>
+                <span>CNPJ: {{ cliente.cnpj }}</span>
+                {% if cliente.nome_responsavel %}
+                    <span class="text-ink-soft">|</span>
+                    <span>Resp: <strong class="text-blue-400">{{ cliente.nome_responsavel }}</strong></span>
+                {% endif %}
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                {% if cliente.telefone_responsavel or cliente.telefone %}
+                <a href="https://api.whatsapp.com/send?phone=55{{ cliente.telefone_responsavel|default:cliente.telefone|urlencode }}" target="_blank" 
+                   class="flex items-center gap-2 bg-green-600/20 text-green-400 border border-green-500/30 hover:bg-green-600 hover:text-ink px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> Chamar no Whats
+                </a>
+                {% endif %}
+                {% if cliente.email_responsavel or cliente.email %}
+                <a href="mailto:{{ cliente.email_responsavel|default:cliente.email }}" 
+                   class="flex items-center gap-2 bg-core-deep text-ink-soft border border-core-line hover:bg-core-line hover:text-ink px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm">
+                    <i class="fa-regular fa-envelope"></i> E-mail
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="text-center bg-[rgb(var(--c-bg))] p-6 rounded-2xl border border-core-line shadow-inner min-w-[200px] z-10 flex flex-col items-center justify-center">
+            <p class="text-[10px] text-ink-soft uppercase font-bold tracking-widest mb-2">Health Score</p>
+            <p class="text-6xl font-black tracking-tighter
+                {% if cliente.health_score >= 75 %} text-green-400
+                {% elif cliente.health_score >= 50 %} text-yellow-400
+                {% else %} text-red-500 {% endif %}">
+                {{ cliente.health_score }}
+            </p>
+            <div class="mt-4 px-4 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm
+                {% if cliente.nivel_risco == 'BAIXO' %} bg-green-500/10 text-green-400 border-green-500/20
+                {% elif cliente.nivel_risco == 'MEDIO' %} bg-yellow-500/10 text-yellow-400 border-yellow-500/20
+                {% else %} bg-red-500/10 text-red-500 border-red-500/30 animate-pulse {% endif %}">
+                {{ cliente.get_nivel_risco_display }}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-[rgb(var(--c-panel))] border border-core-line rounded-2xl overflow-hidden shadow-lg">
+            <div class="p-6 border-b border-core-line flex justify-between items-center bg-[rgb(var(--c-bg))]">
+                <h2 class="text-sm font-bold text-ink uppercase tracking-widest">Histórico de Interações</h2>
+                <button onclick="abrirModal()" type="button" class="bg-blue-600 hover:bg-blue-500 text-ink px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                    + Registrar
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                
+                {% for ev in eventos_calendario %}
+                <div class="border-l-4 pl-4 pb-4 border-blue-500 bg-blue-500/5 rounded-r-xl p-3">
+                    <div class="flex justify-between items-center mb-1">
+                        <p class="text-xs font-bold text-blue-400 flex items-center gap-2 uppercase tracking-wide">
+                            <i class="fa-regular fa-calendar-check"></i> EVENTO AGENDA
+                        </p>
+                        <span class="text-[10px] text-ink-soft font-mono bg-core-panel px-2 py-1 rounded">{{ ev.start|date:"d/m/Y" }}</span>
+                    </div>
+                    <p class="text-sm text-ink font-semibold">{{ ev.title }}</p>
+                    {% if ev.description %}
+                    <p class="text-xs text-ink-soft mt-2 italic bg-[rgb(var(--c-deep))] p-2 rounded border border-core-line">"{{ ev.description|truncatechars:120 }}"</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                {% for evento in eventos %}
+                <div class="border-l-4 pl-4 pb-4 bg-[rgb(var(--c-deep))] p-3 rounded-r-xl border border-core-line border-l-0
+                    {% if evento.tipo_contato == 'ALERTA' or evento.tipo_contato == 'RISCO' %} !border-l-red-500
+                    {% elif evento.tipo_contato == 'TREINAMENTO' or evento.tipo_contato == 'ONBOARDING' %} !border-l-green-500
+                    {% else %} !border-l-gray-500 {% endif %}">
+                    
+                    <div class="flex justify-between items-center mb-1">
+                        <p class="text-xs font-bold uppercase tracking-wide
+                            {% if evento.tipo_contato == 'ALERTA' or evento.tipo_contato == 'RISCO' %} text-red-400
+                            {% elif evento.tipo_contato == 'TREINAMENTO' or evento.tipo_contato == 'ONBOARDING' %} text-green-400
+                            {% else %} text-ink-soft {% endif %}">
+                            {{ evento.get_tipo_contato_display }}
+                        </p>
+                        <span class="text-[10px] text-ink-soft font-mono bg-core-panel px-2 py-1 rounded">
+                            {% if evento.status == 'REALIZADO' %}{{ evento.data_realizada|date:"d/m/Y"|default:evento.data_prevista|date:"d/m/Y" }}{% else %}{{ evento.data_prevista|date:"d/m/Y" }}{% endif %}
+                        </span>
+                    </div>
+                    
+                    <p class="text-[10px] font-bold uppercase mt-2
+                        {% if evento.status == 'REALIZADO' %} text-green-500 {% elif evento.status == 'CANCELADO' %} text-ink-soft {% else %} text-orange-400 {% endif %}">
+                        <i class="fa-solid fa-circle text-[6px] mr-1"></i> {{ evento.get_status_display }}
+                    </p>
+                    
+                    {% if evento.observacoes %}
+                    <p class="text-xs text-ink-soft mt-3 bg-[rgb(var(--c-panel))] p-3 rounded-lg border border-core-line whitespace-pre-wrap italic">"{{ evento.observacoes }}"</p>
+                    {% endif %}
+
+                    <div class="mt-3 pt-2 border-t border-core-line flex justify-between items-center text-[10px] text-blue-300 font-semibold uppercase tracking-wider">
+                        <span>
+                            <i class="fa-solid fa-user-pen mr-1.5 text-blue-400"></i>
+                            {% if evento.responsavel %}
+                                {{ evento.responsavel.first_name|default:evento.responsavel.username }}
+                            {% else %}
+                                SISTEMA / BOT
+                            {% endif %}
+                        </span>
+                        <span class="flex items-center gap-1.5 text-ink-soft">
+                            <i class="fa-regular fa-clock text-blue-400"></i> {{ evento.data_criacao|date:"d/m/Y - H:i" }}
+                        </span>
+                    </div>
+
+                    {% if evento.status == 'PENDENTE' %}
+                    <div class="mt-4 pt-4 border-t border-core-line">
+                        <button type="button" onclick="document.getElementById('fechar-evento-{{ evento.pk }}').classList.toggle('hidden')" class="text-blue-400 hover:text-blue-300 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-check-double"></i> Dar Baixa na Tarefa
+                        </button>
+                        
+                        <form id="fechar-evento-{{ evento.pk }}" action="{% url 'cs_satisfacao:concluir_evento_cs' evento.pk %}" method="POST" class="hidden mt-3 space-y-3">
+                            {% csrf_token %}
+                            <textarea name="observacao_fechamento" rows="2" placeholder="O que foi feito para resolver isso? (Ficará gravado no histórico)" class="w-full bg-[rgb(var(--c-panel))] border border-core-line rounded-lg px-3 py-2 text-xs text-ink outline-none focus:border-blue-500 resize-none transition-colors" required></textarea>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-ink px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all w-full flex justify-center items-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-floppy-disk"></i> Salvar e Concluir
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                </div>
+                {% endfor %}
+                
+
+                {% if not eventos and not eventos_calendario %}
+                <div class="text-center py-10 text-ink-soft">
+                    <i class="fa-regular fa-folder-open text-4xl mb-3"></i>
+                    <p class="text-sm font-semibold uppercase tracking-wider">Nenhum registro encontrado</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-[rgb(var(--c-panel))] border border-core-line rounded-2xl overflow-hidden shadow-lg">
+            <div class="p-6 border-b border-core-line bg-[rgb(var(--c-bg))]">
+                <h2 class="text-sm font-bold text-ink uppercase tracking-widest">Últimos Atendimentos (O.S.)</h2>
+            </div>
+            <div class="p-6 space-y-4">
+                {% for ticket in ultimos_tickets %}
+                <div class="bg-[rgb(var(--c-deep))] border border-core-line p-4 rounded-xl hover:border-core-line transition-colors cursor-default">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border shadow-sm
+                            {% if ticket.prioridade == 'CRITICA' %}bg-red-500/10 text-red-500 border-red-500/20
+                            {% elif ticket.prioridade == 'ALTA' %}bg-orange-500/10 text-orange-400 border-orange-500/20
+                            {% else %}bg-core-deep text-ink-soft border-core-line{% endif %}">
+                            {{ ticket.get_prioridade_display }}
+                        </span>
+                        <span class="text-[10px] text-ink-soft font-mono bg-core-panel px-2 py-1 rounded">{{ ticket.data_abertura|date:"d/m/Y" }}</span>
+                    </div>
+                    <p class="text-sm font-bold text-ink mt-1 leading-snug">#{{ ticket.numero }} - {{ ticket.titulo }}</p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest mt-3 flex items-center gap-1.5 {% if ticket.status == 'CONCLUIDO' %}text-green-500{% else %}text-yellow-400{% endif %}">
+                        <i class="fa-solid fa-circle text-[6px]"></i> {{ ticket.get_status_display }}
+                    </p>
+                </div>
+                {% empty %}
+                <div class="text-center py-10 text-ink-soft">
+                    <i class="fa-solid fa-ticket text-4xl mb-3"></i>
+                    <p class="text-sm font-semibold uppercase tracking-wider">Nenhum ticket recente</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalNovoEvento" class="fixed inset-0 z-50 hidden bg-[rgb(var(--c-deep))]/90 flex items-center justify-center backdrop-blur-sm transition-opacity">
+    <div class="bg-[rgb(var(--c-panel))] border border-core-line rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+        <div class="bg-[rgb(var(--c-bg))] px-6 py-5 border-b border-core-line flex justify-between items-center">
+            <h3 class="text-sm font-bold text-ink uppercase tracking-widest">Registrar Evento CS</h3>
+            <button onclick="fecharModal()" class="text-ink-soft hover:text-ink transition-colors bg-core-deep w-8 h-8 rounded flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{% url 'cs_satisfacao:adicionar_evento_cliente' cliente.pk %}" method="POST" class="p-6 space-y-5">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1.5">Ação Realizada</label>
+                    <select name="tipo_contato" required class="w-full bg-[rgb(var(--c-deep))] border border-core-line rounded-xl px-4 py-2.5 text-sm font-semibold text-ink outline-none focus:border-blue-500 transition-colors">
+                        <option value="FOLLOWUP">Acompanhamento de Rotina</option>
+                        <option value="ONBOARDING">Pós-Implantação (Onboarding)</option>
+                        <option value="TREINAMENTO">Treinamento Técnico</option>
+                        <option value="RENOVACAO">Renovação de Contrato</option>
+                        <option value="ALERTA">Sinalização de Risco / Insatisfação</option>
+                        <option value="RETENCAO" class="text-success font-bold">Ação de Retenção (Salvar Cliente)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-1.5">Motivo do Atrito (Se houver)</label>
+                    <select name="motivo_risco" class="w-full bg-[rgb(var(--c-deep))] border border-core-line rounded-xl px-4 py-2.5 text-sm font-semibold text-ink outline-none focus:border-rose-500 transition-colors">
+                        <option value="NENHUM">Nenhum / Não se aplica</option>
+                        <option value="ATENDIMENTO">Reclamação de Atendimento/Comercial</option>
+                        <option value="FUNCIONALIDADE">Falta de Funcionalidade</option>
+                        <option value="BUGS">Bugs ou Problemas Frequentes</option>
+                        <option value="CONCORRENCIA" class="text-rose-500 font-bold">Ameaça da Concorrência (Preço/Sistema)</option>
+                        <option value="FINANCEIRO">Dificuldade Financeira</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-ink-soft uppercase tracking-widest mb-1.5">Status</label>
+                    <select name="status" required class="w-full bg-[rgb(var(--c-deep))] border border-core-line rounded-xl px-4 py-2.5 text-sm font-semibold text-ink outline-none focus:border-blue-500 transition-colors">
+                        <option value="REALIZADO">Realizado</option>
+                        <option value="PENDENTE">Pendente / Agendado</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-ink-soft uppercase tracking-widest mb-1.5">Data</label>
+                    <input type="date" name="data_prevista" required value="{{ hoje|date:'Y-m-d' }}" class="w-full bg-[rgb(var(--c-deep))] border border-core-line rounded-xl px-4 py-2.5 text-sm font-semibold text-ink outline-none focus:border-blue-500 transition-colors">
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-ink-soft uppercase tracking-widest mb-1.5">Resumo da Interação</label>
+                <textarea name="observacoes" rows="3" placeholder="Detalhes do contato..." class="w-full bg-[rgb(var(--c-deep))] border border-core-line rounded-xl px-4 py-2.5 text-sm font-semibold text-ink outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-5 border-t border-core-line bg-[rgb(var(--c-panel))]">
+                <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider text-ink-soft hover:text-ink transition-colors">Cancelar</button>
+                <button type="submit" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-ink text-xs font-bold uppercase tracking-wider rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-bolt"></i> Salvar na Timeline
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const modal = document.getElementById('modalNovoEvento');
+    function abrirModal() { modal.classList.remove('hidden'); }
+    function fecharModal() { modal.classList.add('hidden'); }
+    modal.addEventListener('click', function(e) { if (e.target === this) fecharModal(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') fecharModal(); });
+</script>
+{% endblock %}

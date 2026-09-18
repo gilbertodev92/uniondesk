@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lixão de Prospecções - CRM</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        .topbar { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; background-color: rgba(30, 41, 59, 1); border-bottom: 1px solid #334155; z-index: 10; height: 72px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .topbar h1 a { font-size: 1.2rem; font-weight: 800; color: #f1f5f9; text-decoration: none; }
+        .btn-voltar { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; color: #94a3b8; text-decoration: none; border-radius: 10px; border: 1px solid transparent; background: rgba(255,255,255,0.03); transition: all 0.2s;}
+        .btn-voltar:hover { background: #334155; color: #fff; border-color: #475569;}
+
+        .content-area { padding: 24px 32px; flex: 1; max-width: 1600px; margin: 0 auto; width: 100%; }
+        
+        .page-header { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; flex-shrink: 0;}
+        .page-header h2 { font-size: 1.6rem; font-weight: 800; color: #f8a8a8; letter-spacing: -0.5px; margin: 0;}
+        .page-header p { color: #94a3b8; font-size: 0.95rem; margin-top: 6px; }
+        
+        .toolbar-area { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: rgba(30, 41, 59, 0.5); padding: 10px; border-radius: 12px; border: 1px solid #334155; width: 100%; }
+        .form-filtros { display: flex; gap: 10px; margin: 0; padding: 0; align-items: center; flex-wrap: wrap; flex: 1; min-width: 0; }
+        
+        .filter-input-wrapper { position: relative; flex-grow: 1; min-width: 250px; }
+        .filter-input-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 0.9rem; }
+        .filter-input { width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 10px 16px 10px 38px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; outline: none; transition: 0.2s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+        .filter-input:focus { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,0.15), inset 0 2px 4px rgba(0,0,0,0.2); }
+
+        .table-container { width: 100%; overflow-x: auto; padding-bottom: 20px;}
+        table { width: 100%; border-collapse: separate; border-spacing: 0 12px; text-align: left; }
+        th { padding: 0 20px 8px 20px; font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; border: none; white-space: nowrap; }
+        td { background: #1e293b; padding: 18px 20px; font-size: 0.9rem; color: #f1f5f9; vertical-align: middle; border: 1px solid transparent; border-top: 1px solid #334155; border-bottom: 1px solid #334155; }
+        td:first-child { border-left: 1px solid #334155; border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+        td:last-child { border-right: 1px solid #334155; border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+        
+        .empresa-nome { font-weight: 800; color: #f8fafc; font-size: 0.95rem; margin-bottom: 4px;}
+        .sub-text { font-size: 0.75rem; color: #94a3b8; font-weight: 500;}
+        .icon-text { display: flex; align-items: center; gap: 6px; color: #cbd5e1; font-weight: 600; }
+        
+        .motivo-badge { display: inline-block; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-top: 6px;}
+
+        /* Paginação */
+        .pagination-area { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; background: rgba(30, 41, 59, 0.4); border-top: 1px solid #334155; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; margin-top: -12px;}
+        .pagination-info { font-size: 0.8rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .pagination-controls { display: flex; gap: 8px; }
+        .page-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; padding: 8px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; text-decoration: none; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .page-btn:hover { background: #ef4444; color: #fff; border-color: #ef4444; transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'crm_vendas:lista_prospeccoes' %}" class="btn-voltar" title="Voltar à Mesa"><i class="fa-solid fa-arrow-left"></i></a>
+            <h1><a href="{% url 'crm_vendas:kanban' %}">Pipeline LÓGICA</a></h1>
+        </div>
+    </div>
+
+    <div class="content-area">
+        <div class="page-header">
+            <div>
+                <h2><i class="fa-solid fa-dumpster mr-3"></i>Lixão de Descarte</h2>
+                <p>Contatos que não viraram lead ou não deram retorno na prospecção inicial.</p>
+            </div>
+            
+            <div class="toolbar-area">
+                <form method="GET" class="form-filtros">
+                    <div class="filter-input-wrapper">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" name="busca_nome" value="{{ busca_nome }}" placeholder="Buscar por nome no lixão..." class="filter-input">
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Empresa & Dados</th>
+                        <th style="width: 20%;">Contato</th>
+                        <th style="width: 20%;">Localização</th>
+                        <th style="width: 30%;">Motivo do Descarte</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lead in leads %}
+                    <tr>
+                        <td>
+                            <div class="empresa-nome">{{ lead.nome_empresa }}</div>
+                            <div class="sub-text mt-1">CNPJ: <span style="color:#cbd5e1;">{{ lead.cnpj|default:"Não Informado" }}</span></div>
+                            <div class="sub-text mt-1 text-slate-500" style="font-size: 0.65rem;">Criação: {{ lead.data_criacao|date:"d/m/Y" }} | Descarte: {{ lead.ultima_atualizacao|date:"d/m/Y" }}</div>
+                        </td>
+                        <td>
+                            <div class="icon-text mb-1"><i class="fa-regular fa-user text-slate-500"></i> {{ lead.nome_contato }}</div>
+                            <div class="sub-text icon-text"><i class="fa-solid fa-phone text-slate-500"></i> {{ lead.telefone }}</div>
+                        </td>
+                        <td>
+                            <div class="icon-text mb-1"><i class="fa-solid fa-location-dot text-slate-500"></i> {{ lead.cidade|default:"-" }}</div>
+                            <div class="sub-text icon-text"><i class="fa-solid fa-tag text-slate-500"></i> {{ lead.segmento.nome|default:"Geral" }}</div>
+                        </td>
+                        <td>
+                            <div class="motivo-badge"><i class="fa-solid fa-ban mr-1"></i> {{ lead.detalhe_perda|default:"Sem motivo registrado" }}</div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" style="text-align:center; padding: 60px; color:#64748b; background: transparent; border: none;">
+                        <i class="fa-solid fa-recycle text-4xl mb-4 opacity-50 block"></i>
+                        <p class="font-bold text-lg text-slate-300">Lixão vazio.</p>
+                        <p class="mt-2">Nenhum contato foi descartado recentemente.</p>
+                    </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            {% if leads.has_other_pages %}
+            <div class="pagination-area">
+                <span class="pagination-info">Página {{ leads.number }} de {{ leads.paginator.num_pages }}</span>
+                <div class="pagination-controls">
+                    {% if leads.has_previous %}
+                        <a href="?page=1&busca_nome={{ busca_nome }}" class="page-btn"><i class="fa-solid fa-angles-left"></i></a>
+                        <a href="?page={{ leads.previous_page_number }}&busca_nome={{ busca_nome }}" class="page-btn"><i class="fa-solid fa-angle-left"></i> Anterior</a>
+                    {% endif %}
+                    
+                    {% if leads.has_next %}
+                        <a href="?page={{ leads.next_page_number }}&busca_nome={{ busca_nome }}" class="page-btn">Próxima <i class="fa-solid fa-angle-right"></i></a>
+                        <a href="?page={{ leads.paginator.num_pages }}&busca_nome={{ busca_nome }}" class="page-btn"><i class="fa-solid fa-angles-right"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+        </div>
+    </div>
+</body>
+</html>

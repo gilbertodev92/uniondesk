@@ -1,0 +1,400 @@
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   MODAL — NOVA OPORTUNIDADE
+   ═══════════════════════════════════════════════════════════════════ */
+.nl-overlay{
+  position:fixed; inset:0; z-index:1050;
+  background:rgba(0,0,0,.6); backdrop-filter:blur(3px);
+  display:none; align-items:center; justify-content:center; padding:20px;
+}
+.nl-overlay.is-open{display:flex;}
+
+.nl-box{
+  width:100%; max-width:720px; max-height:92vh;
+  background:rgb(var(--c-deep));
+  border:1px solid rgb(var(--c-line));
+  border-radius:15px;
+  display:flex; flex-direction:column; overflow:hidden;
+  box-shadow:0 28px 70px -22px rgba(0,0,0,.72);
+  animation:nlEntra .22s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes nlEntra{from{opacity:0; transform:translateY(14px) scale(.985);} to{opacity:1; transform:none;}}
+
+.nl-head{
+  flex-shrink:0; padding:17px 21px;
+  border-bottom:1px solid rgb(var(--c-line));
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+}
+.nl-head__info{display:flex; align-items:center; gap:12px; min-width:0;}
+.nl-icone{
+  width:38px; height:38px; border-radius:10px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:rgb(var(--c-accent) / .13);
+  border:1px solid rgb(var(--c-accent) / .3);
+  color:rgb(var(--c-accent-soft)); font-size:15px;
+}
+.nl-head h2{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:16px; font-weight:600; color:rgb(var(--c-ink)); line-height:1.2;
+}
+.nl-head p{font-size:12px; color:rgb(var(--c-ink-faint)); margin-top:1px;}
+
+.nl-body{flex:1; overflow-y:auto; padding:21px;}
+
+.nl-secao{margin-bottom:22px;}
+.nl-secao:last-child{margin-bottom:0;}
+.nl-secao__titulo{
+  font-size:10px; font-weight:700; color:rgb(var(--c-ink-faint));
+  text-transform:uppercase; letter-spacing:.13em;
+  padding-bottom:9px; margin-bottom:15px;
+  border-bottom:1px solid rgb(var(--c-line));
+  display:flex; align-items:center; gap:7px;
+}
+
+.nl-grid{display:grid; grid-template-columns:1fr 1fr; gap:15px;}
+.nl-campo{min-width:0;}
+.nl-campo--full{grid-column:1 / -1;}
+.nl-campo label{
+  display:block; font-size:9.5px; font-weight:700;
+  color:rgb(var(--c-ink-faint)); text-transform:uppercase;
+  letter-spacing:.1em; margin-bottom:5px;
+}
+.nl-campo label .req{color:rgb(var(--c-danger)); margin-left:2px;}
+
+/* os widgets do Django recebem estas classes pelo forms.py */
+.modal-input, .modal-select{
+  width:100%; font-family:inherit; font-size:13px;
+  background:rgb(var(--c-bg)); color:rgb(var(--c-ink));
+  border:1px solid rgb(var(--c-line)); border-radius:8px;
+  padding:9px 12px; outline:none;
+  transition:border-color .14s, box-shadow .14s;
+}
+.modal-input::placeholder{color:rgb(var(--c-ink-faint));}
+.modal-input:focus, .modal-select:focus{
+  border-color:rgb(var(--c-accent) / .6);
+  box-shadow:0 0 0 3px rgb(var(--c-accent) / .1);
+}
+.modal-select{
+  appearance:none; cursor:pointer; padding-right:30px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23808a99' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 11px center;
+}
+.modal-select option{background:rgb(var(--c-deep)); color:rgb(var(--c-ink));}
+.modal-select:disabled{opacity:.6; cursor:not-allowed;}
+textarea.modal-input{resize:vertical; min-height:64px;}
+
+/* consulta de CNPJ */
+.nl-cnpj{position:relative;}
+.nl-cnpj__spin{
+  position:absolute; right:12px; top:11px;
+  color:rgb(var(--c-accent-soft)); display:none;
+}
+.nl-dica{
+  display:block; font-size:10.5px; margin-top:5px;
+  color:rgb(var(--c-ink-faint));
+}
+.nl-dica.ok{color:rgb(var(--c-success));}
+.nl-dica.erro{color:rgb(var(--c-danger));}
+
+.nl-foot{
+  flex-shrink:0; padding:15px 21px;
+  border-top:1px solid rgb(var(--c-line));
+  background:rgb(var(--c-bg) / .5);
+  display:flex; justify-content:flex-end; gap:10px;
+}
+
+@media (max-width:640px){
+  .nl-overlay{padding:0;}
+  .nl-box{max-width:100%; max-height:100%; height:100%; border-radius:0; border:none;}
+  .nl-grid{grid-template-columns:1fr; gap:13px;}
+  .nl-body{padding:16px;}
+  .nl-head{padding:14px 16px;}
+  .nl-foot{padding:13px 16px;}
+  .nl-foot .crm-btn{flex:1; justify-content:center;}
+}
+</style>
+
+
+<div id="modalNovoLead" class="nl-overlay" onmousedown="if(event.target===this) fecharModalLead()">
+  <div class="nl-box">
+
+    <header class="nl-head">
+      <div class="nl-head__info">
+        <div class="nl-icone"><i class="fa-solid fa-briefcase"></i></div>
+        <div>
+          <h2>Nova oportunidade</h2>
+          <p>Cadastre o contato e coloque no funil</p>
+        </div>
+      </div>
+      <button type="button" class="crm-btn crm-btn--ghost" onclick="fecharModalLead()" style="width:36px;padding:0;justify-content:center">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </header>
+
+    <div class="nl-body">
+      <form id="formNovoLead" onsubmit="salvarNovoLead(event)">
+        {% csrf_token %}
+
+        <!-- ── dados básicos ── -->
+        <section class="nl-secao">
+          <h3 class="nl-secao__titulo"><i class="fa-solid fa-id-card"></i> Dados do contato</h3>
+          <div class="nl-grid">
+
+            <div class="nl-campo nl-campo--full">
+              <label for="id_lead_cnpj">CNPJ <span style="color:rgb(var(--c-ink-faint));font-weight:500;text-transform:none;letter-spacing:0">(opcional — preenche o resto sozinho)</span></label>
+              <div class="nl-cnpj">
+                {{ form_novo_lead.cnpj }}
+                <i id="lead-cnpj-loading" class="fa-solid fa-spinner fa-spin nl-cnpj__spin"></i>
+              </div>
+              <span id="lead-cnpj-status" class="nl-dica">
+                <i class="fa-solid fa-bolt"></i> Digite os 14 dígitos para buscar automaticamente
+              </span>
+            </div>
+
+            <div class="nl-campo nl-campo--full">
+              <label>Nome da empresa / negócio<span class="req">*</span></label>
+              {{ form_novo_lead.nome_empresa }}
+            </div>
+
+            <div class="nl-campo">
+              <label>Nome do contato<span class="req">*</span></label>
+              {{ form_novo_lead.nome_contato }}
+            </div>
+            <div class="nl-campo">
+              <label>Telefone / WhatsApp<span class="req">*</span></label>
+              {{ form_novo_lead.telefone }}
+            </div>
+
+            <div class="nl-campo">
+              <label>Cidade<span class="req">*</span></label>
+              {{ form_novo_lead.cidade }}
+            </div>
+            <div class="nl-campo">
+              <label>Segmento</label>
+              {{ form_novo_lead.segmento }}
+            </div>
+
+            <div class="nl-campo nl-campo--full">
+              <label>Como chegou até nós<span class="req">*</span></label>
+              {{ form_novo_lead.origem }}
+            </div>
+          </div>
+        </section>
+
+        <!-- ── roteamento e valores ── -->
+        <section class="nl-secao">
+          <h3 class="nl-secao__titulo"><i class="fa-solid fa-diagram-project"></i> Funil e valores</h3>
+          <div class="nl-grid">
+
+            <div class="nl-campo">
+              <label>Etapa inicial</label>
+              <select class="modal-select" disabled>
+                {% if request.resolver_match.url_name == 'lista_prospeccoes' %}
+                  <option selected>0. Mesa de Prospecção</option>
+                {% else %}
+                  <option selected>1. Lead Recebido</option>
+                {% endif %}
+              </select>
+              <input type="hidden" name="etapa" value="{% if request.resolver_match.url_name == 'lista_prospeccoes' %}0_PROSPECCAO{% else %}1_LEAD{% endif %}">
+            </div>
+
+            <div class="nl-campo">
+              <label>Vendedor responsável</label>
+              {{ form_novo_lead.vendedor_responsavel }}
+            </div>
+
+            <div class="nl-campo">
+              <label>Equipamentos (R$)</label>
+              {{ form_novo_lead.valor_equipamentos }}
+            </div>
+            <div class="nl-campo">
+              <label>Serviços avulsos (R$)</label>
+              {{ form_novo_lead.valor_servicos }}
+            </div>
+
+            <div class="nl-campo nl-campo--full">
+              <label>Mensalidade (R$) <span style="color:rgb(var(--c-ink-faint));font-weight:500;text-transform:none;letter-spacing:0">— valor recorrente, contado à parte</span></label>
+              {{ form_novo_lead.valor_mensalidade }}
+            </div>
+          </div>
+        </section>
+
+        <!-- ── qualificação ── -->
+        <section class="nl-secao">
+          <h3 class="nl-secao__titulo"><i class="fa-solid fa-crosshairs"></i> Qualificação</h3>
+          <div class="nl-grid">
+            <div class="nl-campo nl-campo--full">
+              <label>Necessidade principal do cliente</label>
+              {{ form_novo_lead.dor_principal }}
+            </div>
+            <div class="nl-campo nl-campo--full">
+              <label>Urgência</label>
+              {{ form_novo_lead.urgencia }}
+            </div>
+          </div>
+        </section>
+
+      </form>
+    </div>
+
+    <footer class="nl-foot">
+      <button type="button" class="crm-btn" onclick="fecharModalLead()">Cancelar</button>
+      <button type="button" class="crm-btn crm-btn--primary" id="btnSalvarNovoLead"
+              onclick="document.getElementById('formNovoLead').requestSubmit()">
+        <i class="fa-solid fa-check"></i> Criar oportunidade
+      </button>
+    </footer>
+
+  </div>
+</div>
+
+
+<script>
+function abrirModalLead(){
+  document.getElementById('modalNovoLead').classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('id_lead_cnpj')?.focus(), 60);
+}
+function fecharModalLead(){
+  document.getElementById('modalNovoLead').classList.remove('is-open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && document.getElementById('modalNovoLead').classList.contains('is-open')){
+    fecharModalLead();
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   CONSULTA DE CNPJ — tenta três bases públicas, em ordem.
+   Se a primeira falhar ou estourar o limite, cai pra próxima.
+   ═══════════════════════════════════════════════════════════════ */
+const cnpjLeadInput = document.getElementById('id_lead_cnpj');
+
+if (cnpjLeadInput){
+  cnpjLeadInput.addEventListener('input', async function(e){
+    const cnpj = e.target.value.replace(/\D/g, '');
+    const status = document.getElementById('lead-cnpj-status');
+    const spin = document.getElementById('lead-cnpj-loading');
+
+    if (cnpj.length !== 14){
+      status.className = 'nl-dica';
+      status.innerHTML = '<i class="fa-solid fa-bolt"></i> Digite os 14 dígitos para buscar automaticamente';
+      return;
+    }
+
+    spin.style.display = 'block';
+    status.className = 'nl-dica';
+    status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Consultando...';
+
+    let dados = null, origem = '';
+
+    try{
+      const r = await fetch(`https://open.cnpja.com/office/${cnpj}`);
+      if (r.ok){
+        const d = await r.json();
+        let tel = '';
+        if (d.phones && d.phones.length) tel = (d.phones[0].area || '') + (d.phones[0].number || '');
+        dados = { razao_social: d.company?.name || '', telefone: tel, cidade: d.address?.city || '' };
+        origem = 'Open CNPJA';
+      }
+    }catch(err){}
+
+    if (!dados){
+      try{
+        const r = await fetch(`https://kitana.opencnpj.com/cnpj/${cnpj}`);
+        if (r.ok){
+          const j = await r.json();
+          if (j.success && j.data){
+            dados = {
+              razao_social: j.data.razaoSocial || '',
+              telefone: j.data.telefone ? String(j.data.telefone).replace(/\D/g,'') : '',
+              cidade: j.data.municipio || ''
+            };
+            origem = 'Kitana';
+          }
+        }
+      }catch(err){}
+    }
+
+    if (!dados){
+      try{
+        const r = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+        if (r.ok){
+          const d = await r.json();
+          dados = {
+            razao_social: d.razao_social || '',
+            telefone: d.ddd_telefone_1 ? String(d.ddd_telefone_1).replace(/\D/g,'') : '',
+            cidade: d.municipio || ''
+          };
+          origem = 'BrasilAPI';
+        }
+      }catch(err){}
+    }
+
+    spin.style.display = 'none';
+
+    if (dados){
+      const empresa  = document.getElementById('id_lead_nome_empresa');
+      const telefone = document.getElementById('id_lead_telefone');
+      const cidade   = document.getElementById('id_lead_cidade');
+      if (empresa)  empresa.value  = dados.razao_social;
+      if (telefone) telefone.value = dados.telefone;
+      if (cidade)   cidade.value   = dados.cidade;
+      status.className = 'nl-dica ok';
+      status.innerHTML = `<i class="fa-solid fa-check"></i> Preenchido via ${origem}`;
+    } else {
+      status.className = 'nl-dica erro';
+      status.innerHTML = '<i class="fa-solid fa-xmark"></i> CNPJ não encontrado — preencha manualmente';
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SALVAR
+   ═══════════════════════════════════════════════════════════════ */
+async function salvarNovoLead(event){
+  event.preventDefault();
+  const form = document.getElementById('formNovoLead');
+  const btn = document.getElementById('btnSalvarNovoLead');
+  const formData = new FormData(form);
+
+  // no Brasil se digita vírgula; o Django espera ponto
+  ['valor_equipamentos','valor_mensalidade','valor_servicos'].forEach(campo => {
+    if (formData.has(campo)){
+      formData.set(campo, String(formData.get(campo)).replace(',', '.'));
+    }
+  });
+
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+  btn.disabled = true;
+
+  try{
+    const csrf = form.querySelector('[name=csrfmiddlewaretoken]').value;
+    const r = await fetch("{% url 'crm_vendas:lead_create_ajax' %}", {
+      method:'POST', headers:{'X-CSRFToken': csrf}, body: formData
+    });
+    if (!r.ok) throw new Error('servidor');
+
+    const data = await r.json();
+    if (data.status === 'sucesso'){
+      fecharModalLead();
+      window.location.reload();
+    } else {
+      let msg = "Não foi possível criar a oportunidade:\n\n";
+      if (data.erros){
+        for (const campo in data.erros) msg += `• ${campo}: ${data.erros[campo]}\n`;
+      } else {
+        msg += "Confira os campos obrigatórios e os valores informados.";
+      }
+      alert(msg);
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Criar oportunidade';
+      btn.disabled = false;
+    }
+  }catch(err){
+    alert("Erro de comunicação com o servidor. Verifique sua conexão.");
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Criar oportunidade';
+    btn.disabled = false;
+  }
+}
+</script>

@@ -1,0 +1,500 @@
+{% extends "base.html" %}
+{% block title %}{{ credential.title }} — Cofre{% endblock %}
+
+{% block content %}
+<div class="cf-root">
+  <div class="cf-wrap">
+
+    <!-- ═══ CABEÇALHO ═══ -->
+    <header class="cf-head">
+      <div class="cf-head__left">
+        <a href="{% url 'cofre_senhas:list' %}" class="cf-back" aria-label="Voltar ao cofre">
+          <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div>
+          <h1 class="cf-title">{{ credential.title }}</h1>
+          <p class="cf-subtitle">
+            <i class="fa-solid fa-shield-halved"></i>
+            {% if accounts %}{{ accounts|length }} acesso{{ accounts|length|pluralize }} nesta credencial{% else %}Credencial protegida{% endif %}
+          </p>
+        </div>
+      </div>
+
+      <div class="cf-head__right">
+        <div class="cf-timer" id="cf-timer" role="timer" aria-live="off">
+          <i class="fa-regular fa-clock"></i>
+          <span>Bloqueia em <strong id="cf-timer-num">5:00</strong></span>
+        </div>
+      </div>
+    </header>
+
+    {% if accounts %}
+    <!-- ═══ MODO MULTI-ACESSO ═══ -->
+    <div class="cf-toolbar">
+      <div class="cf-search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="cf-search" class="cf-search" placeholder="Filtrar por cliente ou login..." autocomplete="off">
+      </div>
+      <span class="cf-count"><span id="cf-visible">{{ accounts|length }}</span> de {{ accounts|length }}</span>
+    </div>
+
+    <ul class="cf-accounts" id="cf-accounts">
+      {% for a in accounts %}
+      <li class="cf-account" data-label="{{ a.label|lower }}" data-user="{{ a.username|default:''|lower }}">
+
+        <div class="cf-account__id">
+          <span class="cf-account__avatar" aria-hidden="true">{{ a.label|first|upper }}</span>
+          <div class="cf-account__names">
+            <span class="cf-account__label">{{ a.label }}</span>
+            {% if a.username %}
+            <button type="button" class="cf-account__user" data-copy="{{ a.username }}" title="Copiar login">
+              <i class="fa-regular fa-copy"></i> {{ a.username }}
+            </button>
+            {% else %}
+            <span class="cf-account__user cf-account__user--empty">sem login</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="cf-account__secret">
+          <code class="cf-pass" id="cf-pass-{{ a.pk }}" data-state="hidden">••••••••••</code>
+        </div>
+
+        <div class="cf-account__actions">
+          <button type="button" class="cf-btn cf-btn--reveal"
+                  data-account="{{ a.pk }}"
+                  aria-label="Revelar senha de {{ a.label }}">
+            <i class="fa-solid fa-eye"></i> <span>Revelar</span>
+          </button>
+          <button type="button" class="cf-btn cf-btn--copy"
+                  data-account="{{ a.pk }}"
+                  aria-label="Copiar senha de {{ a.label }}" title="Copiar senha">
+            <i class="fa-regular fa-clipboard"></i>
+          </button>
+        </div>
+
+      </li>
+      {% endfor %}
+    </ul>
+
+    <p class="cf-empty-filter" id="cf-empty-filter" hidden>
+      <i class="fa-solid fa-filter-circle-xmark"></i> Nenhum acesso corresponde ao filtro.
+    </p>
+
+    {% else %}
+    <!-- ═══ MODO ACESSO ÚNICO ═══ -->
+    <div class="cf-single">
+      <div class="cf-single__row">
+        <div>
+          <span class="cf-single__kicker">Identificador / Login</span>
+          <span class="cf-single__value">{{ credential.username|default:"—" }}</span>
+        </div>
+        {% if credential.username %}
+        <button type="button" class="cf-btn cf-btn--copy" data-copy="{{ credential.username }}" title="Copiar login">
+          <i class="fa-regular fa-copy"></i>
+        </button>
+        {% endif %}
+      </div>
+
+      <div class="cf-single__row cf-single__row--secret">
+        <div>
+          <span class="cf-single__kicker cf-single__kicker--accent">
+            <i class="fa-solid fa-key"></i> Senha
+          </span>
+          <code class="cf-pass cf-pass--big" id="cf-pass-main" data-state="hidden">••••••••••</code>
+        </div>
+        <div class="cf-account__actions">
+          <button type="button" class="cf-btn cf-btn--reveal" data-credential="{{ credential.pk }}">
+            <i class="fa-solid fa-eye"></i> <span>Revelar</span>
+          </button>
+          <button type="button" class="cf-btn cf-btn--copy" data-credential="{{ credential.pk }}" title="Copiar senha">
+            <i class="fa-regular fa-clipboard"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if notes %}
+    <section class="cf-notes">
+      <h2 class="cf-notes__title"><i class="fa-solid fa-align-left"></i> Notas e observações</h2>
+      <div class="cf-notes__body">{{ notes|linebreaks }}</div>
+    </section>
+    {% endif %}
+
+    <footer class="cf-footer">
+      <a href="{% url 'cofre_senhas:edit' credential.id %}" class="cf-foot-btn">
+        <i class="fa-solid fa-pen-to-square"></i> Editar credencial
+      </a>
+      <button type="button" id="cf-lock-now" class="cf-foot-btn cf-foot-btn--danger">
+        <i class="fa-solid fa-lock"></i> Bloquear cofre agora
+      </button>
+    </footer>
+
+  </div>
+</div>
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   COFRE — consome os tokens globais do base.html (dark/gray/light)
+   ═══════════════════════════════════════════════════════════ */
+.cf-root { --cf-radius: 14px; padding: 20px 16px 40px; }
+.cf-wrap { max-width: 900px; margin: 0 auto; }
+
+.cf-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    padding-bottom: 18px; margin-bottom: 20px;
+    border-bottom: 1px solid rgb(var(--c-line));
+}
+.cf-head__left { display: flex; align-items: center; gap: 14px; }
+.cf-back {
+    width: 42px; height: 42px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line));
+    border-radius: 11px; color: rgb(var(--c-ink-soft));
+    text-decoration: none; transition: color .15s, border-color .15s;
+}
+.cf-back:hover { color: rgb(var(--c-accent)); border-color: rgb(var(--c-accent) / .4); }
+.cf-title { font-size: 20px; font-weight: 800; color: rgb(var(--c-ink)); line-height: 1.2; }
+.cf-subtitle {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .12em; color: rgb(var(--c-ink-faint));
+    margin-top: 5px; display: flex; align-items: center; gap: 7px;
+}
+
+.cf-timer {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11.5px; font-weight: 600; color: rgb(var(--c-ink-soft));
+    background: rgb(var(--c-warn) / .1); border: 1px solid rgb(var(--c-warn) / .28);
+    padding: 8px 13px; border-radius: 999px;
+}
+.cf-timer strong { font-family: 'JetBrains Mono', monospace; color: rgb(var(--c-warn)); }
+.cf-timer--urgent { background: rgb(var(--c-danger) / .12); border-color: rgb(var(--c-danger) / .35); }
+.cf-timer--urgent strong { color: rgb(var(--c-danger)); }
+
+/* ── Toolbar ── */
+.cf-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.cf-search-wrap { position: relative; flex: 1; min-width: 200px; }
+.cf-search-wrap i {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: rgb(var(--c-ink-faint)); font-size: 13px; pointer-events: none;
+}
+.cf-search {
+    width: 100%; background: rgb(var(--c-deep));
+    border: 1px solid rgb(var(--c-line)); border-radius: 11px;
+    padding: 11px 14px 11px 40px; color: rgb(var(--c-ink));
+    font-size: 13px; font-family: 'Inter', sans-serif; outline: none;
+    transition: border-color .15s;
+}
+.cf-search::placeholder { color: rgb(var(--c-ink-faint)); }
+.cf-search:focus { border-color: rgb(var(--c-accent)); box-shadow: 0 0 0 2px rgb(var(--c-accent) / .18); }
+.cf-count {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .1em; color: rgb(var(--c-ink-faint)); white-space: nowrap;
+}
+
+/* ── Lista de acessos ── */
+.cf-accounts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cf-account {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+    align-items: center; gap: 14px;
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: var(--cf-radius);
+    padding: 13px 16px;
+    transition: border-color .15s, background-color .25s;
+}
+.cf-account:hover { border-color: rgb(var(--c-accent) / .35); }
+.cf-account--revealed { border-color: rgb(var(--c-success) / .45); }
+
+.cf-account__id { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.cf-account__avatar {
+    width: 34px; height: 34px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgb(var(--c-accent) / .1); border: 1px solid rgb(var(--c-accent) / .25);
+    color: rgb(var(--c-accent)); border-radius: 9px;
+    font-weight: 800; font-size: 13px;
+}
+.cf-account__names { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cf-account__label {
+    font-size: 13px; font-weight: 700; color: rgb(var(--c-ink));
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cf-account__user {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: rgb(var(--c-ink-faint)); background: none; border: none; padding: 0;
+    cursor: pointer; text-align: left; display: flex; align-items: center; gap: 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+    transition: color .15s;
+}
+.cf-account__user:hover { color: rgb(var(--c-accent)); }
+.cf-account__user--empty { cursor: default; font-style: italic; }
+.cf-account__user--empty:hover { color: rgb(var(--c-ink-faint)); }
+
+.cf-account__secret { min-width: 0; }
+.cf-pass {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; font-weight: 600; letter-spacing: .06em;
+    color: rgb(var(--c-ink-faint));
+    display: block; word-break: break-all;
+}
+.cf-pass[data-state="shown"] { color: rgb(var(--c-success)); letter-spacing: normal; user-select: all; }
+.cf-pass--big { font-size: 24px; margin-top: 6px; }
+
+.cf-account__actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.cf-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    height: 36px; padding: 0 13px;
+    font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 700;
+    border-radius: 9px; cursor: pointer;
+    border: 1px solid rgb(var(--c-line));
+    background: rgb(var(--c-deep)); color: rgb(var(--c-ink-soft));
+    transition: background-color .15s, color .15s, border-color .15s;
+    white-space: nowrap;
+}
+.cf-btn:hover { color: rgb(var(--c-ink)); border-color: rgb(var(--c-ink-faint)); }
+.cf-btn:disabled { opacity: .55; cursor: not-allowed; }
+.cf-btn--copy { width: 36px; padding: 0; }
+.cf-btn--reveal { color: rgb(var(--c-accent)); border-color: rgb(var(--c-accent) / .3); background: rgb(var(--c-accent) / .08); }
+.cf-btn--reveal:hover { background: rgb(var(--c-accent)); color: #fff; border-color: rgb(var(--c-accent)); }
+.cf-btn--ok { color: rgb(var(--c-success)) !important; border-color: rgb(var(--c-success) / .4) !important; background: rgb(var(--c-success) / .12) !important; }
+
+.cf-empty-filter {
+    text-align: center; padding: 34px 16px;
+    color: rgb(var(--c-ink-faint)); font-size: 13px; font-weight: 600;
+}
+.cf-empty-filter i { margin-right: 8px; }
+
+/* ── Acesso único ── */
+.cf-single { display: flex; flex-direction: column; gap: 10px; }
+.cf-single__row {
+    background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line));
+    border-radius: var(--cf-radius); padding: 18px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.cf-single__row--secret { border-color: rgb(var(--c-accent) / .3); }
+.cf-single__kicker {
+    font-size: 9.5px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .18em; color: rgb(var(--c-ink-faint)); display: block;
+}
+.cf-single__kicker--accent { color: rgb(var(--c-accent)); }
+.cf-single__value {
+    font-family: 'JetBrains Mono', monospace; font-size: 16px;
+    font-weight: 700; color: rgb(var(--c-ink)); margin-top: 6px; display: block;
+}
+
+/* ── Notas ── */
+.cf-notes {
+    margin-top: 18px; background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line)); border-radius: var(--cf-radius); padding: 18px 20px;
+}
+.cf-notes__title {
+    font-size: 10px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .16em; color: rgb(var(--c-ink-faint)); margin-bottom: 12px;
+}
+.cf-notes__title i { color: rgb(var(--c-warn)); margin-right: 6px; }
+.cf-notes__body {
+    background: rgb(var(--c-bg)); border: 1px solid rgb(var(--c-line));
+    border-radius: 10px; padding: 14px 16px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: rgb(var(--c-ink-soft)); line-height: 1.65;
+    max-height: 300px; overflow: auto;
+}
+
+/* ── Rodapé ── */
+.cf-footer {
+    display: flex; gap: 10px; margin-top: 22px; padding-top: 18px;
+    border-top: 1px solid rgb(var(--c-line));
+}
+.cf-foot-btn {
+    flex: 1; text-align: center; padding: 13px;
+    border-radius: 11px; border: 1px solid rgb(var(--c-line));
+    background: rgb(var(--c-panel)); color: rgb(var(--c-ink-soft));
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em;
+    text-decoration: none; cursor: pointer;
+    transition: background-color .15s, color .15s, border-color .15s;
+}
+.cf-foot-btn:hover { color: rgb(var(--c-ink)); border-color: rgb(var(--c-ink-faint)); }
+.cf-foot-btn--danger { color: rgb(var(--c-danger)); border-color: rgb(var(--c-danger) / .3); background: rgb(var(--c-danger) / .08); }
+.cf-foot-btn--danger:hover { background: rgb(var(--c-danger)); color: #fff; border-color: rgb(var(--c-danger)); }
+
+/* ── Mobile ── */
+@media (max-width: 720px) {
+    .cf-account {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .cf-account__secret { padding-left: 45px; }
+    .cf-account__actions { padding-left: 45px; }
+    .cf-btn { flex: 1; }
+    .cf-btn--copy { flex: 0 0 44px; }
+    .cf-footer { flex-direction: column; }
+    .cf-single__row { flex-direction: column; align-items: stretch; }
+    .cf-title { font-size: 17px; }
+}
+</style>
+
+<script>
+(function () {
+    "use strict";
+
+    function getCookie(name) {
+        const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return m ? decodeURIComponent(m.pop()) : '';
+    }
+    const CSRF = getCookie('csrftoken');
+
+    // ── Busca a senha no servidor, sob demanda, uma por vez ──
+    // A senha NUNCA está no HTML: só chega aqui quando o usuário pede.
+    async function fetchPassword(kind, id) {
+        const url = kind === 'account'
+            ? `{% url 'cofre_senhas:unlock_account_password' 0 %}`.replace('/0/', `/${id}/`)
+            : `{% url 'cofre_senhas:unlock_view_password' 0 %}`.replace('/0/', `/${id}/`);
+
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+        });
+
+        if (resp.status === 403) {
+            alert('O cofre foi bloqueado. Informe o PIN novamente.');
+            window.location.href = "{% url 'cofre_senhas:index' %}";
+            return null;
+        }
+        if (!resp.ok) throw new Error('falha');
+        return (await resp.json()).password;
+    }
+
+    function flash(btn, iconHtml, ms) {
+        const original = btn.innerHTML;
+        btn.innerHTML = iconHtml;
+        btn.classList.add('cf-btn--ok');
+        setTimeout(() => { btn.innerHTML = original; btn.classList.remove('cf-btn--ok'); }, ms || 1400);
+    }
+
+    async function copyText(text, btn) {
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (e) {
+            // fallback p/ contexto sem clipboard API (http)
+            const ta = document.createElement('textarea');
+            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta);
+        }
+        if (btn) flash(btn, '<i class="fa-solid fa-check"></i>');
+    }
+
+    // ── Revelar ──
+    document.querySelectorAll('.cf-btn--reveal').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const accId  = this.dataset.account;
+            const credId = this.dataset.credential;
+            const el = document.getElementById(accId ? `cf-pass-${accId}` : 'cf-pass-main');
+            const row = this.closest('.cf-account') || this.closest('.cf-single__row');
+
+            // já revelado → esconde de novo
+            if (el.dataset.state === 'shown') {
+                el.textContent = '••••••••••';
+                el.dataset.state = 'hidden';
+                this.innerHTML = '<i class="fa-solid fa-eye"></i> <span>Revelar</span>';
+                if (row) row.classList.remove('cf-account--revealed');
+                return;
+            }
+
+            this.disabled = true;
+            const original = this.innerHTML;
+            this.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+
+            try {
+                const pw = await fetchPassword(accId ? 'account' : 'credential', accId || credId);
+                if (pw === null) return;
+                el.textContent = pw || '(vazia)';
+                el.dataset.state = 'shown';
+                this.innerHTML = '<i class="fa-solid fa-eye-slash"></i> <span>Ocultar</span>';
+                if (row) row.classList.add('cf-account--revealed');
+            } catch (e) {
+                alert('Não foi possível revelar a senha.');
+                this.innerHTML = original;
+            } finally {
+                this.disabled = false;
+            }
+        });
+    });
+
+    // ── Copiar senha (busca sob demanda, não fica no DOM) ──
+    document.querySelectorAll('.cf-btn--copy[data-account], .cf-btn--copy[data-credential]').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const accId  = this.dataset.account;
+            const credId = this.dataset.credential;
+            this.disabled = true;
+            try {
+                const pw = await fetchPassword(accId ? 'account' : 'credential', accId || credId);
+                if (pw === null) return;
+                await copyText(pw, this);
+            } catch (e) {
+                alert('Não foi possível copiar a senha.');
+            } finally {
+                this.disabled = false;
+            }
+        });
+    });
+
+    // ── Copiar login (esse pode estar no HTML, não é segredo) ──
+    document.querySelectorAll('[data-copy]').forEach(el => {
+        el.addEventListener('click', function () { copyText(this.dataset.copy, this); });
+    });
+
+    // ── Filtro ──
+    const search = document.getElementById('cf-search');
+    if (search) {
+        const items = Array.from(document.querySelectorAll('.cf-account'));
+        const counter = document.getElementById('cf-visible');
+        const empty = document.getElementById('cf-empty-filter');
+        search.addEventListener('input', function () {
+            const t = this.value.toLowerCase().trim();
+            let n = 0;
+            items.forEach(it => {
+                const hit = !t || it.dataset.label.includes(t) || it.dataset.user.includes(t);
+                it.style.display = hit ? '' : 'none';
+                if (hit) n++;
+            });
+            counter.textContent = n;
+            empty.hidden = n > 0;
+        });
+    }
+
+    // ── Auto-bloqueio ──
+    // O timer antigo era de 30s e só redirecionava no cliente: a sessão
+    // continuava destravada. Agora o servidor também expira (ver
+    // decorators.py) e aqui pedimos o bloqueio de verdade.
+    let restante = 5 * 60;
+    const num = document.getElementById('cf-timer-num');
+    const box = document.getElementById('cf-timer');
+
+    async function lockNow() {
+        try {
+            await fetch("{% url 'cofre_senhas:lock_vault' %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF },
+            });
+        } catch (e) { /* segue para o redirect de qualquer forma */ }
+        window.location.href = "{% url 'cofre_senhas:index' %}";
+    }
+
+    const tick = setInterval(() => {
+        restante--;
+        const m = Math.floor(restante / 60);
+        const s = String(restante % 60).padStart(2, '0');
+        num.textContent = `${m}:${s}`;
+        if (restante <= 60) box.classList.add('cf-timer--urgent');
+        if (restante <= 0) { clearInterval(tick); lockNow(); }
+    }, 1000);
+
+    document.getElementById('cf-lock-now').addEventListener('click', lockNow);
+})();
+</script>
+{% endblock %}

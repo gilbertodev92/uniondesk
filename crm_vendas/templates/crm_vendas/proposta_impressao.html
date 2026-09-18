@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposta Comercial - {{ lead.nome_empresa }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        
+        /* Configurações de Página A4 */
+        @page {
+            size: A4;
+            margin: 10mm 15mm;
+        }
+
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            color: #1e293b; 
+            margin: 0; 
+            padding: 0; 
+            background: #fff;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+
+        .container { width: 100%; max-width: 210mm; margin: 0 auto; }
+
+        /* Header Compacto */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+
+        .logo-area img { height: 45px; object-fit: contain; }
+
+        .doc-title { text-align: right; }
+        .doc-title h2 { margin: 0; color: #0f172a; font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .doc-title p { margin: 2px 0 0 0; color: #3b82f6; font-size: 10px; font-weight: 700; }
+
+        /* Seções */
+        .section-title {
+            background: #f8fafc;
+            padding: 5px 10px;
+            border-left: 3px solid #3b82f6;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin: 12px 0 8px 0;
+            color: #0f172a;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Grids de Informação */
+        .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 5px; }
+        .info-box { padding: 3px 0; border-bottom: 1px solid #f1f5f9; }
+        .info-label { font-size: 9px; color: #64748b; text-transform: uppercase; font-weight: 700; display: block; }
+        .info-value { font-size: 11px; color: #0f172a; font-weight: 600; }
+
+        /* Tabela de Preços Detalhada */
+        .price-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        .price-table th { 
+            background: #0f172a; 
+            color: white; 
+            text-align: left; 
+            padding: 6px 10px; 
+            font-size: 9px; 
+            text-transform: uppercase; 
+        }
+        .price-table td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; font-size: 10.5px; vertical-align: middle; }
+        .price-table tr:last-child td { border-bottom: 2px solid #0f172a; }
+        
+        .item-type { font-size: 8px; color: #3b82f6; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: -2px; }
+        .value-col { text-align: right; font-weight: 700; color: #0f172a; width: 100px; white-space: nowrap; }
+        .total-row { background: #f1f5f9; font-weight: 800; }
+
+        /* Rodapé de Termos */
+        .terms { 
+            font-size: 9px; 
+            color: #475569; 
+            line-height: 1.4; 
+            margin-top: 15px; 
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 4px;
+        }
+        .terms strong { color: #0f172a; }
+
+        /* Assinaturas */
+        .signatures { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-top: 35px; 
+        }
+        .sig-box { width: 42%; text-align: center; }
+        .sig-line { border-bottom: 1px solid #0f172a; margin-bottom: 5px; height: 25px; }
+        .sig-name { font-size: 11px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
+        .sig-role { font-size: 9px; color: #64748b; font-weight: 600; }
+
+        @media print {
+            body { background: white; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body onload="window.print()">
+    <div class="container">
+        <div class="header">
+            <div class="logo-area">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQAMYfzGISaPJBIU6_snqX8LFMpARzAjaNuTg&s" alt="Lógica Automação">
+            </div>
+            <div class="doc-title">
+                <h2>Proposta Comercial</h2>
+                <p>Nº {{ lead.id|stringformat:".8s"|upper }} • EMITIDA EM: {{ hoje|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+
+        <div class="section-title">Dados do Cliente</div>
+        <div class="grid-info">
+            <div class="info-box">
+                <span class="info-label">Razão Social / Nome</span>
+                <span class="info-value">{{ lead.nome_empresa }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">CNPJ / CPF</span>
+                <span class="info-value">{{ lead.cnpj|default:"Não Informado" }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">Contato Responsável</span>
+                <span class="info-value">{{ lead.nome_contato }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">Telefone / WhatsApp</span>
+                <span class="info-value">{{ lead.telefone }}</span>
+            </div>
+        </div>
+
+        <div class="section-title">Necessidade / Objetivo do Projeto</div>
+        <div style="padding: 0 5px; font-size: 11px; color: #334155; white-space: pre-wrap;">{{ lead.dor_principal|default:"Conforme levantamento inicial para automação comercial e otimização de processos internos." }}</div>
+
+        <div class="section-title">Investimento & Detalhamento</div>
+        
+        <table class="price-table">
+            <thead>
+                <tr>
+                    <th>Descrição do Item / Serviço</th>
+                    <th style="text-align: center; width: 40px;">QTD</th>
+                    <th style="text-align: right; width: 90px;">V. UNITÁRIO</th>
+                    <th style="text-align: right; width: 90px;">TOTAL ITEM</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if lead.itens_proposta.exists %}
+                    {% for item in lead.itens_proposta.all %}
+                    <tr>
+                        <td>
+                            <span class="item-type">{{ item.get_tipo_display }}</span>
+                            {{ item.nome }}
+                        </td>
+                        <td style="text-align: center; font-weight: 800; color: #0f172a;">{{ item.quantidade|default:"1" }}</td>
+                        <td style="text-align: right; color: #64748b;">R$ {{ item.valor|floatformat:2 }}</td>
+                        <td class="value-col">R$ {{ item.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    {% if lead.valor_equipamentos > 0 %}
+                    <tr>
+                        <td><span class="item-type">Produtos</span>Equipamentos e Periféricos para Automação</td>
+                        <td style="text-align: center; font-weight: 800; color: #0f172a;">1</td>
+                        <td style="text-align: right; color: #64748b;">R$ {{ lead.valor_equipamentos|floatformat:2 }}</td>
+                        <td class="value-col">R$ {{ lead.valor_equipamentos|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if lead.valor_servicos > 0 %}
+                    <tr>
+                        <td><span class="item-type">Serviços</span>Implantação, Treinamento e Configuração</td>
+                        <td style="text-align: center; font-weight: 800; color: #0f172a;">1</td>
+                        <td style="text-align: right; color: #64748b;">R$ {{ lead.valor_servicos|floatformat:2 }}</td>
+                        <td class="value-col">R$ {{ lead.valor_servicos|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if lead.valor_mensalidade > 0 %}
+                    <tr>
+                        <td><span class="item-type">Licenciamento</span>Mensalidade / Suporte Técnico Recorrente</td>
+                        <td style="text-align: center; font-weight: 800; color: #0f172a;">1</td>
+                        <td style="text-align: right; color: #64748b;">R$ {{ lead.valor_mensalidade|floatformat:2 }}</td>
+                        <td class="value-col">R$ {{ lead.valor_mensalidade|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                {% endif %}
+
+                <tr class="total-row">
+                    <td colspan="3" style="text-align: right; text-transform: uppercase; font-size: 9px;">Total em Produtos e Serviços:</td>
+                    <td class="value-col" style="color: #059669;">R$ {{ lead.valor_equipamentos|add:lead.valor_servicos|floatformat:2 }}</td>
+                </tr>
+                {% if lead.valor_mensalidade > 0 %}
+                <tr class="total-row">
+                    <td colspan="3" style="text-align: right; text-transform: uppercase; font-size: 9px;">Investimento Mensal (Recorrente):</td>
+                    <td class="value-col" style="color: #2563eb;">R$ {{ lead.valor_mensalidade|floatformat:2 }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <div class="grid-info" style="margin-top: 12px;">
+            <div class="info-box">
+                <span class="info-label">Forma de Pagamento</span>
+                <span class="info-value">{{ lead.forma_pagamento|default:"A combinar conforme negociação." }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">Prazo / Condições</span>
+                <span class="info-value">{{ lead.prazo_pagamento|default:"Conforme política comercial vigente." }}</span>
+            </div>
+        </div>
+
+        <div class="terms">
+            <strong>Condições Gerais:</strong><br>
+            1. Validade desta proposta: <strong>07 dias</strong> a partir da data de emissão.<br>
+            2. O cronograma de implantação será definido após o aceite e assinatura do contrato.<br>
+            3. A manutenção dos valores recorrentes (mensalidades) segue o índice anual de reajuste (IGPM/IPCA).<br>
+            4. Infraestrutura de rede e elétrica são de responsabilidade do contratante, salvo negociação em contrário.
+        </div>
+
+        <div class="signatures">
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-name">{{ lead.nome_empresa }}</div>
+                <div class="sig-role">De Acordo (Contratante)</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-name">{{ lead.vendedor_responsavel.get_full_name|default:lead.vendedor_responsavel.username|upper }}</div>
+                <div class="sig-role">Lógica Automação Comercial</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cadastro / Edição de Cliente{% endblock %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<div class="min-h-screen bg-core-panel text-ink p-6 font-['Inter']">
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <form id="clienteForm" method="post" class="space-y-6">
+            {% csrf_token %}
+
+            <div class="flex flex-col md:flex-row justify-between items-center bg-core-deep p-6 rounded-2xl border border-core-line shadow-lg">
+                <div class="flex items-center gap-3">
+                    <a href="javascript:history.back()" class="text-ink-soft hover:text-ink transition-colors w-8 h-8 flex items-center justify-center bg-core-line rounded-lg">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-2xl font-extrabold text-ink uppercase tracking-tight">Cadastro de Cliente</h1>
+                </div>
+                
+                <div class="flex gap-3 mt-4 md:mt-0">
+                    <a href="javascript:history.back()" class="px-6 py-3 rounded-xl border border-core-line text-ink-soft hover:bg-core-line hover:text-ink transition-colors text-xs font-bold uppercase tracking-widest">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="px-6 py-3 rounded-xl bg-success hover:bg-success text-ink text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> Salvar Ficha
+                    </button>
+                </div>
+            </div>
+
+            {% if form.errors %}
+            <div class="bg-danger/10 border border-danger/30 rounded-2xl p-6 shadow-sm">
+                <h3 class="text-danger font-bold text-sm mb-3 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> Ops! Verifique os erros abaixo:</h3>
+                <ul class="text-xs text-danger list-disc pl-5 space-y-1 font-medium">
+                    {% for field in form %}{% for error in field.errors %}<li><strong>{{ field.label }}:</strong> {{ error }}</li>{% endfor %}{% endfor %}
+                    {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="bg-core-deep border border-core-line rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-success/5 rounded-full blur-3xl pointer-events-none"></div>
+                <h2 class="text-xs font-bold text-ink-soft uppercase tracking-widest border-b border-core-line pb-3 mb-6 relative z-10 flex items-center gap-2">
+                    <i class="fa-regular fa-id-card text-success"></i> Informações Cadastrais
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10 form-inputs-wrapper">
+                    <div class="md:col-span-1">
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">CNPJ</label>
+                        <div class="relative">
+                            {{ form.cnpj }}
+                            <i id="cnpj-loading" class="fa-solid fa-spinner fa-spin absolute right-4 top-3.5 text-success hidden"></i>
+                        </div>
+                        <span class="text-[10px] text-success/80 mt-1.5 font-semibold block" id="cnpj-status"><i class="fa-solid fa-bolt text-[8px] mr-1"></i> Preencha para auto-completar.</span>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Razão Social</label>
+                        {{ form.razao_social }}
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Nome Fantasia</label>
+                        {{ form.nome_fantasia }}
+                    </div>
+                    <div class="md:col-span-1">
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Regime Tributário</label>
+                        {{ form.regime_tributario }}
+                    </div>
+                    <div class="md:col-span-1">
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Inscrição Estadual</label>
+                        {{ form.inscricao_estadual }}
+                    </div>
+
+                    <div class="md:col-span-1">
+                        <label class="text-[10px] font-bold text-success block mb-1.5 uppercase tracking-widest">Telefone</label>
+                        {{ form.telefone }}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-[10px] font-bold text-success block mb-1.5 uppercase tracking-widest">E-mail</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="md:col-span-1">
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Status Financeiro</label>
+                        {{ form.status_financeiro }}
+                    </div>
+
+                    <div class="hidden">
+                        {{ form.data_consulta_cnpj }}
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-core-line relative z-10 flex justify-end">
+                    <p class="text-[10px] text-ink-faint font-medium italic" id="data-consulta-display">
+                        {% if form.instance.data_consulta_cnpj %}
+                            Atualizado em: {{ form.instance.data_consulta_cnpj|date:"d/m/Y \à\s H:i" }}
+                        {% else %}
+                            Aguardando consulta via CNPJ...
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-core-deep border border-core-line rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden mt-6">
+                <div class="absolute top-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                <h2 class="text-xs font-bold text-ink-soft uppercase tracking-widest border-b border-core-line pb-3 mb-6 relative z-10 flex items-center gap-2">
+                    <i class="fa-solid fa-location-dot text-accent"></i> Endereço
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10 form-inputs-wrapper">
+                    <div>
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">CEP</label>
+                        <div class="relative">
+                            {{ form.cep }}
+                            <i id="cep-loading" class="fa-solid fa-spinner fa-spin absolute right-4 top-3.5 text-blue-400 hidden"></i>
+                        </div>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Logradouro</label>
+                        {{ form.logradouro }}
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Número</label>
+                        {{ form.numero }}
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Bairro</label>
+                        {{ form.bairro }}
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Cidade</label>
+                        {{ form.cidade }}
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Estado (UF)</label>
+                        {{ form.estado }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-accent/20/10 border border-accent/20 rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden mt-6">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl pointer-events-none"></div>
+                <h2 class="text-xs font-bold text-accent uppercase tracking-widest border-b border-accent/20 pb-3 mb-6 relative z-10 flex items-center gap-2">
+                    <i class="fa-solid fa-bullhorn"></i> Observações da Operação
+                </h2>
+                
+                <div class="relative z-10">
+                    <label class="text-xs font-semibold text-ink-soft block mb-3">Anotações estratégicas ou avisos importantes aparecerão no chat do WhatsApp da equipe.</label>
+                    <div class="custom-textarea-wrapper">
+                        {{ form.observacoes }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-core-deep border border-core-line rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden mt-6">
+                <h2 class="text-xs font-bold text-ink-soft uppercase tracking-widest border-b border-core-line pb-3 mb-6 relative z-10 flex items-center gap-2">
+                    <i class="fa-solid fa-handshake text-special"></i> Responsável e Parâmetros
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 form-inputs-wrapper">
+                    <div><label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Nome do Responsável</label>{{ form.nome_responsavel }}</div>
+                    <div><label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Whats/Tel do Responsável</label>{{ form.telefone_responsavel }}</div>
+                    <div><label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">E-mail do Responsável</label>{{ form.email_responsavel }}</div>
+                    <div><label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Classe Faturamento</label>{{ form.faturamento_cliente }}</div>
+                    <div><label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Serial do Sistema</label>{{ form.serial_sistema }}</div>
+                    <div><label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Visibilidade</label>{{ form.visibilidade_cliente }}</div>
+                </div>
+            </div>
+
+            <div class="bg-core-deep border border-core-line rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden mt-6">
+                <h2 class="text-xs font-bold text-ink-soft uppercase tracking-widest border-b border-core-line pb-3 mb-6 relative z-10 flex items-center gap-2">
+                    <i class="fa-solid fa-server text-warn"></i> Softwares e Serviços
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                    <div>
+                        <label class="text-[10px] font-bold text-ink-soft block mb-3 uppercase tracking-widest">Sistemas Vinculados</label>
+                        
+                        <div class="bg-core-panel p-4 rounded-xl border border-core-line flex flex-col gap-3 max-h-[220px] overflow-y-auto custom-scrollbar shadow-inner">
+                            {% for checkbox in form.sistemas %}
+                            <label class="flex items-center gap-3 cursor-pointer group py-1">
+                                <div class="flex-shrink-0">
+                                    {{ checkbox.tag }}
+                                </div>
+                                <span class="text-xs font-bold text-ink-soft group-hover:text-ink transition-colors">
+                                    {{ checkbox.choice_label }}
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <label class="flex items-center gap-3 bg-core-panel p-4 rounded-xl border border-core-line cursor-pointer hover:border-core-line transition-colors shadow-inner">
+                            {{ form.contrato_software }} <span class="text-[11px] font-bold text-ink uppercase tracking-wider">Software</span>
+                        </label>
+                        <label class="flex items-center gap-3 bg-core-panel p-4 rounded-xl border border-core-line cursor-pointer hover:border-core-line transition-colors shadow-inner">
+                            {{ form.contrato_hardware }} <span class="text-[11px] font-bold text-ink uppercase tracking-wider">Hardware</span>
+                        </label>
+                        <label class="flex items-center gap-3 bg-core-panel p-4 rounded-xl border border-core-line cursor-pointer hover:border-core-line transition-colors shadow-inner">
+                            {{ form.backup_contratado }} <span class="text-[11px] font-bold text-ink uppercase tracking-wider">Backup</span>
+                        </label>
+                        <label class="flex items-center gap-3 bg-core-panel p-4 rounded-xl border border-core-line cursor-pointer hover:border-core-line transition-colors shadow-inner">
+                            {{ form.hospedagem_datacenter }} <span class="text-[11px] font-bold text-ink uppercase tracking-wider">Hospedagem</span>
+                        </label>
+                        <label class="flex items-center gap-3 bg-success/10 p-4 rounded-xl border border-success/30 cursor-pointer hover:border-success transition-colors shadow-inner col-span-1 sm:col-span-2">
+                            {{ form.ativo }} <span class="text-xs font-black text-success uppercase tracking-widest">Cadastro Ativo na Base</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 pt-6 border-t border-core-line relative z-10 form-inputs-wrapper">
+                    <div><label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Forçar Score (0-100)</label>{{ form.health_score }}</div>
+                    <div><label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Nível de Risco</label>{{ form.nivel_risco }}</div>
+                    <div><label class="text-[10px] font-bold text-ink-soft block mb-1.5 uppercase tracking-widest">Data Últ. Cálculo</label>{{ form.data_ultimo_calculo }}</div>
+                </div>
+            </div>
+
+            <div class="hidden">{% for field in form.hidden_fields %}{{ field }}{% endfor %}</div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-inputs-wrapper input[type="text"], 
+    .form-inputs-wrapper input[type="email"], 
+    .form-inputs-wrapper input[type="number"], 
+    .form-inputs-wrapper input[type="date"], 
+    .form-inputs-wrapper select {
+        width: 100%; 
+        background-color: rgb(var(--c-panel)) !important; 
+        border: 1px solid rgb(var(--c-line)) !important; 
+        color: #f8fafc !important; 
+        border-radius: 0.75rem !important; 
+        padding: 0.75rem 1rem !important;
+        font-size: 0.875rem; 
+        font-weight: 600;
+        outline: none; 
+        transition: all 0.2s;
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .form-inputs-wrapper input:focus, 
+    .form-inputs-wrapper select:focus { 
+        border-color: rgb(var(--c-success)) !important; 
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05), 0 0 0 2px rgba(16,185,129,0.2) !important; 
+    }
+    
+    .custom-textarea-wrapper textarea {
+        width: 100%;
+        min-height: 120px;
+        background-color: rgb(var(--c-panel)) !important; 
+        border: 1px solid rgba(99, 102, 241, 0.3) !important; 
+        color: #f8fafc !important;
+        font-weight: 500;
+        border-radius: 0.75rem !important;
+        padding: 1rem !important;
+        outline: none;
+        resize: vertical;
+        transition: all 0.2s;
+    }
+    .custom-textarea-wrapper textarea:focus {
+        border-color: rgb(var(--c-accent)) !important;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+    
+    .form-inputs-wrapper select option { background-color: rgb(var(--c-panel)); color: white; }
+    
+    input[type="checkbox"] { 
+        width: 1.25rem; 
+        height: 1.25rem; 
+        accent-color: rgb(var(--c-accent)); 
+        cursor: pointer; 
+        flex-shrink: 0; 
+    }
+    label:has(span.text-success) input[type="checkbox"] {
+        accent-color: rgb(var(--c-success)); 
+    }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgb(var(--c-panel)); border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-ink-faint)); }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    function getField(name) { return document.querySelector(`[name='${name}']`); }
+
+    const cnpjInput = getField('cnpj');
+    const cepInput = getField('cep');
+
+    if (cnpjInput) {
+        cnpjInput.addEventListener("input", async function() {
+            // 🔥 MÁSCARA AUTOMÁTICA EM TEMPO REAL NO FRONTEND
+            let v = this.value.replace(/\D/g, '');
+            if (v.length <= 11) {
+                v = v.replace(/(\d{3})(\d)/, "$1.$2");
+                v = v.replace(/(\d{3})(\d)/, "$1.$2");
+                v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+            } else {
+                v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+                v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+                v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+                v = v.replace(/(\d{4})(\d)/, "$1-$2");
+            }
+            this.value = v;
+
+            let cnpj = this.value.replace(/\D/g, '');
+            const statusText = document.getElementById("cnpj-status");
+            const loadingIcon = document.getElementById("cnpj-loading");
+            
+            if (cnpj.length === 14) {
+                loadingIcon.classList.remove("hidden");
+                statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[8px] mr-1"></i> Buscando CNPJ...';
+                
+                try {
+                    let dataToFill = null;
+                    let dataOrigem = "";
+
+                    // ==========================================
+                    // TENTATIVA 1: Open CNPJA (Mais Rica)
+                    // ==========================================
+                    try {
+                        statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[8px] mr-1"></i> Consultando Open CNPJA...';
+                        let r1 = await fetch(`https://open.cnpja.com/office/${cnpj}`);
+                        if (r1.ok) {
+                            let d1 = await r1.json();
+                            
+                            let tel = "";
+                            if (d1.phones && d1.phones.length > 0) tel = (d1.phones[0].area || '') + (d1.phones[0].number || '');
+                            
+                            let email = "";
+                            if (d1.emails && d1.emails.length > 0) email = d1.emails[0].address || '';
+                            
+                            // Busca Agressiva da Inscrição Estadual
+                            let ie = "";
+                            if (d1.registrations && d1.registrations.length > 0) {
+                                let ativa = d1.registrations.find(r => r.enabled);
+                                if (ativa && ativa.number) {
+                                    ie = ativa.number.replace(/\D/g, '');
+                                } else if (d1.registrations[0].number) {
+                                    ie = d1.registrations[0].number.replace(/\D/g, '');
+                                }
+                            }
+                            
+                            let regime = d1.company?.simples?.optant ? "Simples Nacional" : "Lucro Presumido ou Real";
+
+                            dataToFill = {
+                                razao_social: d1.company?.name || "",
+                                nome_fantasia: d1.alias || d1.company?.name || "",
+                                telefone: tel,
+                                email: email,
+                                inscricao_estadual: ie,
+                                regime_tributario: regime,
+                                cep: d1.address?.zip ? String(d1.address.zip).replace(/\D/g, '') : ""
+                            };
+                            dataOrigem = "Open CNPJA";
+                        }
+                    } catch(e1) { console.log("Open CNPJA falhou, partindo para o plano B"); }
+
+                    // ==========================================
+                    // TENTATIVA 2: Kitana OpenCNPJ
+                    // ==========================================
+                    if (!dataToFill) {
+                        try {
+                            statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[8px] mr-1"></i> Tentando Kitana API...';
+                            let r2 = await fetch(`https://kitana.opencnpj.com/cnpj/${cnpj}`);
+                            if (r2.ok) {
+                                let d2 = await r2.json();
+                                if (d2.success && d2.data) {
+                                    dataToFill = {
+                                        razao_social: d2.data.razaoSocial || "",
+                                        nome_fantasia: d2.data.nomeFantasia || d2.data.razaoSocial || "",
+                                        telefone: d2.data.telefone ? String(d2.data.telefone).replace(/\D/g, '') : "",
+                                        email: d2.data.email || "",
+                                        inscricao_estadual: "", // Kitana não tem IE
+                                        regime_tributario: "", // Kitana não tem Regime
+                                        cep: d2.data.cep ? String(d2.data.cep).replace(/\D/g, '') : ""
+                                    };
+                                    dataOrigem = "Kitana API";
+                                }
+                            }
+                        } catch(e2) { console.log("Kitana falhou, partindo para o plano C"); }
+                    }
+
+                    // ==========================================
+                    // TENTATIVA 3: BrasilAPI (Fallback de Salvação)
+                    // ==========================================
+                    if (!dataToFill) {
+                        try {
+                            statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[8px] mr-1"></i> Tentando BrasilAPI...';
+                            let r3 = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+                            if (r3.ok) {
+                                let d3 = await r3.json();
+                                dataToFill = {
+                                    razao_social: d3.razao_social || "",
+                                    nome_fantasia: d3.nome_fantasia || d3.razao_social || "",
+                                    telefone: d3.ddd_telefone_1 ? String(d3.ddd_telefone_1).replace(/\D/g, '') : "",
+                                    email: d3.email || "",
+                                    inscricao_estadual: "",
+                                    regime_tributario: "",
+                                    cep: d3.cep ? String(d3.cep).replace(/\D/g, '') : ""
+                                };
+                                dataOrigem = "BrasilAPI";
+                            }
+                        } catch(e3) { console.log("Brasil API falhou"); }
+                    }
+
+                    // ==========================================
+                    // PREENCHER DADOS NO FORMULÁRIO
+                    // ==========================================
+                    if (dataToFill) {
+                        if(getField('razao_social')) getField('razao_social').value = dataToFill.razao_social;
+                        if(getField('nome_fantasia')) getField('nome_fantasia').value = dataToFill.nome_fantasia;
+                        if(getField('telefone')) getField('telefone').value = dataToFill.telefone;
+                        if(getField('email')) getField('email').value = dataToFill.email;
+                        if(getField('inscricao_estadual')) getField('inscricao_estadual').value = dataToFill.inscricao_estadual;
+                        if(getField('regime_tributario')) getField('regime_tributario').value = dataToFill.regime_tributario;
+                        
+                        if(getField('data_consulta_cnpj')) {
+                            let now = new Date();
+                            getField('data_consulta_cnpj').value = now.toISOString().slice(0, 19).replace('T', ' ');
+                        }
+                        
+                        const displayData = document.getElementById('data-consulta-display');
+                        if (displayData) {
+                            let dataStr = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+                            displayData.innerHTML = `Atualizado em: ${dataStr} via ${dataOrigem}`;
+                        }
+
+                        if(dataToFill.cep && cepInput) {
+                            cepInput.value = dataToFill.cep;
+                            cepInput.dispatchEvent(new Event('input')); // Aciona o Viacep pra buscar a rua
+                        }
+                        
+                        statusText.innerHTML = `<i class="fa-solid fa-check text-[8px] mr-1 text-success"></i> Dados importados via ${dataOrigem}!`;
+                    } else {
+                        // Se falhou as 3
+                        statusText.innerHTML = `<i class="fa-solid fa-xmark text-[8px] mr-1 text-danger"></i> Nenhuma API encontrou o CNPJ (ou limite excedido).`;
+                    }
+
+                } catch(e) {
+                    statusText.innerHTML = '<i class="fa-solid fa-xmark text-[8px] mr-1 text-danger"></i> Erro inesperado no Javascript.';
+                } finally {
+                    loadingIcon.classList.add("hidden");
+                }
+            } else {
+                statusText.innerHTML = '<i class="fa-solid fa-bolt text-[8px] mr-1"></i> Preencha para auto-completar.';
+            }
+        });
+    }
+
+    if (cepInput) {
+        cepInput.addEventListener("input", async function() {
+            let cep = this.value.replace(/\D/g, '');
+            const loadingIcon = document.getElementById("cep-loading");
+            if (cep.length === 8) {
+                loadingIcon.classList.remove("hidden");
+                try {
+                    let response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                    let data = await response.json();
+                    if (!data.erro) {
+                        if(getField('logradouro')) getField('logradouro').value = data.logradouro || '';
+                        if(getField('bairro')) getField('bairro').value = data.bairro || '';
+                        if(getField('cidade')) getField('cidade').value = data.localidade || '';
+                        if(getField('estado')) getField('estado').value = data.uf || '';
+                    }
+                } catch (e) {} finally { loadingIcon.classList.add("hidden"); }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

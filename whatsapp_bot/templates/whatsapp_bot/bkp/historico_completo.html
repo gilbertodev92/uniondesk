@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visão 360 - {{ nome_cliente }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        
+        .balao-tecnico { background: #334155; border: 1px solid #475569; border-radius: 12px 12px 0 12px; }
+        .balao-cliente { background: #1e293b; border: 1px solid #334155; border-radius: 12px 12px 12px 0; }
+        .balao-ia { background: #0f172a; border: 1px solid #fbbf2440; border-radius: 12px; }
+        .balao-interno { background: #fbbf241a; border: 1px solid #fbbf2433; border-radius: 12px; }
+        
+        /* Oculta scrollbar no input de data */
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+    </style>
+</head>
+<body class="bg-[#020617] text-slate-300 font-sans h-screen flex flex-col overflow-hidden antialiased">
+
+    <div class="h-[70px] bg-[#0f172a] border-b border-slate-800 px-6 flex items-center justify-between shrink-0 shadow-md z-20">
+        <div class="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity" onclick="mostrarDashboard()">
+            <div class="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-sm">
+                <i class="fa-solid fa-chart-pie text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-white font-bold text-lg leading-tight uppercase tracking-wide truncate max-w-[400px]" title="{{ nome_cliente }}">{{ nome_cliente }}</h1>
+                <p class="text-xs text-indigo-400 font-bold uppercase tracking-widest flex items-center gap-1"><i class="fa-solid fa-eye"></i> Visão 360 do Cliente</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 w-1/3 min-w-[300px] shadow-inner focus-within:border-indigo-500 transition-colors">
+            <i class="fa-solid fa-magnifying-glass text-slate-500"></i>
+            <input type="text" id="searchInput" placeholder="Buscar texto dentro das mensagens abertas..." class="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-slate-600" onkeyup="filtrarMensagens()">
+        </div>
+    </div>
+
+    <div class="flex-1 flex overflow-hidden">
+        
+        <div class="w-1/3 max-w-[350px] bg-[#0f172a]/50 border-r border-slate-800 flex flex-col z-10">
+            
+            <div class="p-4 border-b border-slate-800 bg-[#0f172a] flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"><i class="fa-solid fa-list-ol mr-1"></i> Protocolos / Atendimentos</h3>
+                    <span class="text-[10px] font-bold bg-slate-800 px-2 py-0.5 rounded text-slate-300">{{ total_atendimentos }}</span>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <div class="relative flex-1">
+                        <i class="fa-regular fa-calendar absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 text-xs"></i>
+                        <input type="date" id="filtroData" onchange="filtrarSidebar()" class="w-full bg-slate-900 border border-slate-700 text-slate-300 text-xs rounded-lg pl-8 pr-2 py-2 focus:outline-none focus:border-indigo-500 transition-colors">
+                    </div>
+                    <button onclick="document.getElementById('filtroData').value=''; filtrarSidebar();" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white rounded-lg p-2 transition-all shadow-sm" title="Limpar Filtro">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2" id="lista-sessoes">
+                {% for s in sessoes %}
+                <div class="sessao-card block p-3 rounded-xl border border-slate-700/50 bg-slate-800/40 hover:bg-slate-700/60 cursor-pointer transition-all" 
+                     data-date="{{ s.data_inicio|date:'Y-m-d' }}"
+                     id="card-{{ s.id }}"
+                     onclick="mostrarSessao('{{ s.id }}', this)">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-bold text-indigo-400"><i class="fa-solid fa-hashtag text-[10px] opacity-70"></i> {{ s.data_inicio|date:"d/m/Y - H:i" }}</span>
+                        <span class="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-slate-900 border border-slate-700">{{ s.get_status_display|truncatechars:15 }}</span>
+                    </div>
+                    <div class="flex flex-col gap-1 mt-2">
+                        <p class="text-xs text-slate-300 font-medium truncate">
+                            <i class="fa-solid fa-user-astronaut text-slate-500 w-4"></i> 
+                            {% if s.tecnico_responsavel %}{{ s.tecnico_responsavel.first_name|default:s.tecnico_responsavel.username|upper }}{% else %}SISTEMA / IA{% endif %}
+                        </p>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest"><i class="fa-solid fa-headset text-slate-600 w-4"></i> {{ s.get_setor_atual_display|default:s.setor_atual }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+                <div id="aviso-filtro-vazio" class="hidden text-center py-8 text-slate-500 text-xs font-bold uppercase tracking-widest">
+                    <i class="fa-solid fa-calendar-xmark text-2xl mb-2 block opacity-50"></i> Nenhum atendimento nesta data.
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 relative flex flex-col bg-[#020617]" style="background-image: radial-gradient(rgba(51, 65, 85, 0.15) 1px, transparent 1px); background-size: 20px 20px;">
+            
+            <div id="dashboard-cliente" class="absolute inset-0 overflow-y-auto custom-scrollbar p-8 flex flex-col">
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                    <i class="fa-solid fa-chart-simple text-indigo-500"></i> Resumo de Atendimentos
+                </h2>
+
+                <div class="grid grid-cols-3 gap-6 mb-8">
+                    <div class="bg-[#0f172a]/80 border border-slate-700 rounded-2xl p-5 shadow-lg backdrop-blur-sm relative overflow-hidden group">
+                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Volume Total</span>
+                        <div class="text-4xl font-black text-white mb-2">{{ total_atendimentos }} <span class="text-sm text-slate-500 font-medium">{% if is_group %}chats (Sessão Única){% else %}chats{% endif %}</span></div>
+                        <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest"><i class="fa-solid fa-calendar-days mr-1"></i> {{ sessoes.last.data_inicio|date:"d/m/Y" }} até Hoje</p>
+                    </div>
+
+                    {% if is_group %}
+                    <div class="bg-[#0f172a]/80 border border-slate-700 rounded-2xl p-5 shadow-lg backdrop-blur-sm relative overflow-hidden group flex flex-col">
+                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all"></div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-3">Membros Mais Ativos</span>
+                        <div class="flex flex-col gap-2.5 flex-1 justify-center">
+                            {% for membro in top_membros %}
+                                <div class="flex justify-between items-center text-sm border-b border-slate-700/50 pb-1.5 last:border-0 last:pb-0">
+                                    <span class="text-slate-200 truncate font-medium flex items-center gap-2"><i class="fa-solid fa-user-astronaut text-slate-500 text-xs"></i> {{ membro.nome }}</span>
+                                    <span class="text-amber-400 font-bold text-[10px] bg-amber-500/10 px-2 py-0.5 rounded">{{ membro.qtd }} msgs</span>
+                                </div>
+                            {% empty %}
+                                <span class="text-slate-500 text-xs italic">Nenhum membro identificado.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="bg-[#0f172a]/80 border border-slate-700 rounded-2xl p-5 shadow-lg backdrop-blur-sm relative overflow-hidden group">
+                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all"></div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Satisfação Técnica</span>
+                        <div class="text-4xl font-black text-white mb-2 flex items-baseline gap-2">
+                            {{ media_tecnico }}
+                            <div class="flex text-amber-400 text-lg">
+                                <i class="fa-solid fa-star"></i>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-amber-500/80 font-bold uppercase tracking-widest"><i class="fa-solid fa-heart mr-1"></i> NPS Geral: {{ media_nps }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="bg-[#0f172a]/80 border border-slate-700 rounded-2xl p-5 shadow-lg backdrop-blur-sm relative overflow-hidden group flex flex-col">
+                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-3">Padrão de Contato</span>
+                        
+                        <div class="flex flex-col gap-2 flex-1 justify-center">
+                            {% for momento in top_momentos %}
+                                {% if forloop.counter == 1 %}
+                                    <div class="text-base font-bold text-emerald-400 truncate flex items-center justify-between border-b border-slate-700/50 pb-1.5">
+                                        <span title="{{ momento.nome }}"><i class="fa-solid fa-fire mr-1 text-sm text-emerald-500"></i> {{ momento.nome }}</span>
+                                        <span class="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-md text-emerald-300">{{ momento.qtd }} msgs</span>
+                                    </div>
+                                {% elif forloop.counter == 2 %}
+                                    <div class="text-sm font-semibold text-slate-200 truncate flex items-center justify-between border-b border-slate-700/50 pb-1.5">
+                                        <span title="{{ momento.nome }}"><i class="fa-solid fa-temperature-half mr-1 text-xs text-amber-500 opacity-80"></i> {{ momento.nome }}</span>
+                                        <span class="text-[9px] bg-slate-700/50 px-2 py-0.5 rounded-md text-slate-300">{{ momento.qtd }} msgs</span>
+                                    </div>
+                                {% else %}
+                                    <div class="text-xs font-medium text-slate-500 truncate flex items-center justify-between">
+                                        <span title="{{ momento.nome }}"><i class="fa-solid fa-temperature-empty mr-1 text-[10px] opacity-40"></i> {{ momento.nome }}</span>
+                                        <span class="text-[8px] opacity-70">{{ momento.qtd }} msgs</span>
+                                    </div>
+                                {% endif %}
+                            {% empty %}
+                                <span class="text-slate-500 text-xs italic">Sem dados suficientes.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if is_group %}
+                <div class="bg-[#0f172a]/80 border border-slate-700 rounded-2xl p-6 shadow-lg backdrop-blur-sm flex-1 flex flex-col overflow-hidden">
+                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-widest border-b border-slate-700 pb-3 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-cloud text-sky-400"></i> Mapa de Assuntos Abordados
+                    </h3>
+                    
+                    {% if top_palavras %}
+                        <div class="flex-1 p-4 overflow-y-auto custom-scrollbar text-center" style="line-height: 1.3;">
+                            {% for p in top_palavras %}
+                            <span style="font-size: {{ p.tamanho }}rem; color: {{ p.cor }};" class="inline-block font-black hover:scale-110 transition-transform cursor-default select-none drop-shadow-sm opacity-90 hover:opacity-100 mx-2 my-1 align-middle" title="{{ p.qtd }} menções">
+                                {{ p.texto }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-10 text-slate-500">
+                            <i class="fa-solid fa-comment-slash text-3xl mb-3 opacity-50"></i>
+                            <p class="text-xs font-bold uppercase tracking-widest">Ainda não há conversas suficientes para mapear.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="bg-[#0f172a]/80 border border-slate-700 rounded-2xl p-6 shadow-lg backdrop-blur-sm flex-1">
+                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-widest border-b border-slate-700 pb-3 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-list text-slate-500"></i> Últimos Motivos de Encerramento
+                    </h3>
+                    
+                    {% if motivos_recentes %}
+                        <div class="space-y-3">
+                            {% for m in motivos_recentes %}
+                            <div class="flex items-start gap-4 p-3 bg-slate-800/40 border border-slate-700/50 rounded-xl hover:bg-slate-800 transition-colors">
+                                <div class="bg-slate-900 border border-slate-700 rounded text-center px-3 py-1.5 shrink-0">
+                                    <span class="block text-xs font-bold text-slate-400">{{ m.data|date:"d/m" }}</span>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-slate-200 font-medium mb-1 break-words">"{{ m.motivo }}"</p>
+                                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"><i class="fa-solid fa-user-astronaut mr-1"></i> Por: {{ m.tecnico }}</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-10 text-slate-500">
+                            <i class="fa-solid fa-inbox text-3xl mb-3 opacity-50"></i>
+                            <p class="text-xs font-bold uppercase tracking-widest">Nenhum motivo de encerramento registrado recentemente.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            {% for s in sessoes %}
+            <div id="mensagens-sessao-{{ s.id }}" class="container-mensagens absolute inset-0 overflow-y-auto custom-scrollbar p-6 flex flex-col space-y-4 hidden">
+                
+                <div class="self-start mb-2">
+                    <button onclick="mostrarDashboard()" class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 hover:text-white bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Voltar ao Resumo
+                    </button>
+                </div>
+
+                <div class="self-center bg-indigo-900/20 border border-indigo-700/30 text-indigo-400 text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4 shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-check"></i> Atendimento: {{ s.data_inicio|date:"d/m/Y H:i" }}
+                </div>
+
+                {% for msg in s.messages.all %}
+                <div class="msg-item flex w-full {% if msg.sender_type == 'CLIENTE' %}justify-start{% elif msg.sender_type in 'TECNICO,SISTEMA,INTERNO' %}justify-end{% else %}justify-center{% endif %}">
+                    
+                    {% if msg.sender_type == 'SISTEMA' %}
+                        <div class="bg-slate-800/80 border border-slate-700 text-slate-400 text-[10px] font-bold uppercase tracking-wide px-4 py-1.5 rounded-lg text-center max-w-[80%]">
+                            <i class="fa-solid fa-robot mr-1"></i> <span class="msg-texto">{{ msg.text }}</span>
+                            <div class="text-[8px] mt-1 opacity-50">{{ msg.timestamp|date:"d/m/Y H:i" }}</div>
+                        </div>
+                    {% elif msg.sender_type == 'INTERNO' %}
+                        <div class="balao-interno text-amber-500 text-[11px] p-3 max-w-[80%]">
+                            <div class="font-bold text-[9px] uppercase tracking-widest border-b border-amber-500/20 pb-1 mb-1 opacity-80"><i class="fa-solid fa-lock mr-1"></i> {% if msg.tecnico %}{{ msg.tecnico.first_name }}{% else %}SISTEMA{% endif %} (Nota Interna)</div>
+                            <span class="msg-texto font-medium whitespace-pre-wrap">{{ msg.text }}</span>
+                            <div class="text-[9px] text-right mt-1 opacity-60">{{ msg.timestamp|date:"d/m/Y H:i" }}</div>
+                        </div>
+                    {% elif msg.sender_type == 'IA' %}
+                        <div class="balao-ia text-slate-300 text-[12px] p-3 max-w-[80%]">
+                            <div class="font-bold text-[9px] text-amber-400 uppercase tracking-widest border-b border-slate-700 pb-1 mb-1"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Inteligência Artificial</div>
+                            <span class="msg-texto whitespace-pre-wrap">{{ msg.text }}</span>
+                            <div class="text-[9px] text-right mt-1 opacity-50">{{ msg.timestamp|date:"d/m/Y H:i" }}</div>
+                        </div>
+                    {% else %}
+                        <div class="{% if msg.sender_type == 'CLIENTE' %}balao-cliente{% else %}balao-tecnico{% endif %} p-3 max-w-[80%] shadow-md text-[13px]">
+                            
+                            {% if msg.sender_type == 'TECNICO' %}
+                                <div class="font-bold text-[9px] text-emerald-400 uppercase tracking-widest border-b border-slate-700/50 pb-1 mb-1 flex items-center gap-1">
+                                    <i class="fa-solid fa-user-astronaut"></i> {% if msg.tecnico %}{{ msg.tecnico.first_name|default:msg.tecnico.username }}{% else %}TÉCNICO{% endif %}
+                                </div>
+                            {% endif %}
+
+                            <div class="msg-texto whitespace-pre-wrap">{{ msg.text }}</div>
+                            
+                            {% if msg.media_url %}
+                                <div class="mt-2 rounded overflow-hidden border border-slate-700/30">
+                                    {% if 'audio' in msg.media_url or 'ogg' in msg.media_url or 'mp3' in msg.media_url %}
+                                        <audio src="{{ msg.media_url }}" controls class="h-8 w-full outline-none" style="color-scheme: dark;"></audio>
+                                    {% elif 'mp4' in msg.media_url %}
+                                        <video src="{{ msg.media_url }}" controls class="max-h-60 rounded"></video>
+                                    {% else %}
+                                        <a href="{{ msg.media_url }}" target="_blank">
+                                            <img src="{{ msg.media_url }}" class="max-h-60 rounded object-contain hover:opacity-80 transition-opacity">
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            <div class="text-[9px] text-right mt-1.5 opacity-50 flex justify-end items-center gap-1">
+                                {{ msg.timestamp|date:"d/m/Y H:i" }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            
+            <div id="aviso-vazio" class="hidden absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-[#020617]/90 z-50">
+                <i class="fa-solid fa-ghost text-4xl mb-3 opacity-50"></i>
+                <p class="font-bold uppercase tracking-widest text-xs">Nenhuma mensagem encontrada</p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function mostrarSessao(id, element) {
+            // Esconde Dashboard e outras sessões
+            document.getElementById('dashboard-cliente').classList.add('hidden');
+            document.querySelectorAll('.container-mensagens').forEach(el => el.classList.add('hidden'));
+            
+            // Mostra a selecionada
+            const box = document.getElementById('mensagens-sessao-' + id);
+            if(box) {
+                box.classList.remove('hidden');
+                box.scrollTop = box.scrollHeight;
+            }
+            
+            // Visual Menu
+            document.querySelectorAll('.sessao-card').forEach(el => {
+                el.classList.remove('border-indigo-500/50', 'bg-slate-800');
+            });
+            if(element) element.classList.add('border-indigo-500/50', 'bg-slate-800');
+        }
+
+        function mostrarDashboard() {
+            document.querySelectorAll('.container-mensagens').forEach(el => el.classList.add('hidden'));
+            document.getElementById('dashboard-cliente').classList.remove('hidden');
+            document.querySelectorAll('.sessao-card').forEach(el => {
+                el.classList.remove('border-indigo-500/50', 'bg-slate-800');
+            });
+        }
+
+        // Filtro da Lateral (Por Data)
+        function filtrarSidebar() {
+            let dataFiltro = document.getElementById('filtroData').value;
+            let cards = document.querySelectorAll('.sessao-card');
+            let visiveis = 0;
+
+            cards.forEach(card => {
+                if (dataFiltro === '' || card.getAttribute('data-date') === dataFiltro) {
+                    card.style.display = 'block';
+                    visiveis++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            if(visiveis === 0) {
+                document.getElementById('aviso-filtro-vazio').classList.remove('hidden');
+            } else {
+                document.getElementById('aviso-filtro-vazio').classList.add('hidden');
+            }
+        }
+
+        // Filtro Interno (Texto nas Mensagens)
+        function filtrarMensagens() {
+            let input = document.getElementById('searchInput').value.toLowerCase();
+            if (input === '') {
+                document.querySelectorAll('.msg-item').forEach(msg => msg.style.display = 'flex');
+                document.getElementById('aviso-vazio').classList.add('hidden');
+                return;
+            }
+
+            let sessaoAtiva = document.querySelector('.container-mensagens:not(.hidden)');
+            if (sessaoAtiva) {
+                let mensagens = sessaoAtiva.querySelectorAll('.msg-item');
+                let achouNaSessao = false;
+                
+                mensagens.forEach(msg => {
+                    let textoElemento = msg.querySelector('.msg-texto');
+                    if (textoElemento && textoElemento.innerText.toLowerCase().includes(input)) {
+                        msg.style.display = 'flex';
+                        achouNaSessao = true;
+                    } else {
+                        msg.style.display = 'none';
+                    }
+                });
+
+                if(!achouNaSessao) document.getElementById('aviso-vazio').classList.remove('hidden');
+                else document.getElementById('aviso-vazio').classList.add('hidden');
+            } else {
+                alert("Por favor, selecione um atendimento na barra lateral para buscar palavras dentro dele.");
+                document.getElementById('searchInput').value = '';
+            }
+        }
+    </script>
+</body>
+</html>

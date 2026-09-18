@@ -1,0 +1,829 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="rgb(var(--c-bg))">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="UnionApp">
+    <link rel="manifest" href="/static/whatsapp_bot/pwa/manifest.json">
+    <link rel="apple-touch-icon" href="/static/whatsapp_bot/pwa/apple-touch-icon.png">
+    <link rel="icon" href="/static/whatsapp_bot/pwa/icon-192.png">
+    <title>UnionApp</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      /* Mesmo design system do base.html — sem isto as classes core/ink/accent não existem
+         (esta página é standalone, não estende o base). */
+      tailwind.config = {
+        darkMode: ['class', '[data-theme="dark"]'],
+        theme: { extend: { colors: {
+          core:   { bg:'rgb(var(--c-bg) / <alpha-value>)', deep:'rgb(var(--c-deep) / <alpha-value>)',
+                    panel:'rgb(var(--c-panel) / <alpha-value>)', line:'rgb(var(--c-line) / <alpha-value>)' },
+          ink:    { DEFAULT:'rgb(var(--c-ink) / <alpha-value>)', soft:'rgb(var(--c-ink-soft) / <alpha-value>)',
+                    faint:'rgb(var(--c-ink-faint) / <alpha-value>)' },
+          accent: { DEFAULT:'rgb(var(--c-accent) / <alpha-value>)', soft:'rgb(var(--c-accent-soft) / <alpha-value>)',
+                    deep:'rgb(var(--c-accent-deep) / <alpha-value>)' },
+          signal:  { DEFAULT:'rgb(var(--c-signal) / <alpha-value>)' },
+          success: { DEFAULT:'rgb(var(--c-success) / <alpha-value>)' },
+          warn:    { DEFAULT:'rgb(var(--c-warn) / <alpha-value>)' },
+          danger:  { DEFAULT:'rgb(var(--c-danger) / <alpha-value>)' },
+          special: { DEFAULT:'rgb(var(--c-special) / <alpha-value>)' },
+        } } }
+      }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- ═══ TOKENS DE TEMA (faltavam — por isso o botão de tema não fazia nada) ═══ -->
+    <style>
+      :root, html[data-theme="dark"] {
+        --c-bg:5 7 12; --c-deep:10 14 23; --c-panel:13 18 32; --c-line:27 35 51;
+        --c-bubble-in:13 18 32;
+        --c-ink:226 232 240; --c-ink-soft:148 163 184; --c-ink-faint:100 116 139;
+        --c-accent:61 90 254; --c-accent-soft:124 155 255; --c-accent-deep:26 42 128; --c-signal:0 217 163;
+        --c-success:47 212 142; --c-warn:245 184 61; --c-danger:240 98 93; --c-special:181 140 255;
+        color-scheme: dark;
+      }
+      html[data-theme="gray"] {
+        --c-bg:33 37 44; --c-deep:39 44 52; --c-panel:44 49 58; --c-line:62 68 79;
+        --c-bubble-in:44 49 58;
+        --c-ink:230 232 236; --c-ink-soft:165 172 183; --c-ink-faint:122 130 142;
+        --c-accent:106 134 255; --c-accent-soft:148 168 255; --c-accent-deep:55 74 160; --c-signal:44 200 158;
+        --c-success:56 199 140; --c-warn:235 181 76; --c-danger:233 108 103; --c-special:176 143 245;
+        color-scheme: dark;
+      }
+      html[data-theme="light"] {
+        --c-bg:230 226 218; --c-deep:240 236 228; --c-panel:248 245 239; --c-line:216 210 198;
+        --c-bubble-in:227 220 205;
+        --c-ink:33 31 27; --c-ink-soft:82 78 70; --c-ink-faint:130 124 112;
+        --c-accent:166 122 22; --c-accent-soft:197 152 46; --c-accent-deep:122 88 12; --c-signal:12 138 106;
+        --c-success:13 128 84; --c-warn:180 83 9; --c-danger:185 28 28; --c-special:109 40 217;
+        color-scheme: light;
+      }
+    </style>
+
+    <style>
+        :root{
+            --bg-app:rgb(var(--c-bg));        /* fundo da lista/chat — igual ao dark mode do WhatsApp */
+            --bg-header:rgb(var(--c-line));     /* cabeçalho e composer */
+            --bg-row:rgb(var(--c-bg));        /* linhas da lista */
+            --bubble-in:rgb(var(--c-line));     /* mensagem recebida */
+            --bubble-out:rgb(var(--c-success) / 0.3);    /* mensagem enviada */
+            --accent:rgb(var(--c-success));        /* verde de ação: enviar, online, badge, aba ativa */
+            --line: rgb(var(--c-line));            /* borda tematizada (antes era branco fixo — sumia no claro) */
+            --text:rgb(var(--c-ink)); --text-dim:rgb(var(--c-ink-faint));
+            --note:rgb(var(--c-warn) / 0.2); --note-line:rgb(var(--c-warn) / 0.3); --note-text:rgb(var(--c-warn));
+        }
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        html, body { height: 100%; overscroll-behavior-y: contain; }
+        body{
+            height: 100vh;
+            height: 100dvh; /* altura real visível — desconta a UI do navegador que o 100vh ignora */
+            background-color: var(--bg-app);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+        }
+        .hide-scroll::-webkit-scrollbar{ display:none; }
+        .hide-scroll{ -ms-overflow-style:none; scrollbar-width:none; }
+        .safe-top{ padding-top: max(env(safe-area-inset-top), 12px); }
+        .safe-bottom{ padding-bottom: max(env(safe-area-inset-bottom), 18px); }
+        .live-dot{ animation: pulse-dot 2s ease-in-out infinite; } @keyframes pulse-dot{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+        .status-dot{ width:7px; height:7px; border-radius:999px; background:var(--accent); }
+
+        .ponto-btn{ transition: transform .12s ease; }
+        .ponto-btn:active{ transform: scale(.94); }
+
+        .tab-btn{ transition: all .15s ease; }
+        .tab-btn.active{ background: rgba(37,211,102,.14); border-color: rgba(37,211,102,.5); color: var(--accent); }
+
+        .conversa-item{ transition: background .12s ease; }
+        .conversa-item:active{ background: rgb(var(--c-panel)); }
+        .badge-nao-lida{ min-width:20px; height:20px; box-shadow:0 0 8px rgba(37,211,102,.4); }
+
+        .chat-loading{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:80px 20px; }
+
+        /* =====================================================================
+           AJUSTES MOBILE PARA O PARTIAL messages_list.html (injetado via fetch)
+           Escopado aqui — o arquivo original (compartilhado com o PC) não é tocado.
+        ===================================================================== */
+        #lista-conversas [id^="drop-zone-"]{ background: var(--bg-app) !important; }
+
+        #lista-conversas [class*="min-h-[68px]"]{
+            flex-wrap: nowrap !important;
+            min-height: 58px !important;
+            padding: 8px 10px !important;
+            gap: 8px !important;
+            background: var(--bg-header) !important;
+            border-bottom: 1px solid var(--line) !important;
+        }
+        #lista-conversas [class*="min-h-[68px]"] [class*="mt-1.5"][class*="flex-wrap"]{ display:none !important; }
+        #lista-conversas .head-btn{
+            width:32px !important; height:32px !important; border-radius:999px !important;
+            background: rgba(255,255,255,.06) !important; border: none !important;
+        }
+        #lista-conversas button:has(i.fa-link){ display:none !important; }
+        #lista-conversas button:has(> i.fa-wand-magic-sparkles),
+        #lista-conversas button:has(> i.fa-file-lines){ display:none !important; }
+        #lista-conversas button:has(> i.fa-regular.fa-face-smile){ display:none !important; }
+
+        /* balões: recoloridos pro visual WhatsApp */
+        #lista-conversas .balao-tecnico{
+            background: var(--bubble-out) !important; border: none !important;
+            border-radius: 10px 3px 10px 10px !important; box-shadow: 0 1px 2px rgba(0,0,0,.35) !important;
+        }
+        #lista-conversas .balao-tecnico::before{ display:none !important; }
+        #lista-conversas .balao-cliente{
+            background: var(--bubble-in) !important; border: none !important;
+            border-radius: 3px 10px 10px 10px !important; box-shadow: 0 1px 2px rgba(0,0,0,.35) !important;
+        }
+
+        /* rodapé do composer (+ variações "assumir"/"em atendimento por outro") */
+        #lista-conversas [class*="border-t"][class*="shrink-0"]{
+            background: var(--bg-header) !important;
+            padding-bottom: max(env(safe-area-inset-bottom), 22px) !important;
+        }
+        #lista-conversas .composer-btn{ border-radius: 999px !important; }
+        #lista-conversas #container-inputs-texto textarea,
+        #lista-conversas #container-inputs-texto input[type="text"]{ border-radius: 999px !important; }
+
+        /* gravação de áudio funciona no cel também */
+        #lista-conversas #btn-gravar-audio.gravando{
+            background: rgb(var(--c-danger)) !important; color:#fff !important;
+        }
+
+        /* nota interna: botão redondo com ícone de cadeado, do tamanho dos outros botões da linha */
+        #lista-conversas label:has(#check-interno){
+            width: 44px !important; height: 44px !important; padding: 0 !important;
+            justify-content: center !important; border-radius: 999px !important;
+            margin: 0 0 2px 0 !important; flex-shrink: 0;
+            background: rgba(255,255,255,.06) !important; border: none !important;
+        }
+        #lista-conversas label:has(#check-interno) > div,
+        #lista-conversas label:has(#check-interno) > span{ display:none !important; }
+        #lista-conversas label:has(#check-interno) i.nota-interna-icone{ font-size: 15px; color:rgb(var(--c-ink-soft)); }
+        #lista-conversas label:has(#check-interno:checked){ background: rgba(240,200,105,.16) !important; }
+        #lista-conversas label:has(#check-interno:checked) i.nota-interna-icone{ color: var(--note-text); }
+        #lista-conversas .pl-\[52px\]{ display:none !important; }
+
+        /* toque-longo pra revelar responder/editar/apagar (não existe :hover no celular) */
+        #lista-conversas .group.acoes-abertas > div:first-child{ opacity:1 !important; }
+    </style>
+</head>
+<body class="flex flex-col overflow-hidden">
+
+    <!-- ===================== HEADER ===================== -->
+    <header id="app-header" class="safe-top px-4 pb-3 shrink-0 z-30" style="background:var(--bg-header); border-bottom:1px solid var(--line);">
+        <div class="flex items-center justify-between gap-3 mb-3">
+            <div class="min-w-0">
+                <h1 class="text-[19px] font-bold leading-none truncate">Atendimentos</h1>
+                <span class="text-[11px] text-ink-soft font-medium flex items-center gap-1.5 mt-1.5">
+                    <span class="status-dot live-dot"></span> Central LÓGICA.DESK
+                </span>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <!-- Botão de tema (cicla dark → gray → light) -->
+                <button type="button" onclick="toggleThemeMobile()" aria-label="Alternar tema"
+                        class="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                        style="background: rgba(255,255,255,.07); border:1px solid var(--line);">
+                    <i id="theme-icon-mobile" class="fa-solid fa-circle-half-stroke text-[14px]" style="color:var(--text);"></i>
+                </button>
+
+                <!-- Botão de Ponto: pílula com ícone + texto, bem explícito -->
+                <a id="ponto-btn" href="{% url 'controle_horas:bater_ponto_rapido' %}?next={{ request.path|urlencode }}"
+                   class="ponto-btn relative flex items-center gap-1.5 pl-2.5 pr-3 h-9 rounded-full shrink-0"
+                   style="background: rgba(37,211,102,.12); border:1px solid rgba(37,211,102,.35);"
+                   title="{{ status_ponto }} — toque para {{ proximo_label_ponto }}">
+                    <i id="ponto-btn-icon" class="fa-regular fa-clock text-[13px]" style="color:var(--accent);"></i>
+                    <span id="ponto-btn-label" class="text-[11.5px] font-semibold" style="color:var(--accent);">Ponto</span>
+                    <span class="status-dot absolute -top-0.5 -right-0.5" style="box-shadow:0 0 0 2px var(--bg-header); {% if status_ponto_cor == 'neutral' %}background:rgb(var(--c-ink-faint));{% elif status_ponto_cor == 'pause' %}background:rgb(var(--c-warn));{% elif status_ponto_cor == 'done' %}background:rgb(var(--c-accent));{% endif %}"></span>
+                </a>
+
+                <!-- Botão de Atualização: só aparece via JS quando dentro da janela 18:30–07:30 -->
+                <a id="ponto-att-btn" href="{% url 'controle_horas:painel' %}?abrir=atualizacao"
+                   class="ponto-btn relative flex items-center gap-1.5 pl-2.5 pr-3 h-9 rounded-full shrink-0"
+                   style="display:none; background: rgba(99,102,241,.14); border:1px solid rgba(99,102,241,.4);"
+                   title="Registrar Atualização — vincule o cliente e bata o ponto">
+                    <i class="fa-solid fa-arrows-rotate text-[13px]" style="color:#818cf8;"></i>
+                    <span class="text-[11.5px] font-semibold" style="color:#818cf8;">Att</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint text-[13px]"></i>
+            <input type="text" id="busca-mobile" oninput="window.filtrarListaMobile()" placeholder="Buscar cliente, número..."
+                   class="w-full rounded-full py-2.5 pl-9 pr-3 text-[13.5px] font-medium focus:outline-none placeholder:text-ink-faint"
+                   style="background: rgba(255,255,255,.07); color:var(--text); border:none;">
+        </div>
+    </header>
+
+    <script>
+    (function () {
+        // Consulta o status de Escala/Home Office e da janela de Atualização
+        // direto na API do app controle_horas — sem depender de nenhuma
+        // variável nova vinda da view do whatsapp_bot.
+        fetch("{% url 'controle_horas:api_meu_status_ponto' %}", { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (dados) {
+                if (!dados) return;
+
+                var pontoBtn = document.getElementById('ponto-btn');
+                var pontoIcon = document.getElementById('ponto-btn-icon');
+                var pontoLabel = document.getElementById('ponto-btn-label');
+                var attBtn = document.getElementById('ponto-att-btn');
+
+                if (!dados.tem_home_office_hoje) {
+                    // Sem Home Office hoje: deixa a pílula em âmbar e manda
+                    // pro cockpit (lá tem o "Lançamento manual" e, se for o
+                    // caso, o botão de Atualização) em vez de bater direto
+                    // e tomar o aviso de bloqueio.
+                    pontoBtn.style.background = 'rgba(240,166,35,.14)';
+                    pontoBtn.style.borderColor = 'rgba(240,166,35,.4)';
+                    pontoIcon.style.color = '#f0a623';
+                    pontoIcon.className = 'fa-solid fa-house-circle-xmark text-[13px]';
+                    pontoLabel.style.color = '#f0a623';
+                    pontoLabel.textContent = 'Sem Home';
+                    pontoBtn.href = "{% url 'controle_horas:painel' %}";
+                    pontoBtn.title = 'Sem Home Office agendado hoje — toque para ver as opções (plantão manual, etc.)';
+                }
+
+                if (dados.pode_registrar_atualizacao) {
+                    attBtn.style.display = 'flex';
+                }
+            })
+            .catch(function () { /* silencioso: pílula fica no estado padrão */ });
+    })();
+    </script>
+
+
+    <!-- ===================== ABAS ===================== -->
+    <div id="app-toolbar" class="shrink-0 z-20 px-3 pt-2.5 pb-2" style="background:var(--bg-app); border-bottom:1px solid var(--line);">
+        <div class="flex gap-1.5 overflow-x-auto hide-scroll">
+            <button onclick="window.filtrarAbaMobile('pendente', this)" class="tab-btn active whitespace-nowrap shrink-0 px-3 py-1.5 rounded-full border border-core-line/50 text-[11px] font-semibold text-ink-soft">Novos</button>
+            <button onclick="window.filtrarAbaMobile('meus', this)" class="tab-btn whitespace-nowrap shrink-0 px-3 py-1.5 rounded-full border border-core-line/50 text-[11px] font-semibold text-ink-soft">Meus</button>
+            <button onclick="window.filtrarAbaMobile('todos', this)" class="tab-btn whitespace-nowrap shrink-0 px-3 py-1.5 rounded-full border border-core-line/50 text-[11px] font-semibold text-ink-soft">Todos</button>
+            <button onclick="window.filtrarAbaMobile('grupos', this)" class="tab-btn whitespace-nowrap shrink-0 px-3 py-1.5 rounded-full border border-core-line/50 text-[11px] font-semibold text-ink-soft">Grupos</button>
+            <button onclick="window.filtrarAbaMobile('fechados', this)" class="tab-btn whitespace-nowrap shrink-0 px-3 py-1.5 rounded-full border border-core-line/50 text-[11px] font-semibold text-ink-soft">Fechados</button>
+            <button onclick="window.filtrarAbaMobile('nao_lidas', this)" class="tab-btn whitespace-nowrap shrink-0 px-3 py-1.5 rounded-full border border-core-line/50 text-[11px] font-semibold text-ink-soft">Não lidos</button>
+        </div>
+    </div>
+
+    <!-- ===================== ÁREA PRINCIPAL ===================== -->
+    <main id="app-main" class="flex-1 overflow-y-auto hide-scroll safe-bottom" style="background:var(--bg-app);">
+        <div id="lista-conversas">
+            {% for s in sessions %}
+            <div class="conversa-item flex items-center gap-3 px-4 py-3 cursor-pointer"
+                 style="border-bottom:1px solid var(--line);"
+                 data-name="{{ s.cliente.razao_social|default:s.push_name|default:s.whatsapp_number|lower }}"
+                 data-unread="{% if s.mensagens_nao_lidas > 0 %}1{% else %}0{% endif %}"
+                 data-tipo="{% if '@g.us' in s.whatsapp_number %}grupos{% elif s.status == 'FINALIZADO' or 'AVALIACAO' in s.status %}fechados{% elif s.tecnico_responsavel_id == request.user.id %}meus{% elif s.tecnico_responsavel %}outros{% else %}pendente{% endif %}"
+                 onclick="window.abrirChatMobile({{ s.id }})">
+
+                <div class="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden shrink-0 relative" style="background:rgb(var(--c-line));">
+                    {% if s.profile_pic %}
+                        <img src="{{ s.profile_pic }}" class="w-full h-full object-cover" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
+                        <i class="fa-solid {% if '@g.us' in s.whatsapp_number %}fa-users{% else %}fa-user{% endif %} text-ink-faint hidden"></i>
+                    {% else %}
+                        <i class="fa-solid {% if '@g.us' in s.whatsapp_number %}fa-users{% else %}fa-user{% endif %} text-ink-faint"></i>
+                    {% endif %}
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-center gap-2 mb-1">
+                        <h3 class="font-semibold text-[15px] truncate">{{ s.cliente.razao_social|default:s.push_name|default:s.whatsapp_number|cut:"@lid"|cut:"@s.whatsapp.net"|cut:"@g.us" }}</h3>
+                        <span class="text-[11.5px] text-ink-soft shrink-0">{{ s.ultima_interacao|date:"H:i" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                        {% if s.tecnico_responsavel %}
+                            <span class="text-[12px] truncate flex items-center gap-1.5" style="color:var(--accent);">
+                                <i class="fa-solid fa-user-check text-[10px]"></i> {{ s.tecnico_responsavel.first_name|default:s.tecnico_responsavel.username }}
+                            </span>
+                        {% elif s.setor_atual %}
+                            <span class="text-[12px] text-ink-soft truncate flex items-center gap-1.5">
+                                <i class="fa-solid fa-users-viewfinder text-[10px]"></i> {{ s.get_setor_atual_display }}
+                            </span>
+                        {% else %}
+                            <span class="text-[12px] truncate flex items-center gap-1.5" style="color:rgb(var(--c-warn));">
+                                <i class="fa-solid fa-robot text-[10px] live-dot"></i> IA em triagem
+                            </span>
+                        {% endif %}
+
+                        {% if s.mensagens_nao_lidas > 0 %}
+                            <span class="badge-nao-lida px-1.5 rounded-full flex items-center justify-center text-[10px] font-extrabold shrink-0" style="background:var(--accent); color:rgb(var(--c-bg));">{{ s.mensagens_nao_lidas }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="flex flex-col items-center justify-center text-center py-24 px-6">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4" style="background:rgba(37,211,102,.1); border:1px solid rgba(37,211,102,.25);">
+                    <i class="fa-solid fa-satellite-dish text-2xl" style="color:var(--accent);"></i>
+                </div>
+                <p class="text-[14px] font-semibold text-ink-soft mb-1">Nenhum atendimento por aqui</p>
+                <p class="text-[11.5px] text-ink-faint leading-relaxed">As conversas mais recentes vão aparecer nesta lista.</p>
+            </div>
+            {% endfor %}
+        </div>
+        <p id="msg-sem-resultado" class="hidden text-center text-[12px] text-ink-faint py-16">Nenhuma conversa encontrada.</p>
+    </main>
+
+    <!-- ===================== MODAL MOBILE: TRANSFERIR ===================== -->
+    <div id="mobileModalTransferir" class="hidden fixed inset-0 bg-core-bg/70 backdrop-blur-sm z-[200] flex items-end">
+        <div class="w-full rounded-t-3xl p-5 safe-bottom" style="background:var(--bg-header);">
+            <h3 class="text-ink font-bold text-[15px] mb-4">Transferir para qual fila?</h3>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <button onclick="window.confirmarTransferMobile('SUPORTE')" class="py-3 rounded-xl text-[12px] font-bold" style="background:rgba(37,211,102,.12); border:1px solid rgba(37,211,102,.35); color:var(--accent);">Suporte</button>
+                <button onclick="window.confirmarTransferMobile('ASSISTENCIA')" class="py-3 rounded-xl text-[12px] font-bold" style="background:rgba(240,200,105,.12); border:1px solid rgba(240,200,105,.35); color:var(--note-text);">Assistência</button>
+                <button onclick="window.confirmarTransferMobile('COMERCIAL')" class="py-3 rounded-xl text-[12px] font-bold" style="background:rgba(91,157,255,.12); border:1px solid rgba(91,157,255,.35); color:rgb(var(--c-accent));">Comercial</button>
+                <button onclick="window.confirmarTransferMobile('FINANCEIRO')" class="py-3 rounded-xl text-[12px] font-bold" style="background:rgba(196,141,255,.12); border:1px solid rgba(196,141,255,.35); color:rgb(var(--c-special));">Financeiro</button>
+            </div>
+            <button onclick="document.getElementById('mobileModalTransferir').classList.add('hidden')" class="w-full py-2.5 rounded-xl text-[12px] font-bold text-ink-soft" style="background:rgba(255,255,255,.06);">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- ===================== MODAL MOBILE: ENCERRAR ===================== -->
+    <div id="mobileModalEncerrar" class="hidden fixed inset-0 bg-core-bg/70 backdrop-blur-sm z-[200] flex items-end">
+        <div class="w-full rounded-t-3xl p-5 safe-bottom" style="background:var(--bg-header);">
+            <h3 class="text-ink font-bold text-[15px] mb-3">Finalizar atendimento</h3>
+            <input type="text" id="mobile-encerrar-motivo" placeholder="Motivo (ex: Problema resolvido)"
+                   class="w-full rounded-xl py-2.5 px-3 text-[13px] text-ink mb-3 focus:outline-none"
+                   style="background: rgba(255,255,255,.07); border:1px solid var(--line);">
+            <div class="flex gap-2">
+                <button onclick="document.getElementById('mobileModalEncerrar').classList.add('hidden')" class="flex-1 py-2.5 rounded-xl text-[12px] font-bold text-ink-soft" style="background:rgba(255,255,255,.06);">Cancelar</button>
+                <button onclick="window.confirmarEncerrarMobile()" class="flex-1 py-2.5 rounded-xl text-[12px] font-bold text-ink bg-red-600">Finalizar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ── Tema (cicla dark → gray → light), sincronizado com o resto do sistema ──
+    (function aplicarTemaSalvo() {
+        var saved = localStorage.getItem('union_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
+    })();
+    function toggleThemeMobile() {
+        var ciclo = ['dark', 'gray', 'light'];
+        var atual = document.documentElement.getAttribute('data-theme') || 'dark';
+        var proximo = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
+        document.documentElement.setAttribute('data-theme', proximo);
+        localStorage.setItem('union_theme', proximo);
+    }
+
+    // Zoom de imagem (o script do partial não roda quando injetado via innerHTML)
+    window.abrirZoom = function(src) {
+        var img = document.getElementById('zoomImage');
+        var link = document.getElementById('zoomAbrirGuia');
+        var modal = document.getElementById('modalZoom');
+        if (img) img.src = src;
+        if (link) link.href = src;
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    // Agrupa mensagens consecutivas do mesmo lado (mesma lógica do desktop)
+    window.agruparMensagens = function() {
+        var cont = document.getElementById('historia-mensagens');
+        if (!cont) return;
+        var linhas = cont.querySelectorAll('.msg-linha[data-lado]');
+        var anterior = null;
+        linhas.forEach(function(linha) {
+            linha.classList.remove('colada', 'tem-colada');
+            if (anterior && anterior.dataset.lado === linha.dataset.lado) {
+                linha.classList.add('colada');
+                anterior.classList.add('tem-colada');
+            }
+            anterior = linha;
+        });
+    };
+    </script>
+    <script>
+        // ===================== HELPERS =====================
+        function getCsrf() {
+            let csrf = '';
+            document.cookie.split(';').forEach(c => { if (c.trim().startsWith('csrftoken=')) csrf = c.trim().substring(10); });
+            return csrf;
+        }
+
+        function scrollChatParaFim() {
+            const chatArea = document.getElementById('historia-mensagens');
+            if (!chatArea) return;
+            chatArea.scrollTop = chatArea.scrollHeight;
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => { chatArea.scrollTop = chatArea.scrollHeight; });
+            });
+            setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 300);
+            chatArea.querySelectorAll('img').forEach(img => {
+                if (!img.complete) img.addEventListener('load', () => { chatArea.scrollTop = chatArea.scrollHeight; });
+            });
+        }
+
+        // Troca o toggle "Nota Interna" (chave + texto) por um botãozinho só com ícone de cadeado
+        function compactarNotaInterna() {
+            const label = document.querySelector('#lista-conversas label:has(#check-interno)');
+            if (label && !label.querySelector('.nota-interna-icone')) {
+                const icone = document.createElement('i');
+                icone.className = 'fa-solid fa-lock nota-interna-icone';
+                label.appendChild(icone);
+                label.title = 'Marcar como nota interna (só a equipe vê)';
+            }
+        }
+
+        // Move o toggle de nota interna pra linha principal do composer, no lugar do emoji
+        function moverNotaInternaMobile() {
+            const container = document.getElementById('container-inputs-texto');
+            const label = document.querySelector('#lista-conversas label:has(#check-interno)');
+            const btnEnviar = container ? container.querySelector('button[onclick*="enviarMensagem"]') : null;
+            if (container && label && btnEnviar && label.parentElement !== container) {
+                container.insertBefore(label, btnEnviar);
+            }
+        }
+
+        // Toque longo numa mensagem revela responder/editar/apagar (não existe :hover no celular)
+        function habilitarAcoesTouch() {
+            document.querySelectorAll('#lista-conversas .group').forEach(grupo => {
+                if (grupo.dataset.acoesWired) return;
+                grupo.dataset.acoesWired = '1';
+                const bolha = grupo.querySelector('.balao-cliente, .balao-tecnico');
+                if (!bolha) return;
+
+                let timer;
+                bolha.addEventListener('touchstart', () => {
+                    timer = setTimeout(() => {
+                        document.querySelectorAll('#lista-conversas .group.acoes-abertas').forEach(g => g.classList.remove('acoes-abertas'));
+                        grupo.classList.add('acoes-abertas');
+                        if (navigator.vibrate) navigator.vibrate(15);
+                    }, 420);
+                }, { passive: true });
+                ['touchend', 'touchmove', 'touchcancel'].forEach(ev => bolha.addEventListener(ev, () => clearTimeout(timer)));
+            });
+        }
+        document.addEventListener('touchstart', (e) => {
+            if (!e.target.closest('.group.acoes-abertas')) {
+                document.querySelectorAll('#lista-conversas .group.acoes-abertas').forEach(g => g.classList.remove('acoes-abertas'));
+            }
+        }, { passive: true });
+
+        // ===================== ABRIR / FECHAR CHAT =====================
+        let sessaoAtivaMobileId = null;
+        let mediaRecorderMobile = null;
+        let audioChunksMobile = [];
+        let isRecordingMobile = false;
+
+        window.abrirChatMobile = function(sessionId, silencioso) {
+            sessaoAtivaMobileId = sessionId;
+            const header = document.getElementById('app-header');
+            const toolbar = document.getElementById('app-toolbar');
+            const listWrap = document.getElementById('lista-conversas');
+
+            if (!silencioso) {
+                toolbar.classList.add('hidden');
+
+                listWrap.innerHTML = `
+                    <div class="chat-loading">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl" style="color:var(--accent);"></i>
+                        <span class="text-[12px] text-ink-faint font-medium">Abrindo conversa...</span>
+                    </div>`;
+
+                header.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <button onclick="window.fecharChatMobile()" class="w-9 h-9 rounded-full flex items-center justify-center text-ink-soft shrink-0" style="background:rgba(255,255,255,.06);">
+                            <i class="fa-solid fa-arrow-left text-[14px]"></i>
+                        </button>
+                        <span class="text-[15px] font-semibold text-ink">Voltar aos chats</span>
+                    </div>`;
+            }
+
+            fetch(`/whatsapp-bot/chat/${sessionId}/`)
+            .then(r => r.text())
+            .then(html => {
+                listWrap.innerHTML = html;
+                listWrap.classList.add('h-full');
+                compactarNotaInterna();
+                moverNotaInternaMobile();
+                habilitarAcoesTouch();
+                if (window.agruparMensagens) window.agruparMensagens();
+                scrollChatParaFim();
+                // Teclado só abre quando o técnico tocar na caixa de digitação — sem foco automático aqui.
+            })
+            .catch(() => {
+                listWrap.innerHTML = `<div class="chat-loading text-rose-400 text-[12px]">Não foi possível carregar a conversa. <button onclick="location.reload()" class="underline">Tentar novamente</button></div>`;
+            });
+        }
+
+        window.fecharChatMobile = function() {
+            sessaoAtivaMobileId = null;
+            location.reload();
+        }
+
+        // ===================== BUSCA E ABAS =====================
+        let filtroAtivoMobile = 'pendente';
+
+        window.filtrarListaMobile = function() {
+            const termo = document.getElementById('busca-mobile').value.trim().toLowerCase();
+            aplicarFiltrosMobile(termo, filtroAtivoMobile);
+        }
+
+        window.filtrarAbaMobile = function(tipo, btn) {
+            filtroAtivoMobile = tipo;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const termo = document.getElementById('busca-mobile').value.trim().toLowerCase();
+            aplicarFiltrosMobile(termo, tipo);
+        }
+
+        function aplicarFiltrosMobile(termo, tipo) {
+            const itens = document.querySelectorAll('#lista-conversas .conversa-item');
+            let visiveis = 0;
+            itens.forEach(item => {
+                const nome = item.dataset.name || '';
+                const naoLida = item.dataset.unread === '1';
+                const t = item.dataset.tipo;
+
+                let passaAba = true;
+                if (tipo === 'nao_lidas') passaAba = naoLida;
+                else if (tipo === 'todos') passaAba = (t !== 'fechados' && t !== 'grupos');
+                else passaAba = (t === tipo);
+
+                const passaBusca = !termo || nome.includes(termo);
+
+                if (passaAba && passaBusca) { item.classList.remove('hidden'); visiveis++; }
+                else { item.classList.add('hidden'); }
+            });
+            const semResultado = document.getElementById('msg-sem-resultado');
+            if (semResultado) semResultado.classList.toggle('hidden', visiveis !== 0 || itens.length === 0);
+        }
+
+        // ===================== FUNÇÕES DO CHAT (composer, respostas, edição) =====================
+        window.abrirHistorico = function(sessionId) { window.open('/whatsapp-bot/historico/' + sessionId + '/', '_blank'); }
+
+        window.cancelarResposta = function() {
+            const box = document.getElementById('reply-preview');
+            if (box) { box.classList.add('hidden'); document.getElementById('reply_to_id').value = ''; document.getElementById('quoted_text').value = ''; }
+        }
+        window.cancelarEdicao = function() {
+            const box = document.getElementById('edit-preview');
+            if (box) { box.classList.add('hidden'); document.getElementById('edit_message_id').value = ''; document.getElementById('input-mensagem').value = ''; }
+        }
+        window.prepararResposta = function(msgId, msgText) {
+            window.cancelarEdicao();
+            const box = document.getElementById('reply-preview');
+            if (box) {
+                box.classList.remove('hidden');
+                document.getElementById('reply-text-preview').innerText = msgText;
+                document.getElementById('reply_to_id').value = msgId;
+                document.getElementById('quoted_text').value = msgText;
+                document.getElementById('input-mensagem').focus();
+            }
+        }
+        window.prepararEdicao = function(msgId, msgText) {
+            window.cancelarResposta();
+            const box = document.getElementById('edit-preview');
+            if (box) {
+                box.classList.remove('hidden');
+                let limpo = msgText.replace(/💬 \*[^*]+\*\n/, '');
+                document.getElementById('edit-text-preview').innerText = limpo;
+                document.getElementById('edit_message_id').value = msgId;
+                const input = document.getElementById('input-mensagem');
+                input.value = limpo; input.focus();
+            }
+        }
+        window.deletarMensagem = function(msgId) {
+            if (!confirm('Deseja realmente apagar esta mensagem para o cliente?')) return;
+            const form = new FormData();
+            form.append('message_id', msgId); form.append('csrfmiddlewaretoken', getCsrf());
+            fetch('/whatsapp-bot/deletar-mensagem/', { method: 'POST', body: form }).then(() => window.abrirChatMobile(sessaoAtivaMobileId, true));
+        }
+        window.salvarRascunho = function() {
+            const input = document.getElementById('input-mensagem');
+            if (input) { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }
+        }
+        window.detectarAtalhoRapido = function() { /* atalhos rápidos (/) só no desktop por enquanto */ }
+        window.checarEnter = function(event, id) {
+            if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); window.enviarMensagem(event, id); }
+        }
+        window.enviarMensagem = function(event, id) {
+            if (event) event.preventDefault();
+            const input = document.getElementById('input-mensagem');
+            const internoEl = document.getElementById('check-interno');
+            const isInterno = internoEl ? internoEl.checked : false;
+            const texto = input ? input.value.trim() : '';
+            if (!texto) return;
+
+            const reply_to_id = document.getElementById('reply_to_id') ? document.getElementById('reply_to_id').value : '';
+            const quoted_text = document.getElementById('quoted_text') ? document.getElementById('quoted_text').value : '';
+            const edit_message_id = document.getElementById('edit_message_id') ? document.getElementById('edit_message_id').value : '';
+
+            const form = new FormData();
+            form.append('session_id', id); form.append('texto', texto); form.append('is_interno', isInterno);
+            form.append('reply_to_id', reply_to_id); form.append('quoted_text', quoted_text);
+            form.append('edit_message_id', edit_message_id); form.append('csrfmiddlewaretoken', getCsrf());
+
+            input.value = ''; input.style.height = '40px';
+            window.cancelarResposta(); window.cancelarEdicao();
+
+            fetch('/whatsapp-bot/enviar/', { method: 'POST', body: form }).then(() => window.abrirChatMobile(id, true));
+        }
+        window.enviarMidiaInput = function(event, id) {
+            const file = event.target.files[0];
+            if (file) window.enviarArquivoGenerico(file, id, 'Enviando anexo...');
+            event.target.value = '';
+        }
+        window.enviarArquivoGenerico = function(file, id) {
+            const form = new FormData();
+            form.append('session_id', id); form.append('arquivo', file); form.append('csrfmiddlewaretoken', getCsrf());
+            fetch('/whatsapp-bot/enviar-arquivo/', { method: 'POST', body: form })
+            .then(r => { if (!r.ok) throw new Error(); window.abrirChatMobile(id, true); })
+            .catch(() => alert('Falha ao enviar o arquivo.'));
+        }
+
+        // ===================== GRAVAÇÃO DE ÁUDIO =====================
+        window.toggleGravacao = async function(e) {
+            if (e) e.preventDefault();
+            const btn = document.getElementById('btn-gravar-audio');
+
+            if (isRecordingMobile) {
+                isRecordingMobile = false;
+                if (mediaRecorderMobile && mediaRecorderMobile.state !== 'inactive') mediaRecorderMobile.stop();
+                if (btn) btn.classList.remove('gravando');
+                return;
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('Este navegador não permite gravar áudio. Tente atualizar o Chrome.');
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioChunksMobile = [];
+                mediaRecorderMobile = new MediaRecorder(stream);
+                mediaRecorderMobile.ondataavailable = (ev) => { if (ev.data.size > 0) audioChunksMobile.push(ev.data); };
+
+                mediaRecorderMobile.onstop = () => {
+                    const audioBlob = new Blob(audioChunksMobile, { type: 'audio/webm' });
+                    window.audioBlobToUploadMobile = new File([audioBlob], 'gravacao.webm', { type: 'audio/webm' });
+
+                    document.getElementById('audio-preview-element').src = URL.createObjectURL(audioBlob);
+                    document.getElementById('container-inputs-texto').classList.add('hidden');
+                    document.getElementById('audio-preview-container').classList.remove('hidden');
+                    stream.getTracks().forEach((track) => track.stop());
+                };
+
+                mediaRecorderMobile.start();
+                isRecordingMobile = true;
+                if (btn) btn.classList.add('gravando');
+            } catch (err) {
+                alert('Não foi possível acessar o microfone. Verifique a permissão do site nas configurações do navegador.');
+            }
+        }
+        window.cancelarAudio = function() {
+            window.audioBlobToUploadMobile = null;
+            document.getElementById('audio-preview-container').classList.add('hidden');
+            document.getElementById('container-inputs-texto').classList.remove('hidden');
+            document.getElementById('audio-preview-element').src = '';
+        }
+        window.enviarAudioGravado = function() {
+            if (window.audioBlobToUploadMobile && sessaoAtivaMobileId) {
+                window.enviarArquivoGenerico(window.audioBlobToUploadMobile, sessaoAtivaMobileId, 'Enviando áudio...');
+                window.cancelarAudio();
+            }
+        }
+        window.alterarVelocidadeAudio = function(btn) {
+            const audio = btn.previousElementSibling;
+            if (audio.playbackRate === 1) {
+                audio.playbackRate = 1.5; btn.innerText = '1.5x';
+                btn.classList.add('bg-blue-600', 'text-ink', 'border-blue-500');
+            } else if (audio.playbackRate === 1.5) {
+                audio.playbackRate = 2.0; btn.innerText = '2x';
+                btn.classList.remove('bg-blue-600', 'border-blue-500');
+                btn.classList.add('bg-emerald-600', 'border-emerald-500');
+            } else {
+                audio.playbackRate = 1.0; btn.innerText = '1x';
+                btn.classList.remove('bg-emerald-600', 'text-ink', 'border-emerald-500');
+            }
+        }
+
+        // ===================== TRANSFERIR / ENCERRAR / VINCULAR (versão mobile) =====================
+        window.abrirModalVincular = function() { alert('Vincular cliente ainda está disponível apenas na versão desktop.'); }
+
+        window.abrirModalTransferir = function(id) {
+            sessaoAtivaMobileId = id;
+            document.getElementById('mobileModalTransferir').classList.remove('hidden');
+        }
+        window.confirmarTransferMobile = function(setor) {
+            const form = new FormData();
+            form.append('session_id', sessaoAtivaMobileId); form.append('setor', setor); form.append('csrfmiddlewaretoken', getCsrf());
+            fetch('/whatsapp-bot/transferir/', { method: 'POST', body: form }).then(() => location.reload());
+        }
+
+        window.abrirModalEncerrar = function(id) {
+            sessaoAtivaMobileId = id;
+            document.getElementById('mobile-encerrar-motivo').value = '';
+            document.getElementById('mobileModalEncerrar').classList.remove('hidden');
+        }
+        window.confirmarEncerrarMobile = function() {
+            const motivo = document.getElementById('mobile-encerrar-motivo').value.trim() || 'Não informado';
+            const form = new FormData();
+            form.append('session_id', sessaoAtivaMobileId); form.append('motivo', motivo); form.append('csrfmiddlewaretoken', getCsrf());
+            fetch('/whatsapp-bot/encerrar/', { method: 'POST', body: form }).then(() => location.reload());
+        }
+
+        // ===================== ATUALIZAÇÃO AUTOMÁTICA + NOTIFICAÇÃO SONORA =====================
+        let notificacoesAtivasMobile = true;
+        let historicoNaoLidasMobile = {};
+
+        function tocarSomNotificacaoMobile() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05);
+                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+                osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.15);
+            } catch (e) { /* áudio bloqueado pelo navegador */ }
+        }
+
+        setInterval(() => {
+            fetch('/whatsapp-bot/chat/cel/').then(r => r.text()).then(html => {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const novaLista = doc.getElementById('lista-conversas');
+                if (!novaLista) return;
+
+                let tocouSom = false;
+                novaLista.querySelectorAll('.conversa-item').forEach(card => {
+                    const clickAttr = card.getAttribute('onclick');
+                    const idMatch = clickAttr ? clickAttr.match(/\d+/) : null;
+                    if (!idMatch) return;
+                    const id = idMatch[0];
+                    const tipo = card.getAttribute('data-tipo');
+                    const naoLidas = parseInt(card.querySelector('.badge-nao-lida')?.innerText || '0');
+
+                    if (historicoNaoLidasMobile[id] === undefined) { historicoNaoLidasMobile[id] = naoLidas; return; }
+
+                    if ((tipo === 'pendente' || tipo === 'meus') && naoLidas > historicoNaoLidasMobile[id] && id !== String(sessaoAtivaMobileId)) {
+                        if (notificacoesAtivasMobile && !tocouSom) {
+                            tocarSomNotificacaoMobile();
+                            tocouSom = true;
+                            if (window.Notification && Notification.permission === "granted") {
+                                const nome = card.querySelector('h3')?.innerText || 'Cliente';
+                                new Notification("LÓGICA.DESK", { body: `Nova mensagem de ${nome}` });
+                            }
+                        }
+                    }
+                    historicoNaoLidasMobile[id] = naoLidas;
+                });
+
+                if (!sessaoAtivaMobileId) {
+                    document.getElementById('lista-conversas').innerHTML = novaLista.innerHTML;
+                    const termo = document.getElementById('busca-mobile').value.trim().toLowerCase();
+                    aplicarFiltrosMobile(termo, filtroAtivoMobile);
+                }
+            }).catch(() => {});
+
+            if (sessaoAtivaMobileId) {
+                fetch(`/whatsapp-bot/chat/${sessaoAtivaMobileId}/`).then(r => r.text()).then(html => {
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const novaArea = doc.getElementById('historia-mensagens');
+                    const chatArea = document.getElementById('historia-mensagens');
+                    if (!chatArea || !novaArea) return;
+
+                    let tocandoMidia = false;
+                    document.querySelectorAll('audio, video').forEach(m => { if (!m.paused && !m.ended) tocandoMidia = true; });
+
+                    const totalAtual = chatArea.getAttribute('data-total');
+                    const totalNovo = novaArea.getAttribute('data-total');
+
+                    if (!tocandoMidia && totalAtual !== totalNovo) {
+                        const estavaNoFim = chatArea.scrollHeight - chatArea.scrollTop <= chatArea.clientHeight + 50;
+                        chatArea.innerHTML = novaArea.innerHTML;
+                        chatArea.setAttribute('data-total', totalNovo);
+                        habilitarAcoesTouch();
+                        if (window.agruparMensagens) window.agruparMensagens();
+                        if (estavaNoFim) chatArea.scrollTop = chatArea.scrollHeight;
+                    }
+                }).catch(() => {});
+            }
+        }, 8000);
+
+        // Solicitar permissão de notificação ao carregar
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
+        // Registrar o Service Worker (instalação como app + base p/ notificações em segundo plano)
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/whatsapp-bot/sw.js")
+                .catch((e) => console.log("Falha ao registrar Service Worker:", e));
+        }
+    </script>
+</body>
+</html>

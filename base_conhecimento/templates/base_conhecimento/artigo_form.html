@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}{% if modo == 'Editar' %}Editar{% else %}Novo{% endif %} artigo | {{ sistema.nome }}{% endblock %}
+
+{% block content %}
+<div class="kb-root">
+  <div class="kb-wrap">
+
+    <header class="kb-head">
+      <div class="kb-head__id">
+        {% if modo == 'Editar' %}
+        <a href="{% url 'base_conhecimento:artigo_detalhe' sistema.pk artigo.slug %}" class="kb-back" aria-label="Voltar ao artigo">
+        {% else %}
+        <a href="{% url 'base_conhecimento:sistema' sistema.pk %}" class="kb-back" aria-label="Voltar ao sistema">
+        {% endif %}
+          <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div>
+
+          <h1 class="kb-title">{% if modo == 'Editar' %}Editar artigo{% else %}Novo artigo{% endif %}</h1>
+          <p class="kb-subtitle"><i class="fa-solid fa-microchip"></i> {{ sistema.nome }}</p>
+        </div>
+      </div>
+    </header>
+
+    <form method="post" class="kb-form" id="kb-form">
+      {% csrf_token %}
+
+      {% if form.errors %}
+      <div class="kb-alert">
+        <strong><i class="fa-solid fa-triangle-exclamation"></i> Corrija antes de salvar:</strong>
+        <ul>
+          {% for field in form %}{% for e in field.errors %}<li>{{ field.label }}: {{ e }}</li>{% endfor %}{% endfor %}
+          {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="kb-form__grid">
+
+        <!-- ── Identificação ── -->
+        <aside class="kb-form__side">
+          <section class="kb-card">
+            <h2 class="kb-card__title"><i class="fa-solid fa-tags"></i> Identificação</h2>
+
+            <div class="kb-field">
+              <label for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }}</label>
+              {{ form.titulo }}
+            </div>
+
+            <div class="kb-field">
+              <label for="{{ form.tipo.id_for_label }}">{{ form.tipo.label }}</label>
+              {{ form.tipo }}
+              {% if form.tipo.help_text %}<small>{{ form.tipo.help_text }}</small>{% endif %}
+            </div>
+
+            <div class="kb-field">
+              <label for="{{ form.hashtags.id_for_label }}">{{ form.hashtags.label }}</label>
+              {{ form.hashtags }}
+              {% if form.hashtags.help_text %}<small>{{ form.hashtags.help_text }}</small>{% endif %}
+            </div>
+
+            {% if modo == 'Editar' and artigo.codigo %}
+            <div class="kb-field">
+              <label>Código</label>
+              <span class="kb-code-static">{{ artigo.codigo }}</span>
+              <small>Gerado automaticamente. Não muda.</small>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="kb-submit">
+              <i class="fa-solid fa-floppy-disk"></i>
+              {% if modo == 'Editar' %}Salvar alterações{% else %}Publicar artigo{% endif %}
+            </button>
+          </section>
+        </aside>
+
+        <!-- ── Conteúdo ── -->
+        <div class="kb-form__main">
+          <section class="kb-card kb-card--editor">
+            <h2 class="kb-card__title"><i class="fa-solid fa-keyboard"></i> Corpo do artigo</h2>
+            <div class="kb-editor">
+              {{ form.media }}
+              {{ form.conteudo }}
+            </div>
+            {% if form.conteudo.errors %}
+            <p class="kb-field-error">{{ form.conteudo.errors.0 }}</p>
+            {% endif %}
+          </section>
+        </div>
+
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<style>
+.kb-root { padding: 20px 16px 40px; }
+.kb-wrap { max-width: 1400px; margin: 0 auto; }
+
+.kb-head { display:flex; align-items:center; gap:16px; padding-bottom:18px; margin-bottom:18px; border-bottom:1px solid rgb(var(--c-line)); }
+.kb-head__id { display:flex; align-items:center; gap:14px; }
+.kb-back { width:42px; height:42px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:11px; color:rgb(var(--c-ink-soft)); text-decoration:none; transition:color .15s, border-color .15s; }
+.kb-back:hover { color:rgb(var(--c-accent)); border-color:rgb(var(--c-accent) / .4); }
+.kb-title { font-size:20px; font-weight:800; color:rgb(var(--c-ink)); line-height:1.2; }
+.kb-subtitle { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.14em; color:rgb(var(--c-ink-faint)); margin-top:6px; display:flex; align-items:center; gap:7px; }
+
+.kb-alert { background:rgb(var(--c-danger) / .1); border:1px solid rgb(var(--c-danger) / .3); border-radius:12px; padding:14px 16px; margin-bottom:16px; color:rgb(var(--c-danger)); font-size:12.5px; }
+.kb-alert ul { margin:8px 0 0; padding-left:20px; }
+
+.kb-form__grid { display:grid; grid-template-columns:340px 1fr; gap:16px; align-items:start; }
+.kb-form__side { position:sticky; top:12px; }
+
+.kb-card { background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:14px; padding:20px; transition:background-color .25s, border-color .25s; }
+.kb-card--editor { display:flex; flex-direction:column; min-height:600px; }
+.kb-card__title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.15em; color:rgb(var(--c-ink-faint)); padding-bottom:12px; margin-bottom:18px; border-bottom:1px solid rgb(var(--c-line)); }
+.kb-card__title i { color:rgb(var(--c-accent)); margin-right:7px; }
+
+.kb-field { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
+.kb-field label { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:rgb(var(--c-ink-soft)); }
+.kb-field small { font-size:11px; color:rgb(var(--c-ink-faint)); line-height:1.5; }
+.kb-field-error { font-size:11px; font-weight:700; color:rgb(var(--c-danger)); margin-top:8px; }
+
+#kb-form input[type="text"], #kb-form select, #kb-form textarea {
+    width:100%; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line));
+    border-radius:9px; padding:10px 12px; color:rgb(var(--c-ink));
+    font-size:13px; font-family:'Inter',sans-serif; outline:none; transition:border-color .15s;
+}
+#kb-form input::placeholder { color:rgb(var(--c-ink-faint)); }
+#kb-form input:focus, #kb-form select:focus { border-color:rgb(var(--c-accent)); box-shadow:0 0 0 2px rgb(var(--c-accent) / .18); }
+#kb-form select option { background:rgb(var(--c-panel)); }
+
+.kb-code-static { font-family:'JetBrains Mono', monospace; font-size:13px; font-weight:700; color:rgb(var(--c-accent)); background:rgb(var(--c-accent) / .08); border:1px solid rgb(var(--c-accent) / .22); border-radius:8px; padding:9px 12px; display:inline-block; }
+
+.kb-submit {
+    width:100%; margin-top:6px; padding:14px;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    background:rgb(var(--c-accent)); border:1px solid rgb(var(--c-accent));
+    border-radius:11px; color:#fff;
+    font-family:'Inter',sans-serif; font-size:11.5px; font-weight:800;
+    text-transform:uppercase; letter-spacing:.1em; cursor:pointer;
+    transition:filter .15s;
+}
+.kb-submit:hover { filter:brightness(1.1); }
+
+/* ── Editor ──
+   O CKEditor tem chrome branco próprio; não dá para tematizar por fora
+   sem quebrar. Damos a ele uma "moldura de papel" — assim ele fica
+   coerente em qualquer tema em vez de um retângulo branco solto. */
+.kb-editor {
+    flex:1;
+    background:#fff;
+    border:1px solid rgb(var(--c-line));
+    border-radius:10px;
+    padding:6px;
+    overflow:hidden;
+    color:#111;
+}
+.kb-editor .django-ckeditor-widget { width:100% !important; }
+.kb-editor .cke_chrome { border:none !important; box-shadow:none !important; }
+.kb-editor textarea { color:#111 !important; background:#fff !important; }
+
+@media (max-width: 1024px) {
+    .kb-form__grid { grid-template-columns:1fr; }
+    .kb-form__side { position:static; }
+    .kb-card--editor { min-height:480px; }
+}
+@media (max-width: 640px) {
+    .kb-card { padding:16px; }
+}
+</style>
+{% endblock %}

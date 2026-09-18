@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Raio-X de {{ usuario.first_name }} | Lógica Desk{% endblock %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+<style>
+    body { font-family: 'Inter', sans-serif; background-color: #05070c; }
+    .rx-bg { background-color: #05070c; background-image: radial-gradient(circle at 50% 0%, rgba(240, 180, 41, 0.06) 0%, transparent 55%), radial-gradient(circle at 0% 100%, rgba(61, 90, 254, 0.04) 0%, transparent 40%); }
+    .hud-panel { background: rgba(10, 14, 23, 0.8); backdrop-filter: blur(16px); border: 1px solid #1b2333; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
+    h1, h2 { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono-num { font-family: 'JetBrains Mono', monospace; }
+
+    .kpi-row { background: rgba(5, 7, 12, 0.5); border: 1px solid #1b2333; border-radius: 12px; padding: 14px 16px; }
+    .kpi-track { background: #05070c; border-radius: 4px; height: 4px; overflow: hidden; margin-top: 8px; }
+    .kpi-fill { height: 100%; border-radius: 4px; }
+</style>
+
+<div class="rx-bg min-h-screen p-4 md:p-6 text-slate-200 antialiased">
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <div class="hud-panel border-l-2 border-l-[#f0b429] rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-6 w-full">
+                <div class="w-20 h-20 rounded-2xl border-2 {{ classe_css }} flex items-center justify-center text-3xl font-bold shrink-0">
+                    {{ letra }}
+                </div>
+                <div class="flex-1">
+                    <h1 class="text-2xl font-semibold text-white mb-1">{{ usuario.get_full_name|default:usuario.username }}</h1>
+                    <p class="text-xs text-slate-500 font-mono-num uppercase tracking-wide mb-3">{{ titulo }} · {{ usuario.profile.setor.nome|default:"Sem Setor" }}</p>
+                    <span class="bg-core-bg text-slate-400 border border-core-line px-3 py-1.5 rounded-lg text-[10px] font-mono-num tracking-widest">{{ inicio }} → {{ fim }}</span>
+                </div>
+            </div>
+
+            <div class="text-center bg-core-bg/60 p-5 rounded-2xl border border-core-line min-w-[180px] shrink-0">
+                <p class="text-[10px] text-slate-500 uppercase font-mono-num tracking-widest mb-1">Score Total</p>
+                <p class="text-4xl font-semibold text-[#f0b429]">{{ score }}</p>
+                <p class="text-[10px] text-emerald-400 font-mono-num mt-1">Eficiência: {{ eficiencia_pct }}</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <div class="hud-panel rounded-2xl p-6 flex flex-col">
+                <h2 class="text-sm font-semibold text-white mb-5 pb-3 border-b border-core-line flex justify-between items-center">
+                    <span>Raio-X Produtivo</span>
+                    <span class="text-[10px] font-mono-num text-slate-500 uppercase" title="Bônus por atuar em múltiplas frentes (Canivete Suíço).">Bônus versatilidade: <span class="text-[#f0b429]">+{{ bonus }}</span></span>
+                </h2>
+
+                <div class="space-y-3 flex-1">
+
+                    <div class="kpi-row">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-medium text-slate-300 flex items-center gap-2"><i class="fa-solid fa-ticket text-orange-400 w-4 text-center"></i> O.S. (Radar) Fechadas</span>
+                            <span class="text-lg font-semibold text-white font-mono-num">{{ os }}</span>
+                        </div>
+                        <div class="kpi-track"><div class="kpi-fill bg-orange-400" style="width: {{ pct_os }}%;"></div></div>
+                    </div>
+
+                    <div class="kpi-row">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-medium text-slate-300 flex items-center gap-2"><i class="fa-solid fa-rocket text-fuchsia-400 w-4 text-center"></i> Implantações</span>
+                            <span class="text-lg font-semibold text-white font-mono-num">{{ imp }}</span>
+                        </div>
+                        <div class="kpi-track"><div class="kpi-fill bg-fuchsia-400" style="width: {{ pct_imp }}%;"></div></div>
+                    </div>
+
+                    <div class="kpi-row">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-medium text-slate-300 flex items-center gap-2"><i class="fa-solid fa-heart-pulse text-rose-400 w-4 text-center"></i> Contatos C.S. Reais</span>
+                            <span class="text-lg font-semibold text-white font-mono-num">{{ cs }}</span>
+                        </div>
+                        <div class="kpi-track"><div class="kpi-fill bg-rose-400" style="width: {{ pct_cs }}%;"></div></div>
+                    </div>
+
+                    <div class="kpi-row">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-medium text-slate-300 flex items-center gap-2"><i class="fa-solid fa-calendar-day text-emerald-400 w-4 text-center"></i> Visitas / Agenda</span>
+                            <span class="text-lg font-semibold text-white font-mono-num">{{ agenda }}</span>
+                        </div>
+                        <div class="kpi-track"><div class="kpi-fill bg-emerald-400" style="width: {{ pct_agenda }}%;"></div></div>
+                    </div>
+
+                    <div class="kpi-row">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-medium text-slate-300 flex items-center gap-2"><i class="fa-solid fa-star text-yellow-300 w-4 text-center"></i> Avaliações (Nota Zap)</span>
+                            <span class="text-right">
+                                <span class="text-lg font-semibold text-white font-mono-num">{{ avaliacoes }}</span>
+                                <span class="text-[10px] text-yellow-400 font-mono-num ml-1">média {{ media_avaliacoes }}</span>
+                            </span>
+                        </div>
+                        <div class="kpi-track"><div class="kpi-fill bg-yellow-300" style="width: {{ pct_avs }}%;"></div></div>
+                    </div>
+
+                    <div class="kpi-row">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-medium text-slate-300 flex items-center gap-2"><i class="fa-brands fa-whatsapp text-accent-soft w-4 text-center"></i> Msgs Enviadas (Total)</span>
+                            <span class="text-right">
+                                <span class="text-lg font-semibold text-white font-mono-num">{{ msgs }}</span>
+                                <span class="text-[9px] text-slate-500 font-mono-num ml-1">priv {{ msgs_priv }} · grp {{ msgs_grupo }}</span>
+                            </span>
+                        </div>
+                        <div class="kpi-track"><div class="kpi-fill bg-accent" style="width: {{ pct_msgs }}%;"></div></div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="hud-panel rounded-2xl p-6 flex flex-col">
+                <h2 class="text-sm font-semibold text-white mb-2 pb-3 border-b border-core-line" title="As bordas do gráfico representam o recorde máximo feito pela equipe neste mês.">
+                    <i class="fa-solid fa-radar text-[#f0b429] mr-2"></i> Radar vs. Recordes da Equipe
+                </h2>
+                <div id="radarChart" class="w-full flex-1 min-h-[400px]"></div>
+            </div>
+
+        </div>
+
+        <div class="flex justify-center mt-2">
+            <a href="{% url 'raio_x:dashboard' %}?inicio={{ inicio }}&fim={{ fim }}" class="bg-core-deep hover:bg-core-panel text-slate-300 hover:text-white px-6 py-3 rounded-xl border border-core-line transition-all text-xs font-mono-num uppercase tracking-widest">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Voltar ao Rank Geral
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    var chartDom = document.getElementById('radarChart');
+    var myChart = echarts.init(chartDom, 'dark');
+    var option;
+
+    option = {
+        backgroundColor: 'transparent',
+        radar: {
+            indicator: [
+                { name: 'O.S. Radar', max: {{ max_os }} },
+                { name: 'Implantação', max: {{ max_imp }} },
+                { name: 'C.S. Ativo', max: {{ max_cs }} },
+                { name: 'Visitas', max: {{ max_agenda }} },
+                { name: 'Avaliações', max: {{ max_avs }} },
+                { name: 'WhatsApp', max: {{ max_msgs }} }
+            ],
+            splitArea: { areaStyle: { color: ['rgba(10, 14, 23, 0.4)', 'rgba(10, 14, 23, 0.8)'] } },
+            splitLine: { lineStyle: { color: 'rgba(27, 35, 51, 0.8)' } },
+            axisLine: { lineStyle: { color: 'rgba(27, 35, 51, 0.8)' } },
+            axisName: { color: '#cbd5e1', fontSize: 11, fontWeight: 500 }
+        },
+        series: [{
+            type: 'radar',
+            data: [{
+                value: {{ radar_dados|safe }},
+                name: 'Esforço',
+                itemStyle: { color: '#f0b429' },
+                lineStyle: { width: 3 },
+                areaStyle: { color: 'rgba(240, 180, 41, 0.35)' }
+            }]
+        }]
+    };
+
+    option && myChart.setOption(option);
+    window.addEventListener('resize', function() { myChart.resize(); });
+</script>
+{% endblock %}

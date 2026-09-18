@@ -1,0 +1,1217 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ─── RESET & BASE ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.kb-root {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    background: rgb(var(--c-bg));
+    color: rgb(var(--c-ink));
+    height: calc(100vh - 1rem);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 16px 0 0 0;
+    border-left: 1px solid rgb(var(--c-line));
+    border-top: 1px solid rgb(var(--c-line));
+    overflow: hidden;
+}
+
+/* ─── TOPBAR ────────────────────────────────────────────────── */
+.kb-topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 12px;
+    padding: 14px 18px;
+    flex-shrink: 0;
+}
+
+.kb-topbar__icon {
+    width: 44px;
+    height: 44px;
+    background: rgb(var(--c-accent) / 0.15);
+    border: 1px solid rgb(var(--c-accent) / 0.3);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgb(var(--c-accent));
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.kb-topbar__info { flex: 1; min-width: 0; }
+
+.kb-topbar__title {
+    font-size: 18px;
+    font-weight: 700;
+    color: rgb(var(--c-ink));
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+
+.kb-topbar__subtitle {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgb(var(--c-ink-faint));
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+}
+
+.kb-stats {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.kb-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+    white-space: nowrap;
+}
+
+.kb-stat--neutral { background: rgb(var(--c-line)); border-color: rgb(var(--c-line)); color: rgb(var(--c-ink-soft)); }
+.kb-stat--neutral strong { color: rgb(var(--c-ink)); font-weight: 700; }
+
+.kb-stat--queue { background: rgb(var(--c-warn) / 0.12); border-color: rgb(var(--c-warn) / 0.4); color: rgb(var(--c-warn)); }
+.kb-stat--queue strong { color: rgb(var(--c-warn)); }
+
+.kb-stat--active { background: rgb(var(--c-accent) / 0.12); border-color: rgb(var(--c-accent) / 0.4); color: rgb(var(--c-accent)); }
+.kb-stat--active strong { color: rgb(var(--c-accent)); }
+
+.kb-stat--critical { background: rgb(var(--c-danger) / 0.12); border-color: rgb(var(--c-danger) / 0.4); color: rgb(var(--c-danger)); }
+.kb-stat--critical strong { color: rgb(var(--c-danger)); }
+
+.kb-btn-new {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgb(var(--c-accent));
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    border: 1px solid rgb(var(--c-accent));
+}
+.kb-btn-new:hover { background: rgb(var(--c-accent)); }
+
+/* ─── FILTER BAR ────────────────────────────────────────────── */
+.kb-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 10px;
+    padding: 10px 14px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.kb-search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+}
+
+.kb-search-wrap i {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgb(var(--c-ink-faint));
+    font-size: 15px;
+    pointer-events: none;
+}
+
+.kb-search-wrap input {
+    width: 100%;
+    background: rgb(var(--c-bg));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 7px;
+    color: rgb(var(--c-ink));
+    font-size: 13px;
+    font-family: inherit;
+    padding: 8px 12px 8px 34px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.kb-search-wrap input:focus { border-color: rgb(var(--c-accent)); }
+.kb-search-wrap input::placeholder { color: rgb(var(--c-ink-faint)); }
+
+.kb-select {
+    background: rgb(var(--c-bg));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 7px;
+    color: rgb(var(--c-ink-soft));
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    padding: 8px 10px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+.kb-select:focus { border-color: rgb(var(--c-accent)); }
+
+.kb-divider {
+    width: 1px;
+    height: 24px;
+    background: rgb(var(--c-line));
+    flex-shrink: 0;
+}
+
+.kb-toggles {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    background: rgb(var(--c-bg));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 7px;
+    padding: 7px 14px;
+}
+
+.kb-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgb(var(--c-ink-soft));
+    user-select: none;
+    white-space: nowrap;
+}
+.kb-toggle-label:hover { color: rgb(var(--c-ink-soft)); }
+
+.kb-toggle {
+    appearance: none;
+    width: 32px;
+    height: 17px;
+    background: rgb(var(--c-line));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+}
+.kb-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 11px; height: 11px;
+    background: rgb(var(--c-ink-faint));
+    border-radius: 50%;
+    transition: left 0.2s, background 0.2s;
+}
+.kb-toggle:checked { background: rgb(var(--c-accent) / 0.15); border-color: rgb(var(--c-accent)); }
+.kb-toggle:checked::after { left: 17px; background: rgb(var(--c-accent)); }
+
+.kb-filter-btn {
+    background: rgb(var(--c-line));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 7px;
+    color: rgb(var(--c-ink-soft));
+    font-size: 13px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.kb-filter-btn[type="submit"]:hover { background: rgb(var(--c-accent)); color: #fff; border-color: rgb(var(--c-accent)); }
+.kb-filter-btn.clear:hover { background: rgb(var(--c-danger) / 0.12); color: rgb(var(--c-danger)); border-color: rgb(var(--c-danger))44; }
+
+/* ─── KANBAN BOARD ──────────────────────────────────────────── */
+.kb-board {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    min-height: 0;
+}
+
+.kb-board::-webkit-scrollbar { height: 5px; }
+.kb-board::-webkit-scrollbar-track { background: rgb(var(--c-bg)); border-radius: 4px; }
+.kb-board::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 4px; }
+.kb-board::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-accent)); }
+
+/* ─── COLUMN ────────────────────────────────────────────────── */
+.kb-col {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 220px;
+    max-width: 270px;
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 12px;
+    overflow: hidden;
+    height: 100%;
+}
+
+.kb-col--triagem   { border-top: 3px solid #eab308; }
+.kb-col--comercial { border-top: 3px solid rgb(var(--c-accent)); }
+.kb-col--financeiro{ border-top: 3px solid rgb(var(--c-success)); }
+.kb-col--implant   { border-top: 3px solid #f97316; }
+.kb-col--suporte   { border-top: 3px solid #ec4899; }
+
+.kb-col__head {
+    background: rgb(var(--c-bg));
+    border-bottom: 1px solid rgb(var(--c-line));
+    padding: 11px 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.kb-col__head-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.kb-col__icon {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.kb-col__name {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgb(var(--c-ink));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kb-col__count {
+    background: rgb(var(--c-line));
+    color: rgb(var(--c-ink-soft));
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid rgb(var(--c-line));
+    flex-shrink: 0;
+}
+
+.kb-col__body {
+    padding: 8px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-height: 60px;
+}
+
+.kb-col__body::-webkit-scrollbar { width: 3px; }
+.kb-col__body::-webkit-scrollbar-track { background: transparent; }
+.kb-col__body::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   COLUNA RECOLHÍVEL  —  clique no cabeçalho para encolher/expandir.
+   Recolhida, a coluna vira uma faixa fina de 44px com o nome na
+   vertical + contador. Libera espaço para as colunas que importam.
+   ═══════════════════════════════════════════════════════════════ */
+.kb-col__head {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+.kb-col__head:hover { background: rgb(var(--c-line) / 0.5); }
+
+/* seta indicadora do estado */
+.kb-col__chevron {
+    font-size: 10px;
+    color: rgb(var(--c-ink-faint));
+    transition: transform 0.2s;
+    flex-shrink: 0;
+    margin-left: 2px;
+}
+
+.kb-col {
+    transition: min-width 0.22s ease, max-width 0.22s ease, flex 0.22s ease;
+}
+
+/* ── estado recolhido ── */
+.kb-col.is-collapsed {
+    min-width: 44px !important;
+    max-width: 44px !important;
+    flex: 0 0 44px !important;
+}
+.kb-col.is-collapsed .kb-col__body { display: none; }
+.kb-col.is-collapsed .kb-col__head {
+    flex-direction: column;
+    height: 100%;
+    padding: 11px 4px;
+    justify-content: flex-start;
+    gap: 10px;
+    border-bottom: none;
+}
+.kb-col.is-collapsed .kb-col__head-left {
+    flex-direction: column;
+    gap: 10px;
+}
+/* nome na vertical, de baixo pra cima */
+.kb-col.is-collapsed .kb-col__name {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    max-height: 60vh;
+    font-size: 11px;
+}
+.kb-col.is-collapsed .kb-col__chevron { transform: rotate(180deg); }
+.kb-col.is-collapsed .kb-col__count { padding: 2px 5px; font-size: 10px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MODO COMPACTO  —  encolhe cartões e colunas para caber mais
+   coisa em telas menores. Ativado pelo botão da barra superior.
+   ═══════════════════════════════════════════════════════════════ */
+body.kb-compact .kb-col { min-width: 172px; max-width: 210px; }
+body.kb-compact .kb-col__head { padding: 7px 9px; }
+body.kb-compact .kb-col__name { font-size: 10.5px; letter-spacing: 0.03em; }
+body.kb-compact .kb-col__body { padding: 5px; gap: 5px; }
+body.kb-compact .kb-card { padding: 7px 8px; }
+body.kb-compact .kb-card__title { font-size: 11.5px; }
+body.kb-compact .kb-card__client { font-size: 10px; }
+body.kb-compact .kb-board { gap: 6px; }
+
+/* botão de modo compacto ativo */
+.kb-filter-btn.is-active {
+    background: rgb(var(--c-accent));
+    color: #fff;
+    border-color: rgb(var(--c-accent));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVO  —  em telas menores as colunas afinam sozinhas,
+   para caber mais colunas sem precisar rolar o quadro inteiro.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1600px) {
+    .kb-col { min-width: 200px; max-width: 240px; }
+}
+@media (max-width: 1400px) {
+    .kb-col { min-width: 186px; max-width: 220px; }
+    .kb-board { gap: 7px; }
+}
+@media (max-width: 1200px) {
+    .kb-col { min-width: 172px; max-width: 205px; }
+    .kb-col__head { padding: 8px 10px; }
+    .kb-col__name { font-size: 11px; }
+    .kb-board { gap: 6px; }
+}
+
+
+/* ─── DRAG & DROP STATES ────────────────────────────────────── */
+.kb-col__body.drag-over {
+    background: rgb(var(--c-line))55;
+    border-radius: 8px;
+    outline: 2px dashed rgb(var(--c-accent));
+    outline-offset: -4px;
+}
+
+.kb-card[draggable="true"] { cursor: grab; }
+.kb-card[draggable="true"]:active { cursor: grabbing; }
+.kb-card.dragging {
+    opacity: 0.4;
+    transform: scale(0.97);
+}
+
+/* ─── CARD ──────────────────────────────────────────────────── */
+.kb-card {
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 9px;
+    padding: 11px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s, background 0.15s;
+    position: relative;
+}
+
+.kb-card:hover {
+    border-color: rgb(var(--c-line));
+    background: rgb(var(--c-panel));
+    transform: translateY(-1px);
+}
+
+.kb-card--done {
+    opacity: 0.55;
+    filter: grayscale(30%);
+}
+
+.kb-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 7px;
+}
+
+.kb-card__num-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+}
+
+.kb-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.kb-dot--critical { background: rgb(var(--c-danger)); box-shadow: 0 0 5px rgb(var(--c-danger)); animation: pulse 1.5s infinite; }
+.kb-dot--high     { background: rgb(var(--c-warn)); }
+.kb-dot--medium   { background: rgb(var(--c-accent)); }
+.kb-dot--low      { background: rgb(var(--c-ink-faint)); }
+
+@keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.4; } }
+
+.kb-card__num {
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    color: rgb(var(--c-ink-faint));
+    letter-spacing: 0.03em;
+}
+.kb-card:hover .kb-card__num { color: rgb(var(--c-accent)); }
+
+.kb-status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 7px;
+    border-radius: 5px;
+    border: 1px solid;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.kb-status--open      { color: rgb(var(--c-ink-soft)); border-color: rgb(var(--c-line)); background: rgb(var(--c-line)); }
+.kb-status--attending { color: rgb(var(--c-accent)); border-color: rgb(var(--c-accent))55; background: rgb(var(--c-accent) / 0.12); }
+.kb-status--waiting-c { color: rgb(var(--c-warn)); border-color: rgb(var(--c-warn))55; background: rgb(var(--c-warn) / 0.12); }
+.kb-status--waiting-d { color: rgb(var(--c-special)); border-color: rgb(var(--c-special))55; background: rgb(var(--c-special) / 0.12); }
+.kb-status--done      { color: rgb(var(--c-success)); border-color: rgb(var(--c-success))55; background: rgb(var(--c-success) / 0.12); }
+
+.kb-card__title {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(var(--c-ink));
+    line-height: 1.4;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.kb-card:hover .kb-card__title { color: rgb(var(--c-accent)); }
+
+.kb-card__client {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgb(var(--c-ink-faint));
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 9px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.kb-card__client i { font-size: 11px; }
+
+.kb-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    border-top: 1px solid rgb(var(--c-line));
+    padding-top: 8px;
+    margin-top: 2px;
+}
+
+.kb-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.kb-tag {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid;
+    white-space: nowrap;
+}
+.kb-tag--impl  { color: rgb(var(--c-special)); border-color: rgb(var(--c-special))55; background: rgb(var(--c-special) / 0.12); }
+.kb-tag--mod   { color: rgb(var(--c-accent)); border-color: rgb(var(--c-accent))55; background: rgb(var(--c-special) / 0.15); }
+.kb-tag--trein { color: rgb(var(--c-success)); border-color: rgb(var(--c-success))55; background: rgb(var(--c-success) / 0.12); }
+
+.kb-card__owner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.kb-card__owner-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgb(var(--c-ink-faint));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70px;
+}
+
+.kb-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgb(var(--c-line));
+    border: 1px solid rgb(var(--c-line));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: rgb(var(--c-ink-soft));
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.kb-no-owner {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgb(var(--c-danger));
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ─── EMPTY STATE ───────────────────────────────────────────── */
+.kb-empty {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 12px;
+    color: rgb(var(--c-line));
+    gap: 16px;
+}
+.kb-empty i { font-size: 48px; }
+.kb-empty p {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgb(var(--c-ink-faint));
+}
+
+/* ─── TOAST ─────────────────────────────────────────────────── */
+#kb-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-left: 3px solid rgb(var(--c-accent));
+    border-radius: 9px;
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgb(var(--c-ink));
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 9999;
+    max-width: 320px;
+}
+#kb-toast.show { opacity: 1; transform: translateY(0); }
+
+/* ── Modal de transferência (drag-and-drop) ── */
+#kb-modal {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgb(0 0 0 / 0.6); backdrop-filter: blur(3px);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+}
+#kb-modal.show { display: flex; }
+.kb-modal-box {
+    background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line));
+    border-radius: 16px; padding: 26px; width: 100%; max-width: 440px;
+    box-shadow: 0 20px 50px rgb(0 0 0 / 0.4);
+}
+.kb-modal-box h3 { font-size: 17px; font-weight: 800; color: rgb(var(--c-ink)); margin-bottom: 6px; }
+.kb-modal-sub { font-size: 13px; color: rgb(var(--c-ink-soft)); margin-bottom: 20px; }
+.kb-modal-sub strong { color: rgb(var(--c-accent)); }
+.kb-modal-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgb(var(--c-ink-faint)); margin-bottom: 8px; display: block; }
+#kb-modal-tecnico {
+    width: 100%; background: rgb(var(--c-deep)); border: 1px solid rgb(var(--c-line));
+    border-radius: 9px; color: rgb(var(--c-ink)); font-size: 14px; padding: 11px 13px;
+    outline: none; cursor: pointer; margin-bottom: 22px;
+}
+#kb-modal-tecnico:focus { border-color: rgb(var(--c-accent)); }
+#kb-modal-tecnico option { background: rgb(var(--c-panel)); }
+.kb-modal-actions { display: flex; gap: 10px; }
+.kb-modal-btn {
+    flex: 1; padding: 12px; border-radius: 9px; font-size: 13px; font-weight: 700;
+    cursor: pointer; border: 1px solid; transition: filter .15s;
+}
+.kb-modal-btn--cancel { background: rgb(var(--c-deep)); border-color: rgb(var(--c-line)); color: rgb(var(--c-ink-soft)); }
+.kb-modal-btn--ok { background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); color: #fff; }
+.kb-modal-btn--ok:hover { filter: brightness(1.1); }
+
+/* ─── FOCUS ACESSIBILITY ────────────────────────────────────── */
+:focus-visible {
+    outline: 2px solid rgb(var(--c-accent));
+    outline-offset: 2px;
+}
+</style>
+
+<div class="kb-root" role="main" aria-label="Quadro de atendimentos">
+
+    <!-- TOPBAR -->
+    <header class="kb-topbar" role="banner">
+        <div class="kb-topbar__icon" aria-hidden="true">
+            <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div class="kb-topbar__info">
+            <div class="kb-topbar__title">Atendimentos</div>
+            <div class="kb-topbar__subtitle">Gestão de atendimentos</div>
+        </div>
+
+        <div class="kb-stats" role="region" aria-label="Resumo de chamados">
+            <span class="kb-stat kb-stat--neutral" title="Total de chamados">
+                <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+                Total <strong>{{ total_geral }}</strong>
+            </span>
+            <span class="kb-stat kb-stat--queue" title="Em fila">
+                <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                Fila <strong>{{ total_abertos }}</strong>
+            </span>
+            <span class="kb-stat kb-stat--active" title="Em atendimento">
+                <i class="fa-solid fa-headset" aria-hidden="true"></i>
+                Em execução <strong>{{ total_em_atendimento }}</strong>
+            </span>
+            <span class="kb-stat kb-stat--critical" title="Críticos">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                Críticos <strong>{{ total_criticos }}</strong>
+            </span>
+        </div>
+
+        <a href="{% url 'atendimentos_chamados:criar' %}" class="kb-btn-new" aria-label="Abrir novo atendimento">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i> Novo Atendimento
+        </a>
+    </header>
+
+    <!-- FILTER BAR -->
+    <form method="get" class="kb-filters" role="search" aria-label="Filtros de chamados">
+
+        <div class="kb-search-wrap" aria-label="Campo de busca">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input
+                type="text"
+                name="busca"
+                placeholder="Buscar por assunto, OS ou cliente..."
+                value="{{ request.GET.busca }}"
+                aria-label="Buscar chamados"
+            >
+        </div>
+
+        <select name="tecnico" class="kb-select" aria-label="Filtrar por técnico">
+            <option value="">Técnicos — todos</option>
+            {% for t in tecnicos %}
+            <option value="{{ t.id }}" {% if request.GET.tecnico == t.id|stringformat:"s" %}selected{% endif %}>
+                {{ t.first_name|default:t.username }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <select name="prioridade" class="kb-select" aria-label="Filtrar por prioridade">
+            <option value="">Prioridade — todas</option>
+            {% for p in prioridades %}
+            <option value="{{ p.0 }}" {% if request.GET.prioridade == p.0 %}selected{% endif %}>{{ p.1 }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="status" class="kb-select" aria-label="Filtrar por status">
+            <option value="">Status — todos</option>
+            {% for s in status_list %}
+            <option value="{{ s.0 }}" {% if request.GET.status == s.0 %}selected{% endif %}>{{ s.1 }}</option>
+            {% endfor %}
+        </select>
+
+        <div class="kb-divider" role="separator" aria-hidden="true"></div>
+
+        <div class="kb-toggles" role="group" aria-label="Filtros rápidos">
+            <label class="kb-toggle-label" title="Exibir apenas implantações de novos clientes">
+                <input type="checkbox" name="cliente_novo" class="kb-toggle" {% if cliente_novo %}checked{% endif %} aria-label="Implantações">
+                Impl.
+            </label>
+            <label class="kb-toggle-label" title="Exibir apenas com treinamento">
+                <input type="checkbox" name="treinamento" class="kb-toggle" {% if treinamento %}checked{% endif %} aria-label="Com treinamento">
+                Trein.
+            </label>
+            <label class="kb-toggle-label" title="Exibir chamados concluídos">
+                <input type="checkbox" name="concluidos" class="kb-toggle" {% if request.GET.concluidos %}checked{% endif %} aria-label="Concluídos">
+                Concluídos
+            </label>
+        </div>
+
+        <div class="kb-divider" role="separator" aria-hidden="true"></div>
+
+        <button type="submit" class="kb-filter-btn" title="Aplicar filtros" aria-label="Aplicar filtros">
+            <i class="fa-solid fa-filter" aria-hidden="true"></i>
+        </button>
+        <a href="?" class="kb-filter-btn clear" title="Limpar filtros" aria-label="Limpar todos os filtros">
+            <i class="fa-solid fa-eraser" aria-hidden="true"></i>
+        </a>
+
+        <div class="kb-divider" role="separator" aria-hidden="true"></div>
+
+        <button type="button" id="btn-compacto" class="kb-filter-btn" onclick="toggleCompacto()"
+                title="Modo compacto (cartões menores, cabe mais na tela)" aria-label="Alternar modo compacto">
+            <i class="fa-solid fa-compress" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="kb-filter-btn" onclick="toggleTodasColunas()"
+                title="Recolher / expandir todas as colunas" aria-label="Recolher ou expandir todas as colunas">
+            <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
+        </button>
+    </form>
+
+    <!-- KANBAN BOARD -->
+    <div class="kb-board" role="region" aria-label="Quadro kanban de chamados">
+
+        {% for setor_nome, setor_obj, tickets in kanban_data %}
+        {% with col_id=setor_nome|slugify %}
+
+        <div
+            class="kb-col
+                {% if 'Triagem' in setor_nome %} kb-col--triagem
+                {% elif 'Comercial' in setor_nome %} kb-col--comercial
+                {% elif 'Financeiro' in setor_nome %} kb-col--financeiro
+                {% elif 'Implanta' in setor_nome %} kb-col--implant
+                {% else %} kb-col--suporte {% endif %}"
+            role="region"
+            aria-label="Coluna {{ setor_nome }}"
+        >
+            <div class="kb-col__head" onclick="toggleColuna(this)" title="Clique para recolher/expandir esta coluna">
+                <div class="kb-col__head-left">
+                    <span class="kb-col__icon" aria-hidden="true">
+                        {% if 'Triagem' in setor_nome %}<i class="fa-solid fa-filter" style="color:#eab308"></i>
+                        {% elif 'Comercial' in setor_nome %}<i class="fa-solid fa-briefcase" style="color:#3b82f6"></i>
+                        {% elif 'Financeiro' in setor_nome %}<i class="fa-solid fa-dollar-sign" style="color:#10b981"></i>
+                        {% elif 'Implanta' in setor_nome %}<i class="fa-solid fa-rocket" style="color:#f97316"></i>
+                        {% else %}<i class="fa-solid fa-wrench" style="color:#ec4899"></i>{% endif %}
+                    </span>
+                    <span class="kb-col__name">{{ setor_nome }}</span>
+                </div>
+                <span class="kb-col__count" aria-label="{{ tickets|length }} chamados nesta coluna">{{ tickets|length }}</span>
+                <i class="fa-solid fa-chevron-left kb-col__chevron" aria-hidden="true"></i>
+            </div>
+
+            <div
+                class="kb-col__body"
+                data-setor="{{ setor_nome }}"
+                data-setor-id="{{ setor_obj.id|default:'' }}"
+                ondragover="handleDragOver(event)"
+                ondragleave="handleDragLeave(event)"
+                ondrop="handleDrop(event)"
+                aria-label="Lista de chamados em {{ setor_nome }}"
+            >
+                {% for ticket in tickets %}
+                <article
+                    class="kb-card {% if ticket.status == 'CONCLUIDO' %}kb-card--done{% endif %}"
+                    draggable="true"
+                    data-ticket-id="{{ ticket.numero }}"
+                    data-setor-atual="{{ setor_nome }}"
+                    onclick="window.location='{% url 'atendimentos_chamados:detalhe' ticket.numero %}'"
+                    ondragstart="handleDragStart(event)"
+                    ondragend="handleDragEnd(event)"
+                    tabindex="0"
+                    role="button"
+                    aria-label="Chamado #{{ ticket.numero }} — {{ ticket.titulo }} — {{ ticket.get_status_display }}"
+                    onkeydown="if(event.key==='Enter'||event.key===' '){window.location='{% url 'atendimentos_chamados:detalhe' ticket.numero %}'}"
+                >
+                    <div class="kb-card__top">
+                        <div class="kb-card__num-wrap">
+                            <span
+                                class="kb-dot
+                                    {% if ticket.prioridade == 'CRITICA' %}kb-dot--critical
+                                    {% elif ticket.prioridade == 'ALTA' %}kb-dot--high
+                                    {% elif ticket.prioridade == 'MEDIA' %}kb-dot--medium
+                                    {% else %}kb-dot--low{% endif %}"
+                                aria-label="Prioridade {{ ticket.prioridade }}"
+                            ></span>
+                            <span class="kb-card__num">#{{ ticket.numero }}</span>
+                        </div>
+
+                        <span class="kb-status-badge
+                            {% if ticket.status == 'CONCLUIDO' %}kb-status--done
+                            {% elif ticket.status == 'EM_ATENDIMENTO' %}kb-status--attending
+                            {% elif ticket.status == 'AGUARDANDO_CLIENTE' %}kb-status--waiting-c
+                            {% elif ticket.status == 'AGUARDANDO_DESENVOLVIMENTO' %}kb-status--waiting-d
+                            {% else %}kb-status--open{% endif %}"
+                            aria-label="Status: {{ ticket.get_status_display }}"
+                        >{{ ticket.get_status_display }}</span>
+                    </div>
+
+                    <h3 class="kb-card__title" title="{{ ticket.titulo }}">{{ ticket.titulo }}</h3>
+
+                    <p class="kb-card__client" title="{{ ticket.cliente.razao_social }}">
+                        <i class="fa-solid fa-building" aria-hidden="true"></i>
+                        {{ ticket.cliente.razao_social }}
+                    </p>
+
+                    <div class="kb-card__footer">
+                        <div class="kb-tags">
+                            {% if ticket.implantacao_cliente_novo %}
+                            <span class="kb-tag kb-tag--impl" title="Implantação novo cliente">IMPL</span>
+                            {% endif %}
+                            {% if ticket.implantacao_modulo_novo %}
+                            <span class="kb-tag kb-tag--mod" title="Módulo adicional">MOD</span>
+                            {% endif %}
+                            {% if ticket.possui_treinamento %}
+                            <span class="kb-tag kb-tag--trein" title="Treinamento incluído">TREIN</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="kb-card__owner">
+                            {% if ticket.tecnico_responsavel %}
+                            <span class="kb-card__owner-name" title="{{ ticket.tecnico_responsavel.first_name|default:ticket.tecnico_responsavel.username }}">
+                                {{ ticket.tecnico_responsavel.first_name|default:ticket.tecnico_responsavel.username }}
+                            </span>
+                            <div class="kb-avatar" aria-hidden="true">
+                                {{ ticket.tecnico_responsavel.username|make_list|first|upper }}
+                            </div>
+                            {% else %}
+                            <span class="kb-no-owner" aria-label="Sem técnico responsável">
+                                <i class="fa-solid fa-user-xmark" aria-hidden="true"></i> Sem dono
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% endwith %}
+        {% empty %}
+
+        <div class="kb-empty" role="status" aria-live="polite">
+            <i class="fa-solid fa-satellite-dish" aria-hidden="true"></i>
+            <p>Nenhum chamado encontrado</p>
+        </div>
+
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Toast feedback -->
+<div id="kb-toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
+
+<!-- Modal de transferência (aberto ao arrastar um card para outro setor) -->
+<div id="kb-modal" role="dialog" aria-modal="true" aria-labelledby="kb-modal-title">
+    <div class="kb-modal-box">
+        <h3 id="kb-modal-title">Transferir atendimento</h3>
+        <p class="kb-modal-sub">
+            Enviando <strong id="kb-modal-ticket">#0</strong> para o setor
+            <strong id="kb-modal-setor">—</strong>. Quem vai receber?
+        </p>
+        <label class="kb-modal-label" for="kb-modal-tecnico">Responsável</label>
+        <select id="kb-modal-tecnico"><option value="">Carregando...</option></select>
+        <div class="kb-modal-actions">
+            <button type="button" class="kb-modal-btn kb-modal-btn--cancel" onclick="fecharModalTransferencia()">Cancelar</button>
+            <button type="button" class="kb-modal-btn kb-modal-btn--ok" onclick="confirmarTransferencia()">Transferir</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT DO QUADRO — colunas recolhíveis + modo compacto.
+   Tudo fica salvo no localStorage, então cada técnico mantém o
+   arranjo que preferir na SUA máquina (no monitor grande de casa
+   pode deixar tudo aberto; no menor do trabalho, recolher o que
+   não usa).
+   ═══════════════════════════════════════════════════════════════ */
+const KB_LS_COLS = 'kanban_colunas_recolhidas';
+const KB_LS_COMPACTO = 'kanban_modo_compacto';
+
+function _kbChaveColuna(col) {
+    // usa o nome do setor como identificador estável
+    const body = col.querySelector('.kb-col__body');
+    return body ? (body.dataset.setor || '').trim() : '';
+}
+
+function _kbLerRecolhidas() {
+    try { return JSON.parse(localStorage.getItem(KB_LS_COLS)) || []; }
+    catch (e) { return []; }
+}
+
+function _kbSalvarRecolhidas() {
+    const nomes = [];
+    document.querySelectorAll('.kb-col.is-collapsed').forEach(col => {
+        const chave = _kbChaveColuna(col);
+        if (chave) nomes.push(chave);
+    });
+    try { localStorage.setItem(KB_LS_COLS, JSON.stringify(nomes)); } catch (e) {}
+}
+
+/* Recolhe/expande UMA coluna (clique no cabeçalho) */
+function toggleColuna(head) {
+    const col = head.closest('.kb-col');
+    if (!col) return;
+    col.classList.toggle('is-collapsed');
+    _kbSalvarRecolhidas();
+}
+
+/* Recolhe todas, ou expande todas se já estiverem recolhidas */
+function toggleTodasColunas() {
+    const cols = document.querySelectorAll('.kb-col');
+    const algumaAberta = document.querySelector('.kb-col:not(.is-collapsed)');
+    cols.forEach(col => col.classList.toggle('is-collapsed', !!algumaAberta));
+    _kbSalvarRecolhidas();
+}
+
+/* Modo compacto: cartões e colunas menores */
+function toggleCompacto() {
+    const ativo = document.body.classList.toggle('kb-compact');
+    document.getElementById('btn-compacto')?.classList.toggle('is-active', ativo);
+    try { localStorage.setItem(KB_LS_COMPACTO, ativo ? '1' : '0'); } catch (e) {}
+}
+
+/* Restaura o arranjo salvo ao abrir a página */
+(function restaurarLayoutKanban() {
+    // modo compacto
+    try {
+        if (localStorage.getItem(KB_LS_COMPACTO) === '1') {
+            document.body.classList.add('kb-compact');
+            document.getElementById('btn-compacto')?.classList.add('is-active');
+        }
+    } catch (e) {}
+
+    const salvas = _kbLerRecolhidas();
+    const jaConfigurou = salvas.length > 0 || localStorage.getItem(KB_LS_COLS) !== null;
+
+    document.querySelectorAll('.kb-col').forEach(col => {
+        const chave = _kbChaveColuna(col);
+        if (jaConfigurou) {
+            if (salvas.includes(chave)) col.classList.add('is-collapsed');
+        } else {
+            // 1ª visita numa tela estreita: recolhe automaticamente as
+            // colunas VAZIAS, que são as que menos fazem falta
+            const vazia = col.querySelectorAll('.kb-card').length === 0;
+            if (vazia && window.innerWidth < 1500) col.classList.add('is-collapsed');
+        }
+    });
+})();
+
+/* Ao arrastar um cartão sobre uma coluna recolhida, ela abre sozinha
+   — senão seria impossível soltar o chamado numa coluna encolhida. */
+document.querySelectorAll('.kb-col').forEach(col => {
+    col.addEventListener('dragover', () => {
+        if (col.classList.contains('is-collapsed')) {
+            col.classList.remove('is-collapsed');
+            _kbSalvarRecolhidas();
+        }
+    });
+});
+
+(function() {
+    let draggedCard = null;
+    let draggedFrom = null;
+
+    window.handleDragStart = function(e) {
+        draggedCard = e.currentTarget;
+        draggedFrom = e.currentTarget.closest('.kb-col__body');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', draggedCard.dataset.ticketId);
+        setTimeout(() => draggedCard.classList.add('dragging'), 0);
+    };
+
+    window.handleDragEnd = function(e) {
+        if (draggedCard) draggedCard.classList.remove('dragging');
+        document.querySelectorAll('.kb-col__body').forEach(c => c.classList.remove('drag-over'));
+        draggedCard = null;
+        draggedFrom = null;
+    };
+
+    window.handleDragOver = function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const col = e.currentTarget;
+        if (col !== draggedFrom) col.classList.add('drag-over');
+    };
+
+    window.handleDragLeave = function(e) {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+    };
+
+    // Ao soltar o card num setor, NÃO transfere direto: abre o modal para
+    // escolher QUEM daquele setor vai receber (como o usuário pediu — igual à
+    // transferência de dentro do chamado).
+    let pendente = null; // { ticketId, setorId, setorNome, cardEl, fromEl, toEl }
+
+    window.handleDrop = function(e) {
+        e.preventDefault();
+        const targetCol = e.currentTarget;
+        targetCol.classList.remove('drag-over');
+        if (!draggedCard || targetCol === draggedFrom) return;
+
+        const setorId = targetCol.dataset.setorId;
+        // Triagem não tem setor real (id vazio) — não é destino de transferência
+        if (!setorId) {
+            showToast('Escolha um setor de destino (a Triagem não recebe transferência).', true);
+            return;
+        }
+
+        pendente = {
+            ticketId: draggedCard.dataset.ticketId,
+            setorId: setorId,
+            setorNome: targetCol.dataset.setor,
+            cardEl: draggedCard,
+            fromEl: draggedFrom,
+            toEl: targetCol,
+        };
+        abrirModalTransferencia(pendente.ticketId, pendente.setorNome, pendente.setorId);
+    };
+
+    // ── Modal de transferência ──
+    function abrirModalTransferencia(ticketId, setorNome, setorId) {
+        const modal = document.getElementById('kb-modal');
+        document.getElementById('kb-modal-ticket').textContent = '#' + ticketId;
+        document.getElementById('kb-modal-setor').textContent = setorNome;
+        const sel = document.getElementById('kb-modal-tecnico');
+        sel.innerHTML = '<option value="">Carregando...</option>';
+        modal.classList.add('show');
+
+        // busca os técnicos do setor de destino
+        fetch(`/atendimentos/setor/${setorId}/tecnicos/`)
+            .then(r => r.json())
+            .then(lista => {
+                sel.innerHTML = '<option value="">— Deixar na fila do setor (sem responsável) —</option>';
+                lista.forEach(u => {
+                    const o = document.createElement('option');
+                    o.value = u.id; o.textContent = u.nome;
+                    sel.appendChild(o);
+                });
+            })
+            .catch(() => { sel.innerHTML = '<option value="">Erro ao carregar técnicos</option>'; });
+    }
+
+    window.fecharModalTransferencia = function() {
+        document.getElementById('kb-modal').classList.remove('show');
+        pendente = null;
+    };
+
+    window.confirmarTransferencia = function() {
+        if (!pendente) return;
+        const tecnicoId = document.getElementById('kb-modal-tecnico').value;
+        const body = new URLSearchParams();
+        body.append('setor_id', pendente.setorId);
+        if (tecnicoId) body.append('tecnico_id', tecnicoId);
+
+        fetch(`/atendimentos/${pendente.ticketId}/transferir/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            body: body,
+        })
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.ok) {
+                // move o card visualmente e atualiza as contagens
+                pendente.toEl.appendChild(pendente.cardEl);
+                pendente.cardEl.dataset.setorAtual = pendente.setorNome;
+                atualizarContagem(pendente.fromEl);
+                atualizarContagem(pendente.toEl);
+                showToast(`#${pendente.ticketId} transferido para "${pendente.setorNome}"`);
+            } else {
+                showToast(resp.erro || 'Não foi possível transferir', true);
+            }
+            fecharModalTransferencia();
+        })
+        .catch(() => { showToast('Erro de conexão ao transferir', true); fecharModalTransferencia(); });
+    };
+
+    function atualizarContagem(colBody) {
+        const n = colBody.querySelectorAll('.kb-card').length;
+        const badge = colBody.closest('.kb-col').querySelector('.kb-col__count');
+        if (badge) badge.textContent = n;
+    }
+
+    function showToast(msg, isError) {
+        const t = document.getElementById('kb-toast');
+        t.textContent = msg;
+        t.style.borderLeftColor = isError ? 'rgb(var(--c-danger))' : 'rgb(var(--c-accent))';
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3200);
+    }
+
+    function getCookie(name) {
+        const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+        return v ? v[2] : '';
+    }
+
+    /* Auto-submit toggles */
+    document.querySelectorAll('.kb-toggle').forEach(toggle => {
+        toggle.addEventListener('change', () => toggle.closest('form').submit());
+    });
+
+    /* Select auto-submit on change */
+    document.querySelectorAll('.kb-select').forEach(sel => {
+        sel.addEventListener('change', () => sel.closest('form').submit());
+    });
+})();
+</script>
+
+{% endblock %}

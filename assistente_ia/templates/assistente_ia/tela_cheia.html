@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Falar com o Gerente - UnionDESK{% endblock %}
+{% block content %}
+<div class="flex flex-col h-full max-w-3xl mx-auto w-full py-6 px-4">
+
+  <div class="flex items-center gap-3 mb-4 shrink-0">
+    <div class="w-9 h-9 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center">
+      <i class="fa-solid fa-user-tie text-accent-soft text-sm"></i>
+    </div>
+    <div>
+      <h1 class="font-display text-base font-semibold text-ink">Falar com o Gerente</h1>
+      <p class="text-[11px] text-ink-faint">só quando precisar — não é bate-papo</p>
+    </div>
+  </div>
+
+  <div id="ia-mensagens" class="flex-1 overflow-y-auto rounded-xl border border-core-line bg-core-panel px-4 py-4 space-y-3 text-sm leading-relaxed custom-scrollbar"></div>
+
+  <div id="ia-preview-wrap" class="hidden pt-2 shrink-0">
+    <div class="relative inline-block">
+      <img id="ia-preview-img" class="h-16 w-16 object-cover rounded-lg border border-core-line" />
+      <button type="button" onclick="iaRemoverImagem()"
+        class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-danger text-white flex items-center justify-center text-[9px]"
+        aria-label="Remover imagem">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <form id="ia-form" class="mt-3 flex items-end gap-2 shrink-0">
+    {% csrf_token %}
+    <button type="button" onclick="document.getElementById('ia-arquivo').click()"
+      class="util-btn shrink-0" aria-label="Anexar imagem" title="Anexar imagem (ou cole com Ctrl+V)">
+      <i class="fa-solid fa-paperclip text-sm"></i>
+    </button>
+    <input type="file" id="ia-arquivo" accept="image/*" class="hidden" />
+    <textarea id="ia-pergunta" rows="1" placeholder="Pergunta rápida ou cole um print..."
+      class="flex-1 resize-none rounded-lg border border-core-line bg-core-deep text-ink text-sm px-3 py-2.5 focus:outline-none focus:border-accent"></textarea>
+    <button type="submit" class="w-10 h-10 rounded-lg bg-accent hover:bg-accent-soft text-white flex items-center justify-center shrink-0 transition-colors" aria-label="Enviar pergunta">
+      <i class="fa-solid fa-paper-plane text-sm"></i>
+    </button>
+  </form>
+</div>
+
+<script>
+(function () {
+  let imagemPendente = null;
+
+  function getCookie(nome) {
+    const valor = document.cookie.split('; ').find(l => l.startsWith(nome + '='));
+    return valor ? decodeURIComponent(valor.split('=')[1]) : '';
+  }
+
+  function mostrarPreview(dataUrl) {
+    document.getElementById('ia-preview-img').src = dataUrl;
+    document.getElementById('ia-preview-wrap').classList.remove('hidden');
+  }
+  window.iaRemoverImagem = function () {
+    imagemPendente = null;
+    document.getElementById('ia-preview-wrap').classList.add('hidden');
+    document.getElementById('ia-arquivo').value = '';
+  };
+  function carregarImagem(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      imagemPendente = { base64: e.target.result, mime: file.type };
+      mostrarPreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+  document.getElementById('ia-arquivo').addEventListener('change', function (e) {
+    if (e.target.files[0]) carregarImagem(e.target.files[0]);
+  });
+  document.getElementById('ia-pergunta').addEventListener('paste', function (e) {
+    const item = Array.from(e.clipboardData.items || []).find(i => i.type.startsWith('image/'));
+    if (item) { e.preventDefault(); carregarImagem(item.getAsFile()); }
+  });
+
+  function addMensagem(texto, autor, imagemDataUrl) {
+    const box = document.getElementById('ia-mensagens');
+    const linha = document.createElement('div');
+    const ehAnalista = autor === 'analista';
+    linha.className = ehAnalista ? 'flex justify-end' : 'flex justify-start';
+    const bolha = document.createElement('div');
+    bolha.className = ehAnalista
+      ? 'max-w-[75%] rounded-xl rounded-br-sm bg-accent text-white px-3.5 py-2.5'
+      : 'max-w-[75%] rounded-xl rounded-bl-sm bg-core-bubble-in border border-core-line text-ink px-3.5 py-2.5';
+    if (imagemDataUrl) {
+      const img = document.createElement('img');
+      img.src = imagemDataUrl;
+      img.className = 'rounded-lg mb-1.5 max-h-48 object-cover';
+      bolha.appendChild(img);
+    }
+    const span = document.createElement('div');
+    span.style.whiteSpace = 'pre-wrap';
+    span.textContent = texto;
+    bolha.appendChild(span);
+    linha.appendChild(bolha);
+    box.appendChild(linha);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  document.getElementById('ia-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const campo = document.getElementById('ia-pergunta');
+    const pergunta = campo.value.trim();
+    if (!pergunta && !imagemPendente) return;
+
+    addMensagem(pergunta || '(imagem)', 'analista', imagemPendente ? imagemPendente.base64 : null);
+    campo.value = '';
+    const imgEnviada = imagemPendente;
+    iaRemoverImagem();
+
+    const box = document.getElementById('ia-mensagens');
+    const carregando = document.createElement('div');
+    carregando.className = 'flex justify-start';
+    carregando.innerHTML = '<div class="rounded-xl rounded-bl-sm bg-core-bubble-in border border-core-line text-ink-faint px-3.5 py-2.5 text-sm">Pensando...</div>';
+    box.appendChild(carregando);
+    box.scrollTop = box.scrollHeight;
+
+    try {
+      const resp = await fetch('{% url "assistente_ia:perguntar" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({
+          pergunta: pergunta,
+          pagina: window.location.pathname,
+          imagem_base64: imgEnviada ? imgEnviada.base64 : null,
+          imagem_mime: imgEnviada ? imgEnviada.mime : null,
+        }),
+      });
+      const dados = await resp.json();
+      carregando.remove();
+      addMensagem(dados.resposta || dados.erro || 'Sem resposta.', 'ia');
+    } catch (err) {
+      carregando.remove();
+      addMensagem('Erro de conexão. Tente novamente.', 'ia');
+    }
+  });
+
+  document.getElementById('ia-pergunta').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.getElementById('ia-form').requestSubmit();
+    }
+  });
+})();
+</script>
+{% endblock %}

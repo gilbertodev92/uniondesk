@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}{% if query %}"{{ query }}" — Busca{% else %}Buscar{% endif %} | Base de Conhecimento{% endblock %}
+
+{% block content %}
+<div class="kb-root">
+  <div class="kb-wrap kb-wrap--md">
+
+    <header class="kb-head">
+      <div class="kb-head__id">
+        <a href="{% url 'base_conhecimento:rom' %}" class="kb-back" aria-label="Voltar à central">
+          <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div>
+          <h1 class="kb-title">Busca na base</h1>
+          <p class="kb-subtitle">
+            {% if query %}
+              <i class="fa-solid fa-magnifying-glass"></i>
+              {{ total }} resultado{{ total|pluralize }} para "{{ query }}"
+            {% else %}
+              <i class="fa-solid fa-layer-group"></i> Todos os sistemas de uma vez
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <form method="get" class="kb-filters">
+      <div class="kb-search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" name="q" value="{{ query }}" class="kb-search" autofocus
+               placeholder="Descreva o problema, o código ou o título..." autocomplete="off">
+      </div>
+
+      <select name="sistema" class="kb-select">
+        <option value="">Todos os sistemas</option>
+        {% for s in sistemas %}
+        <option value="{{ s.pk }}" {% if sistema_atual == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.nome }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="tipo" class="kb-select">
+        <option value="">Todos os tipos</option>
+        {% for valor, rotulo in tipos %}
+        <option value="{{ valor }}" {% if tipo_atual == valor %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="kb-btn kb-btn--primary"><i class="fa-solid fa-magnifying-glass"></i> <span>Buscar</span></button>
+    </form>
+
+    {% if not busca_no_conteudo and query %}
+    <p class="kb-hint">
+      <i class="fa-solid fa-circle-info"></i>
+      A busca cobre código, título e tags. Para buscar dentro do texto dos artigos,
+      rode <code>manage.py extrair_imagens_base64</code> e ligue
+      <code>BC_BUSCAR_NO_CONTEUDO = True</code> no settings.
+    </p>
+    {% endif %}
+
+    {% if query %}
+    <div class="kb-list">
+      {% for artigo in artigos %}
+      <a href="{% url 'base_conhecimento:artigo_detalhe' artigo.sistema.pk artigo.slug %}"
+         class="kb-item kb-item--{{ artigo.tipo }}">
+
+        <div class="kb-item__main">
+          <span class="kb-code">{{ artigo.codigo }}</span>
+          <div class="kb-item__texts">
+            <h3 class="kb-item__title">{{ artigo.titulo }}</h3>
+            <div class="kb-item__meta">
+              <span class="kb-sistema"><i class="fa-solid fa-microchip"></i> {{ artigo.sistema.nome }}</span>
+              <span class="kb-type kb-type--{{ artigo.tipo }}">{{ artigo.get_tipo_display }}</span>
+              {% for tag in artigo.tags_lista|slice:":3" %}
+              <span class="kb-tag">#{{ tag }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="kb-item__side">
+          <div class="kb-item__date">
+            <span class="kb-item__date-lbl">Atualizado</span>
+            <span class="kb-item__date-val">{{ artigo.atualizado_em|date:"d/m/Y" }}</span>
+          </div>
+          <span class="kb-item__go" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
+        </div>
+      </a>
+      {% empty %}
+      <div class="kb-empty">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <p>Nada encontrado para "{{ query }}"</p>
+        <span>Tente o código do artigo, uma palavra do título ou uma tag.</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <nav class="kb-pager" aria-label="Paginação">
+      {% if page_obj.has_previous %}
+      <a href="?q={{ query|urlencode }}&sistema={{ sistema_atual }}&tipo={{ tipo_atual }}&page={{ page_obj.previous_page_number }}" class="kb-pager__btn">
+        <i class="fa-solid fa-chevron-left"></i>
+      </a>
+      {% endif %}
+      <span class="kb-pager__info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+      <a href="?q={{ query|urlencode }}&sistema={{ sistema_atual }}&tipo={{ tipo_atual }}&page={{ page_obj.next_page_number }}" class="kb-pager__btn">
+        <i class="fa-solid fa-chevron-right"></i>
+      </a>
+      {% endif %}
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="kb-empty kb-empty--start">
+      <i class="fa-solid fa-keyboard"></i>
+      <p>Digite para buscar em toda a base</p>
+      <span>Código do artigo, palavra do título ou tag — em todos os sistemas.</span>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<style>
+.kb-root { padding: 20px 16px 40px; }
+.kb-wrap { max-width: 1300px; margin: 0 auto; }
+.kb-wrap--md { max-width: 1050px; }
+
+.kb-head { display:flex; align-items:center; gap:16px; padding-bottom:18px; margin-bottom:18px; border-bottom:1px solid rgb(var(--c-line)); }
+.kb-head__id { display:flex; align-items:center; gap:14px; min-width:0; }
+.kb-back { width:42px; height:42px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:11px; color:rgb(var(--c-ink-soft)); text-decoration:none; transition:color .15s, border-color .15s; }
+.kb-back:hover { color:rgb(var(--c-accent)); border-color:rgb(var(--c-accent) / .4); }
+.kb-title { font-size:20px; font-weight:800; color:rgb(var(--c-ink)); line-height:1.2; }
+.kb-subtitle { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.14em; color:rgb(var(--c-ink-faint)); margin-top:6px; display:flex; align-items:center; gap:7px; }
+
+.kb-filters { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.kb-search-wrap { position:relative; flex:1; min-width:220px; }
+.kb-search-wrap i { position:absolute; left:16px; top:50%; transform:translateY(-50%); color:rgb(var(--c-ink-faint)); font-size:13px; pointer-events:none; }
+.kb-search { width:100%; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:12px; padding:13px 16px 13px 44px; color:rgb(var(--c-ink)); font-size:14px; font-family:'Inter',sans-serif; outline:none; transition:border-color .15s; }
+.kb-search::placeholder { color:rgb(var(--c-ink-faint)); }
+.kb-search:focus { border-color:rgb(var(--c-accent)); box-shadow:0 0 0 2px rgb(var(--c-accent) / .18); }
+
+.kb-select { background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:12px; padding:12px 14px; color:rgb(var(--c-ink)); font-size:12.5px; font-family:'Inter',sans-serif; outline:none; cursor:pointer; }
+.kb-select:focus { border-color:rgb(var(--c-accent)); }
+.kb-select option { background:rgb(var(--c-panel)); }
+
+.kb-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:46px; padding:0 20px; font-family:'Inter',sans-serif; font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; border-radius:12px; cursor:pointer; text-decoration:none; border:1px solid rgb(var(--c-line)); background:rgb(var(--c-deep)); color:rgb(var(--c-ink-soft)); transition:background-color .15s, color .15s, border-color .15s; white-space:nowrap; }
+.kb-btn--primary { background:rgb(var(--c-accent)); border-color:rgb(var(--c-accent)); color:#fff; }
+.kb-btn--primary:hover { filter:brightness(1.1); }
+
+.kb-hint { font-size:11.5px; color:rgb(var(--c-ink-faint)); background:rgb(var(--c-warn) / .07); border:1px solid rgb(var(--c-warn) / .2); border-radius:10px; padding:11px 14px; margin-bottom:14px; line-height:1.6; }
+.kb-hint i { color:rgb(var(--c-warn)); margin-right:6px; }
+.kb-hint code { font-family:'JetBrains Mono', monospace; font-size:10.5px; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:4px; padding:1px 5px; }
+
+.kb-list { display:flex; flex-direction:column; gap:8px; }
+.kb-item { display:flex; align-items:center; justify-content:space-between; gap:16px; background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-left:3px solid rgb(var(--c-ink-faint)); border-radius:12px; padding:14px 16px; text-decoration:none; transition:border-color .15s, transform .12s, background-color .25s; }
+.kb-item:hover { transform:translateX(2px); border-color:rgb(var(--c-accent) / .4); }
+.kb-item--erro { border-left-color:rgb(var(--c-danger)); }
+.kb-item--procedimento { border-left-color:rgb(var(--c-accent)); }
+.kb-item--tutorial { border-left-color:rgb(var(--c-success)); }
+.kb-item--faq { border-left-color:rgb(var(--c-warn)); }
+
+.kb-item__main { display:flex; align-items:center; gap:14px; min-width:0; flex:1; }
+.kb-code { font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:700; color:rgb(var(--c-accent)); background:rgb(var(--c-accent) / .08); border:1px solid rgb(var(--c-accent) / .25); border-radius:7px; padding:5px 9px; flex-shrink:0; white-space:nowrap; }
+.kb-item__texts { min-width:0; }
+.kb-item__title { font-size:13.5px; font-weight:700; color:rgb(var(--c-ink)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.kb-item__meta { display:flex; align-items:center; gap:8px; margin-top:5px; flex-wrap:wrap; }
+
+/* o sistema aparece no resultado — é o que a busca por sistema escondia */
+.kb-sistema { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:rgb(var(--c-ink-soft)); }
+.kb-sistema i { color:rgb(var(--c-ink-faint)); margin-right:5px; }
+
+.kb-type { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; border-radius:5px; padding:2px 7px; }
+.kb-type--erro { color:rgb(var(--c-danger)); background:rgb(var(--c-danger) / .1); border:1px solid rgb(var(--c-danger) / .25); }
+.kb-type--procedimento { color:rgb(var(--c-accent)); background:rgb(var(--c-accent) / .1); border:1px solid rgb(var(--c-accent) / .25); }
+.kb-type--tutorial { color:rgb(var(--c-success)); background:rgb(var(--c-success) / .1); border:1px solid rgb(var(--c-success) / .25); }
+.kb-type--faq { color:rgb(var(--c-warn)); background:rgb(var(--c-warn) / .1); border:1px solid rgb(var(--c-warn) / .25); }
+.kb-tag { font-size:9.5px; font-weight:600; color:rgb(var(--c-ink-faint)); font-family:'JetBrains Mono', monospace; }
+
+.kb-item__side { display:flex; align-items:center; gap:14px; flex-shrink:0; }
+.kb-item__date { text-align:right; }
+.kb-item__date-lbl { display:block; font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.12em; color:rgb(var(--c-ink-faint)); }
+.kb-item__date-val { display:block; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:600; color:rgb(var(--c-ink-soft)); margin-top:2px; }
+.kb-item__go { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); color:rgb(var(--c-ink-faint)); font-size:10px; transition:background-color .15s, color .15s; }
+.kb-item:hover .kb-item__go { background:rgb(var(--c-accent)); color:#fff; border-color:rgb(var(--c-accent)); }
+
+.kb-empty { text-align:center; padding:70px 20px; border:1px dashed rgb(var(--c-line)); border-radius:14px; }
+.kb-empty i { font-size:38px; color:rgb(var(--c-line)); display:block; margin-bottom:14px; }
+.kb-empty p { font-size:14px; font-weight:700; color:rgb(var(--c-ink-soft)); }
+.kb-empty span { font-size:12px; color:rgb(var(--c-ink-faint)); }
+
+.kb-pager { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:20px; }
+.kb-pager__btn { width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); color:rgb(var(--c-ink-soft)); text-decoration:none; transition:color .15s, border-color .15s; }
+.kb-pager__btn:hover { color:rgb(var(--c-accent)); border-color:rgb(var(--c-accent) / .4); }
+.kb-pager__info { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:rgb(var(--c-ink-faint)); }
+
+@media (max-width: 720px) {
+    .kb-item { flex-direction:column; align-items:stretch; gap:12px; }
+    .kb-item__side { justify-content:space-between; padding-top:12px; border-top:1px solid rgb(var(--c-line)); }
+    .kb-item__date { text-align:left; }
+    .kb-item__title { white-space:normal; }
+    .kb-filters { flex-direction:column; }
+}
+</style>
+{% endblock %}

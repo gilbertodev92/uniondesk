@@ -1,0 +1,197 @@
+{% load horas_extras %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Folha de Ponto - {{ usuario.get_full_name|default:usuario.username }}</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+
+    @page { 
+        size: A4 portrait; 
+        margin: 10mm 15mm; 
+    }
+
+    html, body {
+        margin: 0; padding: 0;
+        font-family: 'Inter', Arial, sans-serif;
+        font-size: 10px;
+        color: #1e293b; /* slate-800 */
+        background: #fff;
+    }
+
+    /* Ocultar elementos na impressão (caso aberto no navegador) */
+    @media print {
+        .no-print { display: none !important; }
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+    .container { max-width: 210mm; margin: 0 auto; }
+
+    /* Cabeçalho Corporativo */
+    .header {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 15px;
+    }
+    .logo { max-height: 45px; }
+    .title-box { text-align: right; }
+    .title-box h1 { margin: 0; font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #0f172a; }
+    .title-box p { margin: 2px 0 0 0; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 2px; }
+
+    /* Info do Colaborador */
+    .info-box {
+        display: flex; justify-content: space-between;
+        background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;
+        padding: 10px 15px; margin-bottom: 15px;
+    }
+    .info-item { display: flex; flex-direction: column; gap: 3px; }
+    .info-label { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; }
+    .info-value { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0f172a; }
+
+    /* Tabela Principal */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    thead th {
+        background: #0f172a; color: #ffffff;
+        font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        padding: 6px 4px; border: 1px solid #0f172a; text-align: center; white-space: nowrap;
+    }
+    tbody td {
+        padding: 5px 4px; border: 1px solid #cbd5e1;
+        font-size: 9px; font-weight: 600; text-align: center; vertical-align: middle;
+        color: #334155;
+    }
+    tbody tr:nth-child(even) td { background: #f8fafc; }
+    
+    /* Destaques na Tabela */
+    .td-data { font-weight: 800; color: #0f172a; }
+    .td-dia { text-transform: uppercase; font-size: 8px; color: #64748b; }
+    .td-hora { font-family: 'Courier New', monospace; font-weight: 700; font-size: 10px; }
+    .td-extra { font-family: 'Courier New', monospace; font-weight: 800; color: #059669; } /* Verde para extra */
+    .td-desc { text-align: left !important; font-size: 8px; font-weight: 400; max-width: 150px; }
+
+    /* Totais do Mês */
+    .summary-box {
+        display: flex; justify-content: flex-end; gap: 20px;
+        border-top: 2px solid #e2e8f0; padding-top: 10px; margin-bottom: 30px;
+    }
+    .summary-item { text-align: right; }
+    .summary-label { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #64748b; }
+    .summary-value { font-size: 14px; font-weight: 900; font-family: 'Courier New', monospace; }
+
+    /* Termo Jurídico e Assinaturas */
+    .signature-section { page-break-inside: avoid; margin-top: 30px; }
+    .legal-text {
+        font-size: 8px; text-align: justify; color: #475569; line-height: 1.4;
+        background: #f1f5f9; padding: 10px; border-radius: 4px; margin-bottom: 30px;
+    }
+    .signatures { display: flex; justify-content: space-around; margin-top: 40px; }
+    .sign-box { text-align: center; width: 40%; }
+    .sign-line { border-top: 1px solid #0f172a; margin-bottom: 5px; }
+    .sign-name { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #0f172a; }
+    .sign-role { font-size: 8px; font-weight: 600; color: #64748b; text-transform: uppercase; }
+
+    /* Rodapé */
+    .footer { text-align: center; font-size: 7px; color: #94a3b8; text-transform: uppercase; margin-top: 30px; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+    <div class="no-print" style="text-align: center; padding: 15px; background: #0f111a; margin-bottom: 20px;">
+        <button onclick="window.print()" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; text-transform: uppercase;">🖨️ Imprimir Espelho de Ponto</button>
+        <button onclick="window.history.back()" style="background: #374151; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-left: 10px;">Voltar</button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <img src="data:image/png;base64,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" alt="Lógica Mais Logo" class="logo">
+            <div class="title-box">
+                <h1>Espelho de Ponto Oficial</h1>
+                <p>Mês de Referência: {{ competencia }}</p>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-item">
+                <span class="info-label">Colaborador(a)</span>
+                <span class="info-value">{{ usuario.get_full_name|default:usuario.username }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Usuário / Sistema</span>
+                <span class="info-value">{{ usuario.username }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Situação do Documento</span>
+                <span class="info-value" style="color: #059669;">✔️ Validado Pelo Sistema</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Data de Emissão</span>
+                <span class="info-value">{% now "d/m/Y" %}</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Data</th>
+                    <th style="width: 12%;">Dia da Semana</th>
+                    <th style="width: 9%;">Entrada 1</th>
+                    <th style="width: 9%;">Saída 1</th>
+                    <th style="width: 9%;">Entrada 2</th>
+                    <th style="width: 9%;">Saída 2</th>
+                    <th style="width: 9%;">Total Dia</th>
+                    <th style="width: 9%;">H. Extras</th>
+                    <th style="width: 24%; text-align: left;">Ocorrência / Justificativa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if rows %}
+                    {% for r in rows %}
+                    <tr>
+                        <td class="td-data">{{ r.data|date:"d/m/Y" }}</td>
+                        <td class="td-dia">{{ r.data|date:"l" }}</td>
+                        <td class="td-hora">{% if r.e1 %}{{ r.e1|time:"H:i" }}{% else %}—{% endif %}</td>
+                        <td class="td-hora">{% if r.s1 %}{{ r.s1|time:"H:i" }}{% else %}—{% endif %}</td>
+                        <td class="td-hora">{% if r.e2 %}{{ r.e2|time:"H:i" }}{% else %}—{% endif %}</td>
+                        <td class="td-hora">{% if r.s2 %}{{ r.s2|time:"H:i" }}{% else %}—{% endif %}</td>
+                        <td class="td-hora">{{ r.total|hhmm }}</td>
+                        <td class="td-extra">{% if r.extra > 0 %}+{{ r.extra|hhmm }}{% else %}00:00{% endif %}</td>
+                        <td class="td-desc">
+                            {% if r.descricao %}
+                                <i>{{ r.descricao|linebreaksbr }}</i>
+                            {% else %}
+                                {{ r.tipo|upper }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="9" style="padding: 30px; text-transform: uppercase; font-weight: bold; color: #94a3b8;">Nenhum registro de ponto validado nesta competência.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <div class="signature-section">
+            <div class="legal-text">
+                <strong>TERMO DE RECONHECIMENTO:</strong> Reconheço a exatidão das horas registradas neste "Espelho de Ponto", correspondentes ao meu trabalho no período indicado. Declaro que os intervalos para repouso e alimentação foram integralmente usufruídos e que os eventuais apontamentos manuais foram realizados por mim e devidamente aprovados pela gestão.
+            </div>
+
+            <div class="signatures">
+                <div class="sign-box">
+                    <div class="sign-line"></div>
+                    <div class="sign-name">{{ usuario.get_full_name|default:usuario.username }}</div>
+                    <div class="sign-role">Assinatura do Colaborador</div>
+                </div>
+                <div class="sign-box">
+                    <div class="sign-line"></div>
+                    <div class="sign-name">Gestão Lógica Mais</div>
+                    <div class="sign-role">Recursos Humanos / Diretoria</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Documento gerado eletronicamente via Lógica Desk Pro.
+        </div>
+    </div>
+</body>
+</html>

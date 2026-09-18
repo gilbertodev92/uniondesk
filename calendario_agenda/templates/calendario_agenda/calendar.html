@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Agenda e Calendário{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5 p-3 md:p-4">
+
+    <!-- ═══ CABEÇALHO ═══ -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-xl md:text-2xl font-bold text-ink flex items-center gap-3">
+                <span class="p-2 bg-accent/10 border border-accent/20 rounded-lg text-accent">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </span>
+                Centro de Comando da Agenda
+            </h1>
+            <p class="text-ink-soft text-sm mt-1">Visão operacional de eventos, carga e execução de tarefas.</p>
+        </div>
+
+        <a href="{% url 'calendario_agenda:event_create' %}"
+           class="w-full md:w-auto justify-center bg-accent hover:bg-accent-soft text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg flex items-center gap-2 transition-all">
+            <i class="fa-solid fa-plus"></i> Novo Evento
+        </a>
+    </div>
+
+    <!-- ═══ MÉTRICAS ═══ -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <div class="ag-metric">
+            <span class="ag-metric__label"><i class="fa-regular fa-calendar text-ink-faint"></i> Eventos Hoje</span>
+            <strong class="ag-metric__value text-ink">{{ metricas.hoje|default:"0" }}</strong>
+        </div>
+        <div class="ag-metric ag-metric--accent">
+            <span class="ag-metric__label"><i class="fa-solid fa-calendar-week text-accent"></i> Semana</span>
+            <strong class="ag-metric__value text-accent">{{ metricas.semana|default:"0" }}</strong>
+        </div>
+        <div class="ag-metric ag-metric--success">
+            <span class="ag-metric__label"><i class="fa-solid fa-rocket text-success"></i> Implantações</span>
+            <strong class="ag-metric__value text-success">{{ metricas.implantacoes|default:"0" }}</strong>
+        </div>
+        <div class="ag-metric ag-metric--warn">
+            <span class="ag-metric__label"><i class="fa-solid fa-graduation-cap text-warn"></i> Treinamentos</span>
+            <strong class="ag-metric__value text-warn">{{ metricas.treinamentos|default:"0" }}</strong>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <div class="lg:col-span-9 space-y-4">
+
+            <!-- ═══ BARRA DE CONTROLE ═══ -->
+            <div class="ag-panel p-3 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3">
+
+                <div class="flex items-center gap-3 justify-between md:justify-start">
+                    <div class="flex items-center bg-core-deep border border-core-line rounded-xl p-1">
+                        <button id="cal-prev" class="ag-nav-btn" title="Anterior" aria-label="Período anterior"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button id="cal-today" class="px-3 py-1.5 text-[11px] font-bold text-ink-soft hover:text-ink transition-all uppercase tracking-wider">Hoje</button>
+                        <button id="cal-next" class="ag-nav-btn" title="Próximo" aria-label="Próximo período"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    <h2 id="custom-cal-title" class="text-base md:text-lg font-bold text-ink capitalize md:min-w-[150px]">Carregando...</h2>
+                </div>
+
+                <div class="flex items-center gap-1 bg-core-deep border border-core-line rounded-xl p-1 overflow-x-auto">
+                    <button class="chip chip-active" data-view="dayGridMonth">Mês</button>
+                    <button class="chip" data-view="timeGridWeek">Semana</button>
+                    <button class="chip" data-view="timeGridDay">Dia</button>
+                    <button class="chip" data-view="listWeek">Lista</button>
+                </div>
+            </div>
+
+            <div class="ag-panel p-2 md:p-4 overflow-hidden">
+                <div id="calendar"></div>
+            </div>
+        </div>
+
+        <!-- ═══ LATERAL ═══ -->
+        <aside class="lg:col-span-3 space-y-4">
+            <div class="ag-panel p-5">
+                <h3 class="text-[11px] font-bold text-ink-faint uppercase tracking-widest mb-4 border-b border-core-line pb-3">Legenda Operacional</h3>
+                <ul class="space-y-3.5 text-sm font-medium text-ink-soft">
+                    <li class="flex items-center gap-3"><span class="ag-dot ag-dot--meeting"></span> Reuniões / Visitas</li>
+                    <li class="flex items-center gap-3"><span class="ag-dot ag-dot--deploy"></span> Implantações</li>
+                    <li class="flex items-center gap-3"><span class="ag-dot ag-dot--training"></span> Treinamentos / Dúvidas</li>
+                    <li class="flex items-center gap-3"><span class="ag-dot ag-dot--urgent"></span> Urgentes / Plantão</li>
+                </ul>
+            </div>
+
+            <div class="rounded-2xl border border-accent/20 bg-accent/5 p-5">
+                <h3 class="text-sm font-bold text-accent mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb"></i> Dica de Uso
+                </h3>
+                <p class="text-xs text-ink-soft leading-relaxed">
+                    Arraste eventos no calendário para remarcar datas. Clique em um evento para abrir a edição e ver
+                    detalhes completos como endereço e empresa.
+                </p>
+            </div>
+        </aside>
+
+    </div>
+</div>
+
+{{ events_payload|json_script:"events-data" }}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales-all.global.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   AGENDA — consome os tokens globais do base.html.
+   Nenhuma cor hardcoded: troca de tema re-tematiza tudo.
+   ═══════════════════════════════════════════════════════════ */
+
+.ag-panel {
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 1rem;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+/* ── Cards de métrica ── */
+.ag-metric {
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 1rem;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+.ag-metric::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: rgb(var(--c-line));
+}
+.ag-metric--accent::after  { background: rgb(var(--c-accent)); }
+.ag-metric--success::after { background: rgb(var(--c-success)); }
+.ag-metric--warn::after    { background: rgb(var(--c-warn)); }
+.ag-metric__label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgb(var(--c-ink-faint));
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.ag-metric__value {
+    font-size: 26px;
+    font-weight: 900;
+    display: block;
+    margin-top: 6px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.ag-nav-btn {
+    padding: 6px 12px;
+    border-radius: 0.5rem;
+    color: rgb(var(--c-ink-faint));
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+.ag-nav-btn:hover { color: rgb(var(--c-ink)); background: rgb(var(--c-line)); }
+
+/* ── Chips de visualização ── */
+.chip {
+    padding: 6px 14px;
+    border-radius: 8px;
+    color: rgb(var(--c-ink-faint));
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: background-color 0.15s, color 0.15s;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.chip:hover { color: rgb(var(--c-ink)); background: rgb(var(--c-line)); }
+.chip-active {
+    background: rgb(var(--c-accent)) !important;
+    color: #fff !important;
+}
+
+/* ── Legenda ── */
+.ag-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.ag-dot--meeting  { background: rgb(var(--c-accent));  box-shadow: 0 0 8px rgb(var(--c-accent) / 0.5); }
+.ag-dot--deploy   { background: rgb(var(--c-success)); box-shadow: 0 0 8px rgb(var(--c-success) / 0.5); }
+.ag-dot--training { background: rgb(var(--c-warn));    box-shadow: 0 0 8px rgb(var(--c-warn) / 0.5); }
+.ag-dot--urgent   { background: rgb(var(--c-danger));  box-shadow: 0 0 8px rgb(var(--c-danger) / 0.5); }
+
+/* ═══════════════════════════════════════════════════════════
+   FULLCALENDAR — tematizado pelas próprias variáveis do plugin
+   ═══════════════════════════════════════════════════════════ */
+#calendar { min-height: 520px; }
+.fc-header-toolbar { display: none !important; }
+
+.fc {
+    --fc-border-color:        rgb(var(--c-line));
+    --fc-page-bg-color:       transparent;
+    --fc-today-bg-color:      rgb(var(--c-accent) / 0.06);
+    --fc-neutral-bg-color:    rgb(var(--c-deep));
+    --fc-list-event-hover-bg-color: rgb(var(--c-deep));
+    --fc-highlight-color:     rgb(var(--c-accent) / 0.12);
+    --fc-now-indicator-color: rgb(var(--c-danger));
+}
+.fc-theme-standard td, .fc-theme-standard th { border-color: rgb(var(--c-line)) !important; }
+
+.fc .fc-col-header-cell-cushion {
+    color: rgb(var(--c-ink-faint));
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 12px 0;
+}
+.fc .fc-daygrid-day-number {
+    color: rgb(var(--c-ink-soft));
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px;
+    transition: color 0.15s;
+}
+.fc .fc-daygrid-day-number:hover { color: rgb(var(--c-accent)); text-decoration: none; }
+.fc .fc-day-today .fc-daygrid-day-number { color: rgb(var(--c-accent)); font-weight: 800; }
+.fc .fc-day-other .fc-daygrid-day-number { color: rgb(var(--c-ink-faint) / 0.5); }
+
+/* horas na visão semana/dia */
+.fc .fc-timegrid-slot-label-cushion,
+.fc .fc-timegrid-axis-cushion { color: rgb(var(--c-ink-faint)); font-size: 11px; }
+
+/* visão lista */
+.fc .fc-list-day-cushion { background: rgb(var(--c-deep)) !important; }
+.fc .fc-list-day-text, .fc .fc-list-day-side-text { color: rgb(var(--c-ink)); font-weight: 700; }
+.fc .fc-list-event-title, .fc .fc-list-event-time { color: rgb(var(--c-ink-soft)); }
+.fc .fc-list-empty { background: transparent; color: rgb(var(--c-ink-faint)); }
+.fc-list-event:hover td { background: rgb(var(--c-deep)) !important; }
+
+/* "+N mais" */
+.fc .fc-daygrid-more-link { color: rgb(var(--c-accent)); font-weight: 700; font-size: 10px; }
+.fc .fc-popover {
+    background: rgb(var(--c-panel)) !important;
+    border-color: rgb(var(--c-line)) !important;
+}
+.fc .fc-popover-header {
+    background: rgb(var(--c-deep)) !important;
+    color: rgb(var(--c-ink)) !important;
+}
+
+/* ── EVENTOS: cor por CLASSE, não por hex inline.
+      Isso é o que faz o calendário reagir à troca de tema. ── */
+.fc-event {
+    border-radius: 6px !important;
+    border: none !important;
+    padding: 3px 6px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    cursor: pointer;
+    transition: filter 0.1s;
+}
+.fc-event:hover { filter: brightness(1.12); }
+.fc-event .fc-event-main { color: #fff; }
+
+.fc-event.ev-meeting  { background-color: rgb(var(--c-accent))  !important; }
+.fc-event.ev-deploy   { background-color: rgb(var(--c-success)) !important; }
+.fc-event.ev-training { background-color: rgb(var(--c-warn))    !important; }
+.fc-event.ev-urgent   { background-color: rgb(var(--c-danger))  !important; }
+
+/* pontinho da visão lista acompanha a cor do evento */
+.fc-list-event.ev-meeting  .fc-list-event-dot { border-color: rgb(var(--c-accent))  !important; }
+.fc-list-event.ev-deploy   .fc-list-event-dot { border-color: rgb(var(--c-success)) !important; }
+.fc-list-event.ev-training .fc-list-event-dot { border-color: rgb(var(--c-warn))    !important; }
+.fc-list-event.ev-urgent   .fc-list-event-dot { border-color: rgb(var(--c-danger))  !important; }
+.fc-list-event.ev-meeting  .fc-list-event-title,
+.fc-list-event.ev-deploy   .fc-list-event-title,
+.fc-list-event.ev-training .fc-list-event-title,
+.fc-list-event.ev-urgent   .fc-list-event-title { color: rgb(var(--c-ink)); }
+
+/* eventos de fundo (bloqueio de agenda) */
+.fc-bg-event { opacity: 0.18 !important; }
+
+/* ── MOBILE ── */
+@media (max-width: 767px) {
+    #calendar { min-height: 420px; }
+    .fc .fc-daygrid-day-number { font-size: 11px; padding: 5px; }
+    .fc .fc-col-header-cell-cushion { font-size: 9px; padding: 8px 0; }
+    .fc-event { font-size: 9.5px !important; padding: 2px 4px !important; }
+    .ag-metric { padding: 13px 14px; }
+    .ag-metric__value { font-size: 21px; }
+    .ag-metric__label { font-size: 9px; }
+}
+</style>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const rawEvents = JSON.parse(document.getElementById("events-data").textContent || "[]");
+
+    // ══════════════════════════════════════════════════════
+    // CLASSIFICAÇÃO DE EVENTOS
+    // Atribui uma CLASSE (não uma cor fixa). A cor vem do CSS,
+    // que lê os tokens do tema — então segue dark/gray/light.
+    // ══════════════════════════════════════════════════════
+    const eventsData = rawEvents.map(ev => {
+        const source = (ev.source || (ev.extendedProps && ev.extendedProps.source) || '').toLowerCase();
+        const title  = (ev.title || "").toLowerCase();
+
+        let cls = 'ev-meeting'; // padrão: reuniões / visitas / manual
+
+        if (source === 'implantacao' || title.includes('implant')) {
+            cls = 'ev-deploy';
+        } else if (source === 'cs' || title.includes('treinament') || title.includes('dúvida') || title.includes('duvida')) {
+            cls = 'ev-training';
+        } else if (source === 'chamado' || title.includes('urgent') || title.includes('plantão') || title.includes('plantao')) {
+            cls = 'ev-urgent';
+        }
+
+        ev.classNames = [].concat(ev.classNames || [], cls);
+
+        // remove cores fixas que viessem do backend (senão sobrepõem o CSS)
+        delete ev.backgroundColor;
+        delete ev.borderColor;
+        delete ev.color;
+
+        return ev;
+    });
+
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+
+    const cal = new FullCalendar.Calendar(document.getElementById("calendar"), {
+        initialView: isMobile ? "listWeek" : "dayGridMonth",  // no celular, lista é mais legível que grade
+        height: "auto",
+        locale: "pt-br",
+        firstDay: 0,
+        headerToolbar: false,
+        dayMaxEventRows: isMobile ? 2 : true,
+
+        editable: !isMobile,              // arrastar no toque conflita com o scroll da página
+        eventDurationEditable: !isMobile,
+
+        events: eventsData,
+
+        datesSet: function (info) {
+            document.getElementById('custom-cal-title').innerText = info.view.title;
+        },
+        eventClick: function (info) {
+            if (info.event.url) {
+                info.jsEvent.preventDefault();
+                window.location.href = info.event.url;
+            }
+        },
+        eventMouseEnter: function (info) {
+            const ext = info.event.extendedProps || {};
+            const linhas = [
+                info.event.title || "",
+                ext.empresa ? `Empresa: ${ext.empresa}` : "",
+                ext.location ? `Local: ${ext.location}` : ""
+            ].filter(Boolean);
+            info.el.title = linhas.join("\n");
+        },
+        eventDrop:   function (info) { atualizarEventoNoBanco(info); },
+        eventResize: function (info) { atualizarEventoNoBanco(info); }
+    });
+
+    cal.render();
+
+    // marca o chip correspondente à view inicial (mobile abre em Lista)
+    if (isMobile) {
+        document.querySelectorAll(".chip").forEach(c => {
+            c.classList.toggle("chip-active", c.getAttribute("data-view") === "listWeek");
+        });
+    }
+
+    function atualizarEventoNoBanco(info) {
+        const eventId  = info.event.id;
+        const newStart = info.event.start.toISOString();
+        const newEnd   = info.event.end ? info.event.end.toISOString() : null;
+
+        fetch(`/calendario-agenda/evento/${eventId}/atualizar-data/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ start: newStart, end: newEnd })
+        }).then(response => {
+            if (!response.ok) {
+                alert("Erro ao salvar a nova data. O evento voltará ao dia original.");
+                info.revert();
+            }
+        }).catch(() => {
+            alert("Erro de conexão com o servidor!");
+            info.revert();
+        });
+    }
+
+    document.getElementById("cal-prev").addEventListener("click", () => cal.prev());
+    document.getElementById("cal-next").addEventListener("click", () => cal.next());
+    document.getElementById("cal-today").addEventListener("click", () => cal.today());
+
+    const chips = document.querySelectorAll(".chip");
+    chips.forEach(ch => {
+        ch.addEventListener("click", () => {
+            chips.forEach(c => c.classList.remove("chip-active"));
+            ch.classList.add("chip-active");
+            cal.changeView(ch.getAttribute("data-view"));
+        });
+    });
+});
+</script>
+{% endblock %}

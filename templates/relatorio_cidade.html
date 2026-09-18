@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório - {{ cidade }} | Lógica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { font-size: 11pt; background-color: white !important; }
+            .report-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; padding: 0 !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8 font-sans">
+
+    <div class="max-w-5xl mx-auto bg-white p-10 report-container shadow-lg rounded-lg border border-gray-200">
+        
+        <div class="flex justify-between items-end border-b-2 border-blue-600 pb-6 mb-6">
+            <div>
+                <h1 class="text-3xl font-black text-gray-800 uppercase tracking-tighter">Relatório de Clientes</h1>
+                <p class="text-lg text-blue-600 font-bold uppercase tracking-widest mt-1">
+                    <i class="fa-solid fa-location-dot mr-2"></i> Município: {{ cidade }}
+                </p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm font-bold text-gray-500 uppercase">Lógica Mais Tecnologia</p>
+                <p class="text-[10px] text-gray-400 mt-1 uppercase">Emitido em: {{ data_geracao|date:"d/m/Y - H:i" }}</p>
+            </div>
+        </div>
+
+        <div class="mb-8 flex gap-4">
+            <div class="flex-1 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <span class="text-[10px] font-black text-blue-400 uppercase block mb-1">Total de Clientes Ativos</span>
+                <span class="text-3xl font-black text-blue-800">{{ clientes|length }}</span>
+            </div>
+            <div class="flex-1 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <span class="text-[10px] font-black text-gray-400 uppercase block mb-1">Status da Base</span>
+                <span class="text-xl font-bold text-gray-700">FILTRADA POR CIDADE</span>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-lg border border-gray-300">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-800 text-white text-[10px] uppercase tracking-widest">
+                        <th class="p-3 border-b border-gray-300">Razão Social / Fantasia</th>
+                        <th class="p-3 border-b border-gray-300">CNPJ</th>
+                        <th class="p-3 border-b border-gray-300">Telefone de Contato</th>
+                        <th class="p-3 border-b border-gray-300">Sistemas</th>
+                    </tr>
+                </thead>
+                <tbody class="text-xs">
+                    {% for cliente in clientes %}
+                    <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                        <td class="p-3">
+                            <span class="font-bold text-gray-800 block leading-tight">{{ cliente.razao_social }}</span>
+                            {% if cliente.nome_fantasia %}
+                                <span class="text-[10px] text-gray-500 italic mt-0.5 block">{{ cliente.nome_fantasia }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-3 text-gray-600 font-mono text-[10px]">{{ cliente.cnpj }}</td>
+                        <td class="p-3 text-blue-700 font-bold whitespace-nowrap">
+                            {% if cliente.telefone %}
+                                <i class="fa-brands fa-whatsapp text-green-500 mr-1"></i> {{ cliente.telefone }}
+                            {% else %}
+                                <span class="text-gray-300 italic">Não informado</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-3 text-gray-700">
+                            {% for sistema in cliente.sistemas.all %}
+                                <span class="bg-gray-100 px-1.5 py-0.5 rounded text-[9px] font-bold border border-gray-200 mr-1 inline-block mb-1">{{ sistema.nome }}</span>
+                            {% empty %}
+                                <span class="text-gray-300 italic">Nenhum</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="p-10 text-center text-gray-400 italic">Nenhum cliente ativo registrado para esta localidade.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-12 pt-6 border-t border-gray-200 flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+            <span>Union Desk - Lógica Automação</span>
+            <span>Página 1 de 1</span>
+        </div>
+
+        <div class="mt-10 flex justify-center gap-4 no-print">
+            <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-8 rounded-xl shadow-lg transition-all flex items-center gap-2">
+                <i class="fa-solid fa-print"></i> SALVAR PDF / IMPRIMIR
+            </button>
+            <button onclick="window.close()" class="bg-white hover:bg-gray-100 text-gray-600 border border-gray-300 font-bold py-2.5 px-6 rounded-xl transition-all">
+                FECHAR RELATÓRIO
+            </button>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            // Pequeno delay para garantir renderização das fontes e ícones
+            setTimeout(function() {
+                // window.print(); // Descomente esta linha se quiser que ele abra a tela de print sozinho sempre
+            }, 800);
+        };
+    </script>
+</body>
+</html>

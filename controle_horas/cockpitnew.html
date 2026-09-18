@@ -1,0 +1,1499 @@
+{% extends "base.html" %}
+{% load static %}
+{% load horas_extras %}
+{% block content %}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   COCKPIT DE PONTO — v2
+   Tokens
+   ═══════════════════════════════════════════════════════════ */
+/* ══ TOKENS: herdam do design system global (base.html) ══
+   A página não define cor nenhuma — só consome. Trocar o tema
+   no <html data-theme> re-tematiza tudo aqui automaticamente. */
+.cp-root {
+    --cp-bg:        rgb(var(--c-bg));
+    --cp-panel:     rgb(var(--c-panel));
+    --cp-panel-2:   rgb(var(--c-deep));
+    --cp-line:      rgb(var(--c-line));
+    --cp-line-soft: rgb(var(--c-line) / 0.55);
+    --cp-text:      rgb(var(--c-ink));
+    --cp-muted:     rgb(var(--c-ink-soft));
+    --cp-faint:     rgb(var(--c-ink-faint));
+
+    --cp-blue:      rgb(var(--c-accent));
+    --cp-blue-deep: rgb(var(--c-accent-deep));
+    --cp-blue-bg:   rgb(var(--c-accent) / 0.10);
+    --cp-blue-line: rgb(var(--c-accent) / 0.30);
+
+    --cp-green:     rgb(var(--c-success));
+    --cp-green-bg:  rgb(var(--c-success) / 0.10);
+    --cp-green-line:rgb(var(--c-success) / 0.28);
+
+    --cp-amber:     rgb(var(--c-warn));
+    --cp-amber-bg:  rgb(var(--c-warn) / 0.10);
+    --cp-amber-line:rgb(var(--c-warn) / 0.28);
+
+    --cp-red:       rgb(var(--c-danger));
+    --cp-red-bg:    rgb(var(--c-danger) / 0.10);
+    --cp-red-line:  rgb(var(--c-danger) / 0.28);
+
+    --cp-violet:    rgb(var(--c-special));
+    --cp-violet-bg: rgb(var(--c-special) / 0.10);
+    --cp-violet-line:rgb(var(--c-special) / 0.28);
+
+    --cp-radius:    14px;
+    --cp-radius-sm: 9px;
+
+    --cp-font-body: 'Inter', system-ui, sans-serif;
+    --cp-font-disp: 'Space Grotesk', 'Inter', sans-serif;
+    --cp-font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+.cp-root *, .cp-root *::before, .cp-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.cp-root {
+    font-family: var(--cp-font-body);
+    font-size: 14px;
+    line-height: 1.5;
+    background:
+        radial-gradient(1200px 400px at 85% -10%, rgb(var(--c-accent) / 0.07) 0%, transparent 60%),
+        var(--cp-bg);
+    color: var(--cp-text);
+    min-height: calc(100vh - 1rem);
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px 0 0 0;
+    border-left: 1px solid var(--cp-line);
+    border-top: 1px solid var(--cp-line);
+    overflow: hidden;
+}
+
+/* ── TOPBAR ─────────────────────────────────────────────── */
+.cp-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 26px;
+    border-bottom: 1px solid var(--cp-line);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+.cp-topbar__left { display: flex; align-items: center; gap: 14px; }
+.cp-topbar__icon {
+    width: 44px; height: 44px;
+    background: var(--cp-blue-bg);
+    border: 1px solid var(--cp-blue-line);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--cp-blue);
+    font-size: 17px;
+    flex-shrink: 0;
+}
+.cp-topbar__title {
+    font-family: var(--cp-font-disp);
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--cp-text);
+    line-height: 1.15;
+}
+.cp-topbar__subtitle {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--cp-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-top: 3px;
+}
+
+.cp-topbar__right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.cp-month-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--cp-panel);
+    border: 1px solid var(--cp-line);
+    border-radius: 11px;
+    padding: 4px;
+}
+.cp-month-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--cp-faint);
+    text-decoration: none;
+    border: none; background: none;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.cp-month-btn:hover { background: var(--cp-line); color: var(--cp-text); }
+.cp-month-current {
+    font-family: var(--cp-font-mono);
+    padding: 6px 16px;
+    background: var(--cp-panel-2);
+    border: 1px solid var(--cp-line);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cp-text);
+    letter-spacing: 0.04em;
+    min-width: 92px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+.cp-btn-manual {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--cp-font-body);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cp-muted);
+    background: var(--cp-panel);
+    border: 1px solid var(--cp-line);
+    border-radius: 11px;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+.cp-btn-manual:hover { border-color: var(--cp-blue); color: var(--cp-blue); }
+
+/* ── HERO: RELÓGIO + PUNCH + TIMELINE DO DIA ────────────── */
+.cp-hero {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 28px;
+    padding: 22px 26px;
+    border-bottom: 1px solid var(--cp-line);
+    flex-shrink: 0;
+}
+
+.cp-clock-block { display: flex; align-items: center; gap: 16px; }
+.cp-clock {
+    font-family: var(--cp-font-mono);
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--cp-text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+.cp-clock .cp-clock-sec { font-size: 20px; color: var(--cp-faint); font-weight: 500; }
+.cp-clock-date {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--cp-muted);
+    margin-top: 6px;
+    text-transform: capitalize;
+}
+.cp-status-line { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.cp-status-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.cp-status-dot--active  { background: var(--cp-green); box-shadow: 0 0 10px rgb(var(--c-success) / 0.45); animation: cp-pulse 1.8s infinite; }
+.cp-status-dot--pause   { background: var(--cp-amber); box-shadow: 0 0 10px rgb(var(--c-warn) / 0.4); }
+.cp-status-dot--done    { background: var(--cp-faint); }
+.cp-status-dot--neutral { background: var(--cp-faint); }
+@keyframes cp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .cp-status-dot--active { animation: none; } }
+
+.cp-status-text { font-size: 13px; font-weight: 700; }
+.cp-status-text--active  { color: var(--cp-green); }
+.cp-status-text--pause   { color: var(--cp-amber); }
+.cp-status-text--done    { color: var(--cp-muted); }
+.cp-status-text--neutral { color: var(--cp-muted); }
+
+/* Timeline do dia (assinatura) */
+.cp-day-track {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    max-width: 560px;
+    width: 100%;
+    justify-self: center;
+}
+.cp-day-step { flex: 1; position: relative; padding: 0 4px; text-align: center; }
+.cp-day-step::before {
+    content: '';
+    position: absolute;
+    top: 7px; left: -50%; right: 50%;
+    height: 2px;
+    background: var(--cp-line);
+    z-index: 0;
+}
+.cp-day-step:first-child::before { display: none; }
+.cp-day-step--done::before { background: var(--cp-green); }
+.cp-day-node {
+    position: relative;
+    z-index: 1;
+    width: 16px; height: 16px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: var(--cp-panel);
+    border: 2px solid var(--cp-line);
+    display: flex; align-items: center; justify-content: center;
+}
+.cp-day-step--done .cp-day-node { border-color: var(--cp-green); background: var(--cp-green); }
+.cp-day-step--done .cp-day-node::after {
+    content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--cp-bg);
+}
+.cp-day-step--next .cp-day-node { border-color: var(--cp-blue); box-shadow: 0 0 0 4px rgb(var(--c-accent) / 0.15); }
+.cp-day-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--cp-faint);
+    margin-top: 8px;
+}
+.cp-day-step--done .cp-day-label { color: var(--cp-muted); }
+.cp-day-step--next .cp-day-label { color: var(--cp-blue); }
+.cp-day-time {
+    font-family: var(--cp-font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cp-text);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+}
+.cp-day-time--empty { color: var(--cp-faint); }
+
+/* Botão de punch */
+.cp-punch-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(180deg, var(--cp-blue) 0%, var(--cp-blue-deep) 100%);
+    border: 1px solid rgb(var(--c-accent-soft) / 0.35);
+    border-radius: 14px;
+    padding: 15px 26px;
+    text-decoration: none;
+    color: #fff;
+    box-shadow: 0 8px 28px -10px rgb(var(--c-accent) / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.14);
+    transition: transform 0.12s, box-shadow 0.15s, filter 0.15s;
+    cursor: pointer;
+}
+.cp-punch-btn:hover { filter: brightness(1.08); box-shadow: 0 10px 32px -8px rgb(var(--c-accent) / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.14); }
+.cp-punch-btn:active { transform: scale(0.97); }
+.cp-punch-btn--disabled {
+    background: var(--cp-panel-2);
+    border-color: var(--cp-line);
+    color: var(--cp-faint);
+    box-shadow: none;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.cp-punch-btn--warn {
+    background: var(--cp-amber-bg);
+    border-color: var(--cp-amber-line);
+    color: var(--cp-amber);
+    box-shadow: none;
+    cursor: pointer;
+}
+.cp-punch-btn--warn:hover { filter: brightness(1.15); }
+.cp-punch-stack { display: flex; flex-direction: column; gap: 10px; }
+.cp-punch-btn--update {
+    background: linear-gradient(180deg, #6366f1 0%, #4338ca 100%);
+    border: 1px solid rgb(99 102 241 / 0.35);
+    color: #fff;
+    box-shadow: 0 8px 24px -10px rgb(99 102 241 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.14);
+}
+.cp-punch-btn--update:hover { filter: brightness(1.08); }
+.cp-punch-icon { font-size: 22px; flex-shrink: 0; }
+.cp-punch-label {
+    font-family: var(--cp-font-disp);
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    line-height: 1.2;
+}
+.cp-punch-sub { font-size: 11px; font-weight: 500; opacity: 0.85; margin-top: 2px; }
+
+/* ── ALERTS ─────────────────────────────────────────────── */
+.cp-alerts { padding: 14px 26px 0; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.cp-alert {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px;
+    border-radius: var(--cp-radius-sm);
+    font-size: 13px; font-weight: 600;
+    border: 1px solid;
+}
+.cp-alert--success { color: var(--cp-green); background: var(--cp-green-bg); border-color: var(--cp-green-line); }
+.cp-alert--error   { color: var(--cp-red);   background: var(--cp-red-bg);   border-color: var(--cp-red-line); }
+.cp-alert--warning { color: var(--cp-amber); background: var(--cp-amber-bg); border-color: var(--cp-amber-line); }
+.cp-alert--info    { color: var(--cp-blue);  background: var(--cp-blue-bg);  border-color: var(--cp-blue-line); }
+
+/* ── TABS ───────────────────────────────────────────────── */
+.cp-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 0 26px;
+    border-bottom: 1px solid var(--cp-line);
+    flex-shrink: 0;
+    overflow-x: auto;
+    margin-top: 12px;
+}
+.cp-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 17px;
+    font-family: var(--cp-font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cp-faint);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    margin-bottom: -1px;
+    white-space: nowrap;
+}
+.cp-tab-btn i { font-size: 13px; }
+.cp-tab-btn:hover { color: var(--cp-muted); }
+.cp-tab-btn.active { color: var(--cp-text); border-bottom-color: var(--cp-blue); }
+.cp-tab-btn.active i { color: var(--cp-blue); }
+.cp-tab-count {
+    font-family: var(--cp-font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--cp-amber);
+    background: var(--cp-amber-bg);
+    border: 1px solid var(--cp-amber-line);
+    border-radius: 999px;
+    padding: 1px 8px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── CONTENT ────────────────────────────────────────────── */
+.cp-content { flex: 1; overflow-y: auto; padding: 22px 26px 30px; min-height: 0; }
+.cp-content::-webkit-scrollbar { width: 4px; }
+.cp-content::-webkit-scrollbar-thumb { background: var(--cp-line); border-radius: 4px; }
+.cp-root, .cp-root .cp-table-wrap, .cp-root .cp-stat-card { transition: background-color 0.25s ease, border-color 0.25s ease; }
+.cp-panel { display: none; }
+.cp-panel.active { display: block; animation: cp-fade 0.2s ease; }
+@keyframes cp-fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cp-panel.active { animation: none; } }
+
+/* ── STAT CARDS ─────────────────────────────────────────── */
+.cp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+.cp-stat-card {
+    background: var(--cp-panel);
+    border: 1px solid var(--cp-line);
+    border-radius: var(--cp-radius);
+    padding: 17px 19px;
+    position: relative;
+    overflow: hidden;
+}
+.cp-stat-card::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--cp-line);
+}
+.cp-stat-card--extra::after { background: var(--cp-green); }
+.cp-stat-card--main::after  { background: var(--cp-blue); }
+.cp-stat-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--cp-faint);
+    margin-bottom: 8px;
+}
+.cp-stat-value {
+    font-family: var(--cp-font-mono);
+    font-size: 27px;
+    font-weight: 600;
+    color: var(--cp-text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+.cp-stat-value small { font-family: var(--cp-font-body); font-size: 12px; font-weight: 500; color: var(--cp-faint); margin-left: 5px; }
+.cp-stat-value--extra { color: var(--cp-green); }
+
+/* ── TABLES ─────────────────────────────────────────────── */
+.cp-table-wrap {
+    background: var(--cp-panel);
+    border: 1px solid var(--cp-line);
+    border-radius: var(--cp-radius);
+    overflow: hidden;
+}
+.cp-table-scroll { overflow-x: auto; }
+.cp-table { width: 100%; border-collapse: collapse; }
+.cp-table thead th {
+    padding: 11px 16px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--cp-faint);
+    background: var(--cp-panel-2);
+    border-bottom: 1px solid var(--cp-line);
+    white-space: nowrap;
+    text-align: left;
+}
+.cp-table thead th.center { text-align: center; }
+.cp-table thead th.right { text-align: right; }
+.cp-table tbody tr { border-bottom: 1px solid var(--cp-line-soft); transition: background 0.1s; }
+.cp-table tbody tr:last-child { border-bottom: none; }
+.cp-table tbody tr:hover { background: var(--cp-panel-2); }
+.cp-table tbody tr.cp-row--weekend td:first-child { box-shadow: inset 3px 0 0 var(--cp-violet); }
+.cp-table tbody td { padding: 13px 16px; vertical-align: middle; }
+.cp-table tbody td.center { text-align: center; }
+.cp-table tbody td.right { text-align: right; }
+
+.cp-date-main { font-size: 13px; font-weight: 700; color: var(--cp-text); }
+.cp-date-sub {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--cp-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 3px;
+}
+.cp-weekend-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--cp-violet);
+    background: var(--cp-violet-bg);
+    border: 1px solid var(--cp-violet-line);
+    border-radius: 5px;
+    padding: 2px 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-top: 4px;
+}
+
+.cp-time-row { display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; }
+.cp-time-chip {
+    font-family: var(--cp-font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cp-text);
+    background: var(--cp-bg);
+    border: 1px solid var(--cp-line);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-variant-numeric: tabular-nums;
+}
+.cp-time-chip--empty { color: var(--cp-faint); }
+.cp-time-chip--special { color: var(--cp-amber); border-color: var(--cp-amber-line); background: var(--cp-amber-bg); }
+.cp-time-sep { color: var(--cp-faint); font-size: 11px; }
+.cp-time-divider { width: 1px; height: 18px; background: var(--cp-line); margin: 0 5px; }
+.cp-special-icon { color: var(--cp-amber); font-size: 11px; margin-right: 3px; }
+
+.cp-total-main {
+    font-family: var(--cp-font-mono);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--cp-text);
+    font-variant-numeric: tabular-nums;
+}
+.cp-total-extra {
+    font-family: var(--cp-font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cp-green);
+    margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+}
+
+.cp-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 11px;
+    border-radius: 999px;
+    border: 1px solid;
+}
+.cp-status-pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.cp-status-pill--aprovado  { color: var(--cp-green); background: var(--cp-green-bg); border-color: var(--cp-green-line); }
+.cp-status-pill--pendente  { color: var(--cp-amber); background: var(--cp-amber-bg); border-color: var(--cp-amber-line); }
+.cp-status-pill--reprovado { color: var(--cp-red);   background: var(--cp-red-bg);   border-color: var(--cp-red-line); }
+.cp-status-pill--rascunho  { color: var(--cp-muted); background: var(--cp-panel-2);  border-color: var(--cp-line); }
+
+.cp-row-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.cp-action-btn {
+    width: 31px; height: 31px;
+    border-radius: 8px;
+    border: 1px solid;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    text-decoration: none;
+    background: none;
+    flex-shrink: 0;
+}
+.cp-action-btn--edit    { color: var(--cp-blue);  background: var(--cp-blue-bg);  border-color: var(--cp-blue-line); }
+.cp-action-btn--edit:hover    { background: var(--cp-blue); color: #fff; }
+.cp-action-btn--delete  { color: var(--cp-red);   background: var(--cp-red-bg);   border-color: var(--cp-red-line); }
+.cp-action-btn--delete:hover  { background: var(--cp-red); color: #fff; }
+.cp-action-btn--approve { color: var(--cp-green); background: var(--cp-green-bg); border-color: var(--cp-green-line); }
+.cp-action-btn--approve:hover { background: var(--cp-green); color: #fff; }
+.cp-action-btn--reject  { color: var(--cp-red);   background: var(--cp-red-bg);   border-color: var(--cp-red-line); }
+.cp-action-btn--reject:hover  { background: var(--cp-red); color: #fff; }
+
+.cp-locked {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--cp-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: help;
+}
+.cp-locked:hover { color: var(--cp-muted); }
+
+/* ── EMPTY STATE ────────────────────────────────────────── */
+.cp-empty { text-align: center; padding: 54px 20px; }
+.cp-empty i { font-size: 34px; display: block; margin-bottom: 12px; color: var(--cp-line); }
+.cp-empty p { font-size: 13px; font-weight: 600; color: var(--cp-muted); }
+.cp-empty--good i { color: rgb(var(--c-success) / 0.35); }
+.cp-empty-sub { color: var(--cp-faint); font-size: 11.5px; margin-top: 4px; }
+
+/* ── APROVAÇÕES ─────────────────────────────────────────── */
+.cp-approval-name { font-size: 13px; font-weight: 700; color: var(--cp-text); }
+.cp-approval-date {
+    font-size: 11px; font-weight: 600; color: var(--cp-muted);
+    margin-top: 3px; display: flex; align-items: center; gap: 6px;
+}
+.cp-approval-type {
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--cp-blue);
+    background: var(--cp-blue-bg);
+    border: 1px solid var(--cp-blue-line);
+    padding: 2px 8px;
+    border-radius: 5px;
+    margin-bottom: 6px;
+}
+.cp-approval-desc { font-size: 12px; color: var(--cp-muted); }
+
+/* ── FECHAMENTOS ────────────────────────────────────────── */
+.cp-export-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 19px;
+    background: var(--cp-panel);
+    border: 1px solid var(--cp-line);
+    border-radius: var(--cp-radius);
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.cp-export-title { font-size: 13px; font-weight: 700; color: var(--cp-text); display: flex; align-items: center; gap: 9px; }
+.cp-export-sub {
+    font-size: 10.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--cp-faint); margin-top: 4px;
+}
+.cp-export-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.cp-export-btn {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--cp-line);
+    background: var(--cp-panel-2);
+    color: var(--cp-muted);
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s;
+}
+.cp-export-btn:hover { border-color: var(--cp-blue); color: var(--cp-blue); }
+.cp-export-btn--pdf:hover { border-color: var(--cp-red); color: var(--cp-red); }
+
+.cp-mono      { font-family: var(--cp-font-mono); font-size: 13px; font-weight: 600; color: var(--cp-text);  font-variant-numeric: tabular-nums; }
+.cp-mono--extra { color: var(--cp-green); }
+
+.cp-avatar {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: var(--cp-blue-bg);
+    border: 1px solid var(--cp-blue-line);
+    color: var(--cp-blue);
+    font-family: var(--cp-font-disp);
+    font-size: 13px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.cp-person { display: flex; align-items: center; gap: 11px; }
+
+.cp-print-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--cp-blue);
+    background: var(--cp-blue-bg);
+    border: 1px solid var(--cp-blue-line);
+    border-radius: 8px;
+    padding: 8px 13px;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+.cp-print-link:hover { background: var(--cp-blue); color: #fff; }
+
+/* ── MODAL ──────────────────────────────────────────────── */
+.cp-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgb(0 0 0 / 0.55);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 999;
+}
+.cp-modal {
+    background: var(--cp-panel);
+    border: 1px solid var(--cp-line);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 660px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 80px -20px rgb(0 0 0 / 0.5);
+}
+.cp-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--cp-line);
+    background: var(--cp-panel-2);
+    flex-shrink: 0;
+}
+.cp-modal__title {
+    font-family: var(--cp-font-disp);
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--cp-text);
+    display: flex; align-items: center; gap: 10px;
+}
+.cp-modal__title i { color: var(--cp-blue); }
+.cp-modal__close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--cp-line);
+    border: none;
+    color: var(--cp-muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s;
+}
+.cp-modal__close:hover { background: var(--cp-red-bg); color: var(--cp-red); }
+
+.cp-modal__body { padding: 20px; overflow-y: auto; flex: 1; }
+.cp-modal__body::-webkit-scrollbar { width: 4px; }
+.cp-modal__body::-webkit-scrollbar-thumb { background: var(--cp-line); border-radius: 4px; }
+
+.cp-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+.cp-field { display: flex; flex-direction: column; gap: 6px; }
+.cp-field label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--cp-muted);
+}
+
+.cp-fieldset {
+    background: var(--cp-bg);
+    border: 1px solid var(--cp-line);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    transition: opacity 0.2s;
+}
+.cp-fieldset--special { border-left: 3px solid var(--cp-amber); }
+.cp-fieldset__title {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--cp-faint);
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--cp-line-soft);
+}
+.cp-fieldset--special .cp-fieldset__title { color: var(--cp-amber); }
+.cp-fieldset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.cp-fieldset-grid--2 { grid-template-columns: repeat(2, 1fr); }
+
+.cp-modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--cp-line-soft);
+}
+.cp-btn-cancel {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--cp-line);
+    background: transparent;
+    color: var(--cp-muted);
+    font-family: var(--cp-font-body);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.cp-btn-cancel:hover { background: var(--cp-line); color: var(--cp-text); }
+.cp-btn-submit {
+    padding: 10px 22px;
+    border-radius: 10px;
+    border: 1px solid rgb(var(--c-accent-soft) / 0.35);
+    background: linear-gradient(180deg, var(--cp-blue) 0%, var(--cp-blue-deep) 100%);
+    color: #fff;
+    font-family: var(--cp-font-body);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s;
+    box-shadow: 0 6px 18px -8px rgb(var(--c-accent) / 0.55);
+}
+.cp-btn-submit:hover { filter: brightness(1.1); }
+
+.cp-modal input[type="date"],
+.cp-modal input[type="time"],
+.cp-modal select,
+.cp-modal textarea {
+    width: 100%;
+    background: var(--cp-panel-2) !important;
+    border: 1px solid var(--cp-line) !important;
+    color: var(--cp-text) !important;
+    border-radius: 9px !important;
+    padding: 9px 11px !important;
+    font-size: 13px !important;
+    font-weight: 500;
+    font-family: var(--cp-font-body);
+    outline: none;
+    transition: border-color 0.15s;
+}
+.cp-modal input[type="time"], .cp-modal input[type="date"] {
+    font-family: var(--cp-font-mono);
+    font-variant-numeric: tabular-nums;
+}
+.cp-modal input:focus, .cp-modal select:focus, .cp-modal textarea:focus { border-color: var(--cp-blue) !important; }
+.cp-modal input[type="time"]::-webkit-calendar-picker-indicator,
+.cp-modal input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+.cp-modal select option { background: var(--cp-panel-2); }
+
+/* ── FOCUS / A11Y ───────────────────────────────────────── */
+.cp-root :focus-visible { outline: 2px solid var(--cp-blue); outline-offset: 2px; }
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 1100px) {
+    .cp-hero { grid-template-columns: 1fr auto; }
+    .cp-day-track { grid-column: 1 / -1; order: 3; max-width: none; margin-top: 6px; }
+}
+@media (max-width: 760px) {
+    .cp-topbar, .cp-hero, .cp-tabs, .cp-content, .cp-alerts { padding-left: 16px; padding-right: 16px; }
+    .cp-stats { grid-template-columns: 1fr; }
+    .cp-hero { grid-template-columns: 1fr; }
+    .cp-punch-btn { justify-content: center; }
+    .cp-clock { font-size: 34px; }
+    .cp-form-grid { grid-template-columns: 1fr; }
+    .cp-fieldset-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+
+<div class="cp-root" role="main">
+
+    <!-- ═══ TOPBAR ═══ -->
+    <header class="cp-topbar">
+        <div class="cp-topbar__left">
+            <div class="cp-topbar__icon" aria-hidden="true"><i class="fa-solid fa-fingerprint"></i></div>
+            <div>
+                <div class="cp-topbar__title">Ponto Eletrônico</div>
+                <div class="cp-topbar__subtitle">Gestão de jornada &amp; aprovações</div>
+            </div>
+        </div>
+
+        <div class="cp-topbar__right">
+            <nav class="cp-month-nav" role="navigation" aria-label="Navegação de competência">
+                {% for op in opcoes_meses %}
+                    {% if forloop.counter == 2 %}
+                    <a href="?competencia={{ op.valor }}" class="cp-month-btn" title="Mês anterior" aria-label="Ir para o mês anterior">
+                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                    </a>
+                    {% endif %}
+                {% endfor %}
+
+                <div class="cp-month-current" aria-live="polite">
+                    {% for op in opcoes_meses %}{% if op.valor == competencia %}{{ op.label }}{% endif %}{% endfor %}
+                </div>
+
+                <button type="button" class="cp-month-btn" onclick="cpNextMonth('{{ competencia }}')" title="Próximo mês" aria-label="Ir para o próximo mês">
+                    <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                </button>
+            </nav>
+
+            <button type="button" class="cp-btn-manual" onclick="cpOpenModal()" aria-haspopup="dialog">
+                <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Lançamento manual
+            </button>
+        </div>
+    </header>
+
+    <!-- ═══ HERO: RELÓGIO AO VIVO + TIMELINE DO DIA + PUNCH ═══ -->
+    <div class="cp-hero">
+
+        <div class="cp-clock-block">
+            <div>
+                <div class="cp-clock" aria-live="off">
+                    <span id="cp-clock-hm">--:--</span><span class="cp-clock-sec">:<span id="cp-clock-s">--</span></span>
+                </div>
+                <div class="cp-clock-date" id="cp-clock-date"></div>
+                <div class="cp-status-line">
+                    <span class="cp-status-dot cp-status-dot--{{ status_cor }}" aria-hidden="true"></span>
+                    <span class="cp-status-text cp-status-text--{{ status_cor }}">{{ status_atual }}</span>
+                </div>
+            </div>
+        </div>
+
+        {# Timeline do dia: preenche conforme o ponto de hoje (jornada normal) #}
+        {% if pode_bater_ponto %}
+        <div class="cp-day-track" id="cp-day-track" role="list" aria-label="Marcações de hoje">
+            {# renderiza a trilha a partir do registro NORMAL de hoje, se existir #}
+            {% for a in meus_aponts %}
+                {% if a.data == hoje and a.tipo == 'normal' %}
+                    <div class="cp-day-step {% if a.manha_inicio %}cp-day-step--done{% else %}cp-day-step--next{% endif %}" role="listitem">
+                        <div class="cp-day-node"></div>
+                        <div class="cp-day-label">Entrada</div>
+                        <div class="cp-day-time {% if not a.manha_inicio %}cp-day-time--empty{% endif %}">{{ a.manha_inicio|time:"H:i"|default:"--:--" }}</div>
+                    </div>
+                    <div class="cp-day-step {% if a.manha_fim %}cp-day-step--done{% elif a.manha_inicio %}cp-day-step--next{% endif %}" role="listitem">
+                        <div class="cp-day-node"></div>
+                        <div class="cp-day-label">Almoço</div>
+                        <div class="cp-day-time {% if not a.manha_fim %}cp-day-time--empty{% endif %}">{{ a.manha_fim|time:"H:i"|default:"--:--" }}</div>
+                    </div>
+                    <div class="cp-day-step {% if a.tarde_inicio %}cp-day-step--done{% elif a.manha_fim %}cp-day-step--next{% endif %}" role="listitem">
+                        <div class="cp-day-node"></div>
+                        <div class="cp-day-label">Volta</div>
+                        <div class="cp-day-time {% if not a.tarde_inicio %}cp-day-time--empty{% endif %}">{{ a.tarde_inicio|time:"H:i"|default:"--:--" }}</div>
+                    </div>
+                    <div class="cp-day-step {% if a.tarde_fim %}cp-day-step--done{% elif a.tarde_inicio %}cp-day-step--next{% endif %}" role="listitem">
+                        <div class="cp-day-node"></div>
+                        <div class="cp-day-label">Saída</div>
+                        <div class="cp-day-time {% if not a.tarde_fim %}cp-day-time--empty{% endif %}">{{ a.tarde_fim|time:"H:i"|default:"--:--" }}</div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+            {# trilha vazia (removida via JS quando existe registro real de hoje) #}
+            <div class="cp-day-step cp-day-step--next cp-day-fallback"><div class="cp-day-node"></div><div class="cp-day-label">Entrada</div><div class="cp-day-time cp-day-time--empty">--:--</div></div>
+            <div class="cp-day-step cp-day-fallback"><div class="cp-day-node"></div><div class="cp-day-label">Almoço</div><div class="cp-day-time cp-day-time--empty">--:--</div></div>
+            <div class="cp-day-step cp-day-fallback"><div class="cp-day-node"></div><div class="cp-day-label">Volta</div><div class="cp-day-time cp-day-time--empty">--:--</div></div>
+            <div class="cp-day-step cp-day-fallback"><div class="cp-day-node"></div><div class="cp-day-label">Saída</div><div class="cp-day-time cp-day-time--empty">--:--</div></div>
+        </div>
+        {% else %}
+        <div></div>
+        {% endif %}
+
+        <div class="cp-punch-stack">
+        {% if pode_bater_ponto and tem_escala_home_office_hoje %}
+        <a href="{% url 'controle_horas:bater_ponto_rapido' %}" class="cp-punch-btn" aria-label="{{ proximo_label }} — {{ proximo_sub }}">
+            <i class="fa-solid fa-fingerprint cp-punch-icon" aria-hidden="true"></i>
+            <div>
+                <div class="cp-punch-label">{{ proximo_label }}</div>
+                <div class="cp-punch-sub">{{ proximo_sub }}</div>
+            </div>
+        </a>
+        {% elif pode_bater_ponto %}
+        <button type="button" class="cp-punch-btn cp-punch-btn--warn" onclick="cpOpenModal()" title="Sem Home Office agendado hoje. Clique para registrar Plantão/Emergência/Implantação manualmente.">
+            <i class="fa-solid fa-house-circle-xmark cp-punch-icon" aria-hidden="true"></i>
+            <div>
+                <div class="cp-punch-label">Sem Home Office hoje</div>
+                <div class="cp-punch-sub">Presencial • plantão/emergência avulsos: clique aqui</div>
+            </div>
+        </button>
+        {% else %}
+        <span class="cp-punch-btn cp-punch-btn--disabled" aria-disabled="true" title="Disponível apenas para o mês atual">
+            <i class="fa-solid fa-fingerprint cp-punch-icon" aria-hidden="true"></i>
+            <div>
+                <div class="cp-punch-label">Indisponível</div>
+                <div class="cp-punch-sub">Só é possível bater ponto no mês atual</div>
+            </div>
+        </span>
+        {% endif %}
+
+        {# ═══ BOTÃO DEDICADO: ATUALIZAÇÃO DE CLIENTE (fora do horário comercial) ═══ #}
+        {% if pode_registrar_atualizacao %}
+        <button type="button" class="cp-punch-btn cp-punch-btn--update" onclick="cpOpenModalAtt()" aria-haspopup="dialog">
+            <i class="fa-solid fa-arrows-rotate cp-punch-icon" aria-hidden="true"></i>
+            <div>
+                <div class="cp-punch-label">Registrar Atualização</div>
+                <div class="cp-punch-sub">Escolha o cliente e bata o ponto</div>
+            </div>
+        </button>
+        {% else %}
+        <span class="cp-punch-btn cp-punch-btn--disabled" aria-disabled="true" title="Atualização de cliente só pode ser registrada fora do horário comercial (18:30 às 07:30)">
+            <i class="fa-solid fa-clock cp-punch-icon" aria-hidden="true"></i>
+            <div>
+                <div class="cp-punch-label">Atualização indisponível</div>
+                <div class="cp-punch-sub">Fora do período: 18:30 às 07:30</div>
+            </div>
+        </span>
+        {% endif %}
+        </div>
+    </div>
+
+    <!-- ═══ MESSAGES ═══ -->
+    {% if messages %}
+    <div class="cp-alerts">
+        {% for message in messages %}
+        <div class="cp-alert cp-alert--{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}" role="status">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i> {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ═══ TABS ═══ -->
+    <nav class="cp-tabs" role="tablist" aria-label="Seções do ponto eletrônico">
+        <button class="cp-tab-btn active" role="tab" aria-selected="true" aria-controls="cp-panel-meu" id="cp-btn-meu" onclick="cpOpenTab('meu', this)">
+            <i class="fa-solid fa-user-clock" aria-hidden="true"></i> Meu Ponto
+        </button>
+
+        <button class="cp-tab-btn" role="tab" aria-selected="false" aria-controls="cp-panel-agenda" id="cp-btn-agenda" onclick="cpOpenTab('agenda', this); setTimeout(inicializarAgenda, 100);">
+            <i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Plantão &amp; Home Office
+        </button>
+
+        {% if is_gestor %}
+        <button class="cp-tab-btn" role="tab" aria-selected="false" aria-controls="cp-panel-aprovacoes" id="cp-btn-aprovacoes" onclick="cpOpenTab('aprovacoes', this)">
+            <i class="fa-solid fa-check-to-slot" aria-hidden="true"></i> Aprovações
+            {% if aprovacoes_pendentes|length > 0 %}<span class="cp-tab-count" aria-label="{{ aprovacoes_pendentes|length }} pendentes">{{ aprovacoes_pendentes|length }}</span>{% endif %}
+        </button>
+        <button class="cp-tab-btn" role="tab" aria-selected="false" aria-controls="cp-panel-fechamentos" id="cp-btn-fechamentos" onclick="cpOpenTab('fechamentos', this)">
+            <i class="fa-solid fa-file-invoice" aria-hidden="true"></i> Fechamentos
+        </button>
+        {% endif %}
+    </nav>
+
+    <!-- ═══ CONTENT ═══ -->
+    <div class="cp-content">
+
+        <!-- ── MEU PONTO ── -->
+        <div id="cp-panel-meu" class="cp-panel active" role="tabpanel" aria-labelledby="cp-btn-meu">
+
+            <div class="cp-stats">
+                <div class="cp-stat-card cp-stat-card--main">
+                    <div class="cp-stat-label">Total trabalhado no mês</div>
+                    <div class="cp-stat-value">{{ total_h_meu|hhmm }}<small>h</small></div>
+                </div>
+                <div class="cp-stat-card cp-stat-card--extra">
+                    <div class="cp-stat-label">Horas extras / banco</div>
+                    <div class="cp-stat-value cp-stat-value--extra">{{ extra_h_meu|hhmm }}<small>h</small></div>
+                </div>
+                <div class="cp-stat-card">
+                    <div class="cp-stat-label">Lançamentos na competência</div>
+                    <div class="cp-stat-value">{{ meus_aponts|length }}<small>registros</small></div>
+                </div>
+            </div>
+
+            <div class="cp-table-wrap">
+                <div class="cp-table-scroll">
+                <table class="cp-table" role="grid" aria-label="Meus apontamentos do mês">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th class="center">Registros (entrada / saída)</th>
+                            <th class="center">Total / extra</th>
+                            <th class="center">Status</th>
+                            <th class="right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in meus_aponts %}
+                        <tr class="{% if a.data.weekday >= 5 %}cp-row--weekend{% endif %}">
+                            <td>
+                                <div class="cp-date-main">{{ a.data|date:"d/m/Y" }}</div>
+                                <div class="cp-date-sub">{{ a.get_tipo_display }}</div>
+                                {% if a.data.weekday >= 5 %}
+                                <span class="cp-weekend-tag"><i class="fa-solid fa-mug-saucer" aria-hidden="true"></i> {{ a.data|weekday_pt }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="center">
+                                {% if a.tipo == 'normal' %}
+                                <div class="cp-time-row">
+                                    <span class="cp-time-chip {% if not a.manha_inicio %}cp-time-chip--empty{% endif %}">{{ a.manha_inicio|time:"H:i"|default:"--:--" }}</span>
+                                    <span class="cp-time-sep">–</span>
+                                    <span class="cp-time-chip {% if not a.manha_fim %}cp-time-chip--empty{% endif %}">{{ a.manha_fim|time:"H:i"|default:"--:--" }}</span>
+                                    <span class="cp-time-divider" aria-hidden="true"></span>
+                                    <span class="cp-time-chip {% if not a.tarde_inicio %}cp-time-chip--empty{% endif %}">{{ a.tarde_inicio|time:"H:i"|default:"--:--" }}</span>
+                                    <span class="cp-time-sep">–</span>
+                                    <span class="cp-time-chip {% if not a.tarde_fim %}cp-time-chip--empty{% endif %}">{{ a.tarde_fim|time:"H:i"|default:"--:--" }}</span>
+                                </div>
+                                {% else %}
+                                <div class="cp-time-row">
+                                    <i class="fa-solid fa-bolt cp-special-icon" aria-hidden="true"></i>
+                                    <span class="cp-time-chip cp-time-chip--special">{{ a.especial_inicio|time:"H:i"|default:"--:--" }}</span>
+                                    <span class="cp-time-sep">–</span>
+                                    <span class="cp-time-chip cp-time-chip--special">{{ a.especial_fim|time:"H:i"|default:"--:--" }}</span>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="center">
+                                <div class="cp-total-main">{{ a.horas_total|hhmm }}h</div>
+                                {% if a.horas_extra > 0 %}<div class="cp-total-extra">+{{ a.horas_extra|hhmm }}h extra</div>{% endif %}
+                            </td>
+                            <td class="center">
+                                <span class="cp-status-pill cp-status-pill--{{ a.status }}">{{ a.get_status_display }}</span>
+                            </td>
+                            <td class="right">
+                                {% if a.status == 'pendente' or a.status == 'reprovado' %}
+                                <div class="cp-row-actions">
+                                    <a href="{% url 'controle_horas:apontamento_edit' a.pk %}" class="cp-action-btn cp-action-btn--edit" title="Editar este apontamento" aria-label="Editar apontamento de {{ a.data|date:'d/m/Y' }}">
+                                        <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                                    </a>
+                                    <form action="{% url 'controle_horas:apontamento_delete' a.pk %}" method="post" onsubmit="return confirm('Excluir este apontamento?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="cp-action-btn cp-action-btn--delete" title="Excluir este apontamento" aria-label="Excluir apontamento de {{ a.data|date:'d/m/Y' }}">
+                                            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                {% else %}
+                                <span class="cp-locked" title="Apontamento aprovado e travado. Caso encontre algum erro, solicite a correção ao seu gestor.">
+                                    <i class="fa-solid fa-lock" aria-hidden="true"></i> Travado
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5">
+                                <div class="cp-empty">
+                                    <i class="fa-solid fa-mug-hot" aria-hidden="true"></i>
+                                    <p>Nenhum ponto registrado neste mês</p>
+                                    <p class="cp-empty-sub">Use o botão azul acima para marcar sua entrada</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+
+        {% if is_gestor %}
+        <!-- ── APROVAÇÕES ── -->
+        <div id="cp-panel-aprovacoes" class="cp-panel" role="tabpanel" aria-labelledby="cp-btn-aprovacoes">
+            <div class="cp-table-wrap">
+                <div class="cp-table-scroll">
+                <table class="cp-table" role="grid" aria-label="Fila de aprovações pendentes">
+                    <thead>
+                        <tr>
+                            <th>Colaborador / data</th>
+                            <th class="center">Jornada</th>
+                            <th class="center">Total / extra</th>
+                            <th>Tipo / justificativa</th>
+                            <th class="right">Decisão</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in aprovacoes_pendentes %}
+                        <tr>
+                            <td>
+                                <div class="cp-person">
+                                    <span class="cp-avatar" aria-hidden="true">{{ a.usuario.username|first|upper }}</span>
+                                    <div>
+                                        <div class="cp-approval-name">{{ a.usuario.get_full_name|default:a.usuario.username }}</div>
+                                        <div class="cp-approval-date"><i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ a.data|date:"d/m/Y" }} · {{ a.data|weekday_pt }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="center">
+                                {% if a.tipo == 'normal' %}
+                                <div class="cp-time-row">
+                                    <span class="cp-time-chip {% if not a.manha_inicio %}cp-time-chip--empty{% endif %}">{{ a.manha_inicio|time:"H:i"|default:"--:--" }}</span>
+                                    <span class="cp-time-sep">–</span>
+                                    <span class="cp-time-chip {% if not a.manha_fim %}cp-time-chip--empty{% endif %}">{{ a.manha_fim|time:"H:i"|default:"--:--" }}</span>
+                                    <span class="cp-time-divider" aria-hidden="true"></span>
+                                    <span class="cp-time-chip {% if not a.tarde_inicio %}cp-time-chip--empty{% endif %}">{{ a.tarde_inicio|time:"H:i"|default:"--:--" }}</span>
+                                    <span class="cp-time-sep">–</span>
+                                    <span class="cp-time-chip {% if not a.tarde_fim %}cp-time-chip--empty{% endif %}">{{ a.tarde_fim|time:"H:i"|default:"--:--" }}</span>
+                                </div>
+                                {% else %}
+                                <div class="cp-time-row">
+                                    <i class="fa-solid fa-bolt cp-special-icon" aria-hidden="true"></i>
+                                    <span class="cp-time-chip cp-time-chip--special">{{ a.especial_inicio|time:"H:i"|default:"--:--" }}</span>
+                                    <span class="cp-time-sep">–</span>
+                                    <span class="cp-time-chip cp-time-chip--special">{{ a.especial_fim|time:"H:i"|default:"--:--" }}</span>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="center">
+                                <div class="cp-total-main">{{ a.horas_total|hhmm }}h</div>
+                                {% if a.horas_extra > 0 %}<div class="cp-total-extra">+{{ a.horas_extra|hhmm }}h extra</div>{% endif %}
+                            </td>
+                            <td>
+                                <span class="cp-approval-type">{{ a.get_tipo_display }}</span><br>
+                                <span class="cp-approval-desc">{{ a.descricao|default:"Sem observações adicionais." }}</span>
+                            </td>
+                            <td class="right">
+                                <div class="cp-row-actions">
+                                    <form action="{% url 'controle_horas:apontamento_aprovar' a.pk %}" method="post">
+                                        {% csrf_token %}
+                                        <button type="submit" class="cp-action-btn cp-action-btn--approve" title="Aprovar" aria-label="Aprovar apontamento de {{ a.usuario.get_full_name|default:a.usuario.username }}">
+                                            <i class="fa-solid fa-check" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                    <form action="{% url 'controle_horas:apontamento_reprovar' a.pk %}" method="post" onsubmit="return confirm('Devolver para correção do funcionário?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="cp-action-btn cp-action-btn--reject" title="Reprovar / devolver para correção" aria-label="Reprovar apontamento de {{ a.usuario.get_full_name|default:a.usuario.username }}">
+                                            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5">
+                                <div class="cp-empty cp-empty--good">
+                                    <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i>
+                                    <p>Zero pendências</p>
+                                    <p class="cp-empty-sub">Caixa de aprovação limpa</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── FECHAMENTOS ── -->
+        <div id="cp-panel-fechamentos" class="cp-panel" role="tabpanel" aria-labelledby="cp-btn-fechamentos">
+
+            <div class="cp-export-bar">
+                <div>
+                    <div class="cp-export-title"><i class="fa-solid fa-file-shield" style="color:var(--cp-blue)" aria-hidden="true"></i> Documentos oficiais da competência</div>
+                    <div class="cp-export-sub">Exportação — {{ mes|stringformat:"02d" }}/{{ ano }} · somente lançamentos aprovados</div>
+                </div>
+                <div class="cp-export-actions">
+                    <a href="{% url 'controle_horas:export_csv_mes' ano mes %}" class="cp-export-btn">
+                        <i class="fa-solid fa-file-csv" aria-hidden="true"></i> Exportar CSV
+                    </a>
+                    <a href="{% url 'controle_horas:relatorio_espelho_mes_pdf' %}?competencia={{ competencia }}" class="cp-export-btn cp-export-btn--pdf">
+                        <i class="fa-regular fa-file-pdf" aria-hidden="true"></i> Espelho consolidado
+                    </a>
+                </div>
+            </div>
+
+            <div class="cp-table-wrap">
+                <div class="cp-table-scroll">
+                <table class="cp-table" role="grid" aria-label="Resumo de fechamento por colaborador">
+                    <thead>
+                        <tr>
+                            <th>Colaborador</th>
+                            <th class="center">Horas normais</th>
+                            <th class="center">Horas extras</th>
+                            <th class="right">Espelho individual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in resumo_fechamento %}
+                        <tr>
+                            <td>
+                                <div class="cp-person">
+                                    <span class="cp-avatar" aria-hidden="true">{{ r.usuario__username|first|upper }}</span>
+                                    <div class="cp-date-main">
+                                        {% if r.usuario__first_name %}{{ r.usuario__first_name }} {{ r.usuario__last_name }}{% else %}{{ r.usuario__username }}{% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="center"><span class="cp-mono">{{ r.total_h|hhmm }}h</span></td>
+                            <td class="center"><span class="cp-mono cp-mono--extra">{{ r.extra_h|hhmm }}h</span></td>
+                            <td class="right">
+                                <a href="{% url 'controle_horas:relatorio_espelho_individual_pdf' r.usuario__id %}?competencia={{ competencia }}" target="_blank" class="cp-print-link">
+                                    <i class="fa-solid fa-print" aria-hidden="true"></i> Gerar ponto
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4">
+                                <div class="cp-empty">
+                                    <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+                                    <p>Nenhum ponto aprovado neste mês</p>
+                                    <p class="cp-empty-sub">Aprove os lançamentos na aba Aprovações para consolidar</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% include "controle_horas/agenda.html" %}
+    </div>
+</div>
+
+<!-- ═══ MODAL: LANÇAMENTO MANUAL ═══ -->
+<div id="cp-modal-backdrop" class="cp-modal-backdrop" style="display:none;" role="presentation">
+    <div class="cp-modal" role="dialog" aria-modal="true" aria-labelledby="cp-modal-title">
+        <div class="cp-modal__head">
+            <div class="cp-modal__title" id="cp-modal-title">
+                <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Lançamento manual de horas
+            </div>
+            <button type="button" class="cp-modal__close" onclick="cpCloseModal()" aria-label="Fechar">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <div class="cp-modal__body">
+            <form action="{% url 'controle_horas:apontamento_create' %}" method="post">
+                {% csrf_token %}
+
+                <div class="cp-form-grid">
+                    <div class="cp-field">
+                        <label for="id_data">Data do ponto</label>
+                        {{ form_manual.data }}
+                    </div>
+                    <div class="cp-field">
+                        <label for="id_tipo">Tipo de jornada</label>
+                        {{ form_manual.tipo }}
+                    </div>
+                </div>
+
+                <div class="cp-fieldset">
+                    <div class="cp-fieldset__title">Jornada normal (4 marcações)</div>
+                    <div class="cp-fieldset-grid">
+                        <div class="cp-field">
+                            <label for="id_manha_inicio">Manhã — início</label>
+                            {{ form_manual.manha_inicio }}
+                        </div>
+                        <div class="cp-field">
+                            <label for="id_manha_fim">Manhã — fim</label>
+                            {{ form_manual.manha_fim }}
+                        </div>
+                        <div class="cp-field">
+                            <label for="id_tarde_inicio">Tarde — início</label>
+                            {{ form_manual.tarde_inicio }}
+                        </div>
+                        <div class="cp-field">
+                            <label for="id_tarde_fim">Tarde — fim</label>
+                            {{ form_manual.tarde_fim }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cp-fieldset cp-fieldset--special">
+                    <div class="cp-fieldset__title">Jornada especial / plantão (2 marcações)</div>
+                    <div class="cp-fieldset-grid cp-fieldset-grid--2">
+                        <div class="cp-field">
+                            <label for="id_especial_inicio">Horário — início</label>
+                            {{ form_manual.especial_inicio }}
+                        </div>
+                        <div class="cp-field">
+                            <label for="id_especial_fim">Horário — fim</label>
+                            {{ form_manual.especial_fim }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cp-field" style="margin-bottom: 4px;">
+                    <label for="id_descricao">Justificativa / motivo da inclusão</label>
+                    {{ form_manual.descricao }}
+                </div>
+
+                <div class="cp-modal__footer">
+                    <button type="button" class="cp-btn-cancel" onclick="cpCloseModal()">Cancelar</button>
+                    <button type="submit" class="cp-btn-submit"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Enviar para aprovação</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL: REGISTRAR ATUALIZAÇÃO (vincula cliente + bate ponto) ═══ -->
+<div id="cp-modal-att-backdrop" class="cp-modal-backdrop" style="display:none;" role="presentation">
+    <div class="cp-modal" role="dialog" aria-modal="true" aria-labelledby="cp-modal-att-title">
+        <div class="cp-modal__head">
+            <div class="cp-modal__title" id="cp-modal-att-title">
+                <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Registrar Atualização
+            </div>
+            <button type="button" class="cp-modal__close" onclick="cpCloseModalAtt()" aria-label="Fechar">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <div class="cp-modal__body">
+            <form action="{% url 'controle_horas:bater_ponto_atualizacao' %}" method="post">
+                {% csrf_token %}
+
+                <p style="font-size:12.5px; color:var(--cp-muted); margin:0 0 16px 0; line-height:1.5;">
+                    Selecione o cliente que está sendo atualizado. O ponto é registrado agora
+                    (início ou fim, conforme o ciclo em aberto) e o grupo do suporte recebe o
+                    aviso de que é uma <strong>Atualização</strong> — não um plantão — já com o nome do cliente.
+                </p>
+
+                <div class="cp-field" style="margin-bottom: 4px;">
+                    <label for="cp-att-cliente">Cliente</label>
+                    <select id="cp-att-cliente" name="cliente_id">
+                        <option value="">— Selecione o cliente —</option>
+                        {% for c in clientes_ativos %}
+                        <option value="{{ c.codigo }}">{{ c.nome_fantasia|default:c.razao_social }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <p style="font-size:11px; color:var(--cp-faint); margin:6px 0 0 0;">
+                    Se já existir um início em aberto hoje, este passo fecha o ciclo (fim) e o
+                    cliente selecionado é ignorado — não precisa escolher de novo pra finalizar.
+                </p>
+
+                <div class="cp-modal__footer">
+                    <button type="button" class="cp-btn-cancel" onclick="cpCloseModalAtt()">Cancelar</button>
+                    <button type="submit" class="cp-btn-submit"><i class="fa-solid fa-fingerprint" aria-hidden="true"></i> Confirmar e bater ponto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    /* ── RELÓGIO AO VIVO ─────────────────────────────────── */
+    const elHM = document.getElementById('cp-clock-hm');
+    const elS  = document.getElementById('cp-clock-s');
+    const elDate = document.getElementById('cp-clock-date');
+
+    function cpTick() {
+        const now = new Date();
+        const p = n => String(n).padStart(2, '0');
+        if (elHM) elHM.textContent = p(now.getHours()) + ':' + p(now.getMinutes());
+        if (elS)  elS.textContent  = p(now.getSeconds());
+    }
+    if (elDate) {
+        elDate.textContent = new Date().toLocaleDateString('pt-BR', {
+            weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
+        });
+    }
+    cpTick();
+    setInterval(cpTick, 1000);
+
+    /* ── TIMELINE DO DIA: fallback + duplicidade ─────────── */
+    const track = document.getElementById('cp-day-track');
+    if (track) {
+        const real = track.querySelectorAll('.cp-day-step:not(.cp-day-fallback)');
+        if (real.length > 0) {
+            // existe registro de hoje: remove a trilha vazia
+            track.querySelectorAll('.cp-day-fallback').forEach(el => el.remove());
+            // edge case: mais de um registro normal hoje → mantém só o primeiro (4 passos)
+            track.querySelectorAll('.cp-day-step:not(.cp-day-fallback)').forEach((el, i) => {
+                if (i >= 4) el.remove();
+            });
+        }
+    }
+
+    /* ── TABS ────────────────────────────────────────────── */
+    window.cpOpenTab = function (tabId, btn) {
+        document.querySelectorAll('.cp-tab-btn').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.cp-panel').forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        document.getElementById('cp-panel-' + tabId).classList.add('active');
+    };
+
+    /* ── MODAL ───────────────────────────────────────────── */
+    window.cpOpenModal = function () {
+        document.getElementById('cp-modal-backdrop').style.display = 'flex';
+    };
+    window.cpCloseModal = function () {
+        document.getElementById('cp-modal-backdrop').style.display = 'none';
+    };
+    document.getElementById('cp-modal-backdrop').addEventListener('click', function (e) {
+        if (e.target === this) cpCloseModal();
+    });
+
+    /* ── MODAL: ATUALIZAÇÃO ─────────────────────────────────── */
+    window.cpOpenModalAtt = function () {
+        document.getElementById('cp-modal-att-backdrop').style.display = 'flex';
+    };
+    window.cpCloseModalAtt = function () {
+        document.getElementById('cp-modal-att-backdrop').style.display = 'none';
+    };
+    document.getElementById('cp-modal-att-backdrop').addEventListener('click', function (e) {
+        if (e.target === this) cpCloseModalAtt();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { cpCloseModal(); cpCloseModalAtt(); }
+    });
+
+    /* ── NAVEGAÇÃO DE MÊS ────────────────────────────────── */
+    window.cpNextMonth = function (currentMonthStr) {
+        const parts = currentMonthStr.split('-');
+        let year = parseInt(parts[0]);
+        let month = parseInt(parts[1]);
+
+        month += 1;
+        if (month > 12) { month = 1; year += 1; }
+
+        const nextMonthStr = year + "-" + (month < 10 ? "0" + month : month);
+        window.location.href = "?competencia=" + nextMonthStr;
+    };
+
+    /* ── TOGGLE NORMAL x ESPECIAL NO MODAL ───────────────── */
+    const tipoSelect = document.getElementById('id_tipo');
+    if (tipoSelect) {
+        function cpToggleCampos() {
+            const normal = tipoSelect.value === 'normal';
+            document.querySelectorAll('.cp-fieldset:not(.cp-fieldset--special)').forEach(fs => {
+                fs.style.opacity = normal ? '1' : '0.35';
+                fs.querySelectorAll('input').forEach(i => i.disabled = !normal);
+            });
+            document.querySelectorAll('.cp-fieldset--special').forEach(fs => {
+                fs.style.opacity = normal ? '0.35' : '1';
+                fs.querySelectorAll('input').forEach(i => i.disabled = normal);
+            });
+        }
+        cpToggleCampos();
+        tipoSelect.addEventListener('change', cpToggleCampos);
+    }
+})();
+</script>
+
+{% endblock %}

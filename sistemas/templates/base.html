@@ -1,0 +1,138 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>{% block title %}Union Desk{% endblock %}</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#16a34a',
+            bgdark: '#020617'
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        crossorigin="anonymous" />
+
+  <link rel="icon" href="{% static 'favicon.ico' %}" />
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="h-full bg-slate-950 text-slate-100 antialiased">
+
+<div class="flex h-screen overflow-hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col">
+
+    <!-- Logo -->
+    <div class="h-14 flex items-center px-6 border-b border-slate-800">
+      <a href="{% url 'home' %}" class="flex items-center gap-2 text-emerald-400 font-semibold">
+        <i class="fa-solid fa-layer-group"></i>
+        <span>Union Desk</span>
+      </a>
+    </div>
+
+    <!-- Menu -->
+    <nav class="flex-1 p-4 space-y-2 text-sm">
+
+      <a href="{% url 'home' %}"
+         class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">
+        <i class="fa-solid fa-chart-line w-4"></i>
+        Dashboard
+      </a>
+
+      <a href="{% url 'lista_chamados' %}"
+         class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">
+        <i class="fa-solid fa-ticket w-4"></i>
+        Chamados
+      </a>
+
+      <a href="{% url 'empresa_list' %}"
+         class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">
+        <i class="fa-solid fa-building w-4"></i>
+        Empresas
+      </a>
+
+      <a href="{% url 'painel_sistemas' %}"
+         class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">
+        <i class="fa-solid fa-microchip w-4"></i>
+        Sistemas
+      </a>
+
+      <a href="{% url 'base_conhecimento' %}"
+         class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">
+        <i class="fa-solid fa-book w-4"></i>
+        Base de Conhecimento
+      </a>
+
+      <a href="{% url 'agenda' %}"
+         class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">
+        <i class="fa-solid fa-calendar w-4"></i>
+        Agenda
+      </a>
+
+      <a href="{% url 'controle_horas' %}"
+         class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">
+        <i class="fa-solid fa-clock w-4"></i>
+        Controle de Horas
+      </a>
+
+    </nav>
+
+    <!-- Footer Sidebar -->
+    <div class="p-4 border-t border-slate-800 text-xs text-slate-400">
+      <a href="{% url 'user_logout' %}" class="hover:text-red-400">
+        <i class="fa-solid fa-right-from-bracket mr-1"></i> Sair
+      </a>
+    </div>
+
+  </aside>
+
+  <!-- CONTEÚDO -->
+  <div class="flex-1 flex flex-col overflow-y-auto">
+
+    <!-- Topbar opcional -->
+    <div class="h-14 border-b border-slate-800 flex items-center px-6 bg-slate-950">
+      {% block page_header %}{% endblock %}
+    </div>
+
+    <!-- Main -->
+    <main class="flex-1 p-6">
+
+      {% if messages %}
+        <div class="mb-4 space-y-2">
+          {% for message in messages %}
+            <div class="rounded-md px-4 py-2 text-sm
+              {% if message.tags == 'success' %}bg-emerald-900/40 text-emerald-300
+              {% elif message.tags == 'error' %}bg-red-900/40 text-red-300
+              {% else %}bg-slate-800 text-slate-200{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+
+    </main>
+
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ganhos - CRM</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ==========================================
+           REWORK VISUAL 2.0: SLIM, GLASSMORPHISM, NEON
+           ========================================== */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+
+        :root {
+            --bg-dark: #080d18;
+            --bg-glow-a: #1c2945;
+            --bg-glow-b: #0b1120;
+
+            --glass-bg: rgba(15, 23, 42, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-border-strong: rgba(255, 255, 255, 0.14);
+
+            --primary: #3b82f6;
+            --primary-light: #60a5fa;
+            --primary-glow: rgba(59, 130, 246, 0.45);
+
+            --success: #34d399;
+            --success-strong: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.4);
+            --success-soft: rgba(16, 185, 129, 0.12);
+
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-faint: #64748b;
+
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+        html { scrollbar-gutter: stable; }
+
+        body {
+            background: radial-gradient(circle at top center, var(--bg-glow-a) 0%, var(--bg-glow-b) 45%, var(--bg-dark) 100%);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ==========================================
+           TOPBAR E NAVEGAÇÃO
+           ========================================== */
+        .topbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 24px;
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 20; height: 68px;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.35);
+            flex-wrap: wrap; gap: 10px; row-gap: 8px;
+        }
+
+        .topbar-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+        .topbar h1 { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.5px; text-transform: uppercase; white-space: nowrap; }
+        .topbar h1 a {
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .topbar h1 a:hover { filter: brightness(1.25); text-shadow: 0 0 18px rgba(96, 165, 250, 0.55); }
+
+        .btn-voltar {
+            display: flex; align-items: center; justify-content: center;
+            width: 34px; height: 34px; color: var(--text-muted); text-decoration: none;
+            border-radius: var(--radius-sm); transition: all 0.2s; font-size: 0.9rem;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); flex-shrink: 0;
+        }
+        .btn-voltar:hover { background: rgba(255,255,255,0.1); color: #fff; transform: translateX(-2px); border-color: var(--glass-border-strong); }
+
+        .topbar-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .btn-nav {
+            display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: var(--radius-sm);
+            font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+            color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px; position: relative;
+        }
+        .btn-nav:hover { background: rgba(255,255,255,0.09); color: #fff; transform: translateY(-2px); border-color: var(--glass-border-strong); box-shadow: 0 4px 14px rgba(0,0,0,0.3); }
+
+        /* ==========================================
+           CONTEÚDO PRINCIPAL (TABELA GLASSMORPHISM)
+           ========================================== */
+        .content-area { padding: 32px 24px; overflow-y: auto; flex: 1; max-width: 1500px; margin: 0 auto; width: 100%; }
+        
+        .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+        .page-header h2 { font-size: 1.6rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px;}
+        .page-header p { color: var(--text-muted); font-size: 0.95rem; margin-top: 6px; font-weight: 500; }
+
+        .toolbar-area form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .filter-select {
+            background-color: rgba(0,0,0,0.25); border: 1px solid var(--glass-border); color: #cbd5e1;
+            padding: 10px 16px; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600;
+            outline: none; cursor: pointer; transition: 0.25s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .filter-select:focus, .filter-select:hover { border-color: var(--success); background-color: rgba(0,0,0,0.4); box-shadow: 0 0 0 2px var(--success-soft); }
+        .filter-select option { background: var(--bg-dark); }
+
+        .table-container { 
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); border-radius: var(--radius-lg); 
+            overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.25); 
+        }
+        
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { 
+            background: rgba(0,0,0,0.4); padding: 16px 24px; font-size: 0.72rem; font-weight: 800; 
+            color: var(--text-faint); text-transform: uppercase; border-bottom: 1px solid var(--glass-border); 
+            letter-spacing: 0.8px; white-space: nowrap;
+        }
+        td { 
+            padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.03); 
+            font-size: 0.88rem; color: var(--text-main); vertical-align: middle; 
+            cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        tr { transition: transform 0.2s; }
+        tr:hover td { background: var(--success-soft); }
+        tr:last-child td { border-bottom: none; }
+
+        .empresa-nome { font-weight: 800; color: #f8fafc; font-size: 0.95rem; display: block;}
+        .sub-text { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; font-weight: 500; display: flex; align-items: center; gap: 6px;}
+        
+        .valor-ganho { 
+            font-weight: 800; color: var(--success); font-size: 1.1rem; 
+            font-family: 'JetBrains Mono', monospace; text-shadow: 0 0 10px var(--success-glow);
+        }
+        
+        .badge-trophy { 
+            background: var(--success-soft); color: var(--success-strong); 
+            padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.75rem; 
+            font-weight: 800; display: inline-flex; align-items: center; gap: 6px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .vendedor-perfil { display: flex; align-items: center; gap: 10px; }
+        .vendedor-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--success), #3b82f6);
+            display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800;
+            color: #ffffff; box-shadow: 0 2px 10px rgba(52, 211, 153, 0.3); flex-shrink: 0; border: 2px solid rgba(255,255,255,0.15);
+        }
+        .vendedor-avatar.sem-dono { background: #475569; box-shadow: none; border-color: transparent; }
+
+        /* SCROLLBARS DA PÁGINA */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--success); }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <a href="{% url 'crm_vendas:kanban' %}" class="btn-voltar" title="Voltar ao Funil"><i class="fa-solid fa-arrow-left"></i></a>
+            <h1><a href="{% url 'crm_vendas:kanban' %}">Pipeline LÓGICA</a></h1>
+        </div>
+
+        <div class="topbar-right">
+            {% if is_supervisor %}
+            <a href="{% url 'crm_vendas:dashboard_gestor' %}" class="btn-nav">
+                <i class="fa-solid fa-chart-pie text-amber-500"></i> Gestão
+            </a>
+            {% endif %}
+            <a href="{% url 'crm_vendas:lista_prospeccoes' %}" class="btn-nav">
+                <i class="fa-solid fa-phone-volume text-blue-400"></i> Prospecções
+            </a>
+            <a href="{% url 'crm_vendas:lista_ganhos' %}" class="btn-nav" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: #fff;">
+                <i class="fa-solid fa-trophy text-emerald-400"></i> Ganhos
+            </a>
+            <a href="{% url 'crm_vendas:lista_perdidos' %}" class="btn-nav">
+                <i class="fa-solid fa-trash-can text-rose-500"></i> Perdidos
+            </a>
+            <a href="{% url 'crm_vendas:minhas_vendas' %}" class="btn-nav">
+                <i class="fa-solid fa-wallet text-indigo-400"></i> Vendas
+            </a>
+        </div>
+    </div>
+
+    <div class="content-area">
+        <div class="page-header">
+            <div>
+                <h2><i class="fa-solid fa-trophy text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]"></i> Negócios Ganhos</h2>
+                <p>Galeria de troféus. Oportunidades fechadas e convertidas pela equipe.</p>
+            </div>
+            
+            <div class="toolbar-area">
+                <form method="GET">
+                    <select name="cidade" class="filter-select" onchange="this.form.submit()">
+                        <option value="">🗺️ Todas as Cidades</option>
+                        {% for c in cidades %}<option value="{{ c }}" {% if cidade_atual == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+                    </select>
+                    <select name="segmento" class="filter-select" onchange="this.form.submit()">
+                        <option value="">🏢 Todos os Segmentos</option>
+                        {% for s in segmentos %}<option value="{{ s }}" {% if segmento_atual == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                    </select>
+                    <select name="vendedor" class="filter-select" onchange="this.form.submit()">
+                        <option value="">👤 Todos os Vendedores</option>
+                        {% for v in vendedores %}
+                            <option value="{{ v.id }}" {% if vendedor_atual == v.id|stringformat:"s" %}selected{% endif %}>{{ v.first_name|default:v.username }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cliente / Empresa</th>
+                        <th>Telefone / Contato</th>
+                        <th>Valor Ganho</th>
+                        <th>Data de Fechamento</th>
+                        <th>Consultor Responsável</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lead in leads %}
+                    <tr onclick="abrirFichaLead('{{ lead.id }}')">
+                        <td>
+                            <span class="empresa-nome">{{ lead.nome_empresa }}</span>
+                            <span class="sub-text"><i class="fa-solid fa-id-card text-slate-600"></i> CNPJ: {{ lead.cnpj|default:"Não informado" }}</span>
+                        </td>
+                        <td>
+                            <span style="font-weight: 600; color: #e2e8f0; display: flex; align-items: center; gap: 6px;"><i class="fa-regular fa-user text-slate-500"></i> {{ lead.nome_contato }}</span>
+                            <span class="sub-text"><i class="fa-solid fa-phone text-slate-600"></i> {{ lead.telefone }}</span>
+                        </td>
+                        <td>
+                            <span class="valor-ganho">R$ {{ lead.valor_ticket_medio|floatformat:2 }}</span>
+                        </td>
+                        <td>
+                            <span class="badge-trophy"><i class="fa-solid fa-check-circle"></i> {{ lead.data_fechamento|date:"d/m/Y" }}</span>
+                        </td>
+                        <td>
+                            <div class="vendedor-perfil">
+                                {% if lead.vendedor_responsavel %}
+                                    <div class="vendedor-avatar" title="{{ lead.vendedor_responsavel.get_full_name|default:lead.vendedor_responsavel.username }}">
+                                        {{ lead.vendedor_responsavel.first_name|default:lead.vendedor_responsavel.username|make_list|first|upper }}
+                                    </div>
+                                    <span style="font-weight: 700; color: #cbd5e1; font-size: 0.85rem;">
+                                        {{ lead.vendedor_responsavel.first_name|default:lead.vendedor_responsavel.username }}
+                                    </span>
+                                {% else %}
+                                    <div class="vendedor-avatar sem-dono" title="Sem Dono Definido">?</div>
+                                    <span style="font-weight: 700; color: #64748b; font-size: 0.85rem;">Sem Dono</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align:center; padding: 80px 20px; color:#64748b; font-size: 1rem; font-weight: 600;">
+                            <i class="fa-solid fa-ghost text-5xl mb-4 block opacity-30"></i>
+                            Nenhum negócio ganho encontrado com os filtros atuais.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% include 'crm_vendas/partials/_offcanvas_lead.html' %}
+</body>
+</html>

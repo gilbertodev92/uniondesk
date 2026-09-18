@@ -1,0 +1,1023 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Comando Operacional | Union Desk{% endblock %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+    /* UNIONDESK — Dashboard tematizado (dark / gray / light via tokens do base.html) */
+
+    /* fundo com grade sutil que lê o tema */
+    .cyber-bg {
+        background-color: rgb(var(--c-bg));
+        background-image:
+            linear-gradient(rgb(var(--c-accent) / 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgb(var(--c-accent) / 0.035) 1px, transparent 1px),
+            radial-gradient(circle at 50% 0%, rgb(var(--c-accent) / 0.08) 0%, transparent 55%),
+            radial-gradient(circle at 0% 100%, rgb(var(--c-signal) / 0.05) 0%, transparent 50%);
+        background-size: 42px 42px, 42px 42px, 100% 100%, 100% 100%;
+    }
+
+    /* painéis */
+    .hud-panel {
+        background: rgb(var(--c-panel));
+        border: 1px solid rgb(var(--c-line));
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+        transition: border-color .2s, background-color .25s;
+    }
+    .hud-panel:hover { border-color: rgb(var(--c-accent) / 0.35); }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-accent)); }
+
+    .tab-content { display: none; animation: fadeIn 0.4s ease; }
+    .tab-content.block { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .chart-box { width: 100%; height: 350px; min-height: 300px; position: relative; z-index: 10; }
+
+    h1, h2 { font-family: 'Space Grotesk', sans-serif; }
+    .text-4xl.font-black, .text-5xl.font-black, .text-6xl.font-black { font-family: 'Space Grotesk', sans-serif; }
+    [class*="tracking-widest"] { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; }
+
+    /* inputs de filtro do dashboard seguem o tema */
+    .dash-input {
+        background: rgb(var(--c-deep)); border: 1px solid rgb(var(--c-line));
+        color: rgb(var(--c-ink)); border-radius: 8px; padding: 8px 12px;
+        font-size: 13px; outline: none; transition: border-color .15s;
+    }
+    .dash-input:focus { border-color: rgb(var(--c-accent)); }
+    .dash-input option { background: rgb(var(--c-panel)); }
+</style>
+
+<div class="cyber-bg min-h-screen text-ink relative antialiased pb-20">
+
+    <div class="p-6 relative z-10 max-w-[1800px] mx-auto">
+
+        <div class="hud-panel rounded-2xl p-6 md:p-8 mb-8 flex flex-col md:flex-row justify-between items-center relative overflow-hidden" data-aos="fade-down" data-aos-duration="800">
+            <div class="relative z-10 w-full flex flex-col md:flex-row justify-between items-center gap-6">
+                <div>
+                    <h1 class="text-3xl font-black text-ink tracking-tight flex items-center gap-3 drop-shadow-lg">
+                        <i class="fa-solid fa-satellite-dish text-accent animate-pulse"></i> CENTRAL DE INFORMAÇÕES
+                    </h1>
+                    <p class="text-xs text-signal mt-1.5 uppercase tracking-[0.2em] font-bold drop-shadow-md">Lógica Automação Comercial</p>
+
+                    <form method="GET" class="flex items-center gap-3 mt-5 flex-wrap" id="form-filtros">
+                        <input type="hidden" name="aba_ativa" id="input-aba-ativa" value="{{ request.GET.aba_ativa|default:'tab-diario' }}">
+                        
+                        <div id="filtro-dia" class="flex items-center gap-2 bg-core-panel border border-core-line rounded-lg px-3 py-1.5 shadow-inner">
+                            <span class="text-[10px] text-ink-soft font-bold uppercase tracking-widest">Dia:</span>
+                            <input type="date" name="dia" value="{{ dia_selecionado }}" onchange="this.form.submit()" class="bg-transparent text-sm font-bold text-ink outline-none cursor-pointer">
+                        </div>
+                        
+                        <div id="filtro-mes" class="items-center gap-2 hidden">
+                            <select name="periodo" onchange="this.form.submit()" class="bg-core-panel border border-accent/50 text-sm font-bold text-accent-soft rounded-lg px-3 py-2 outline-none focus:border-accent-soft transition-all cursor-pointer shadow-[0_0_15px_rgba(61,90,254,0.15)]">
+                                <option value="mes_exato" {% if periodo == 'mes_exato' %}selected{% endif %}>Mês Específico</option>
+                                <option value="ultimos_3" {% if periodo == 'ultimos_3' %}selected{% endif %}>Últimos 3 Meses</option>
+                                <option value="ultimos_6" {% if periodo == 'ultimos_6' %}selected{% endif %}>Últimos 6 Meses</option>
+                                <option value="este_ano" {% if periodo == 'este_ano' %}selected{% endif %}>Este Ano (2026)</option>
+                            </select>
+
+                            <select name="mes" id="select-mes" onchange="this.form.submit()" class="bg-core-panel border border-core-line text-sm font-bold text-ink rounded-lg px-3 py-2 outline-none focus:border-accent transition-all cursor-pointer shadow-inner" {% if periodo != 'mes_exato' %}disabled style="opacity: 0.5"{% endif %}>
+                                {% for num, nome in meses_lista %}
+                                <option value="{{ num }}" {% if num == mes_atual %}selected{% endif %}>{{ nome }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <select name="ano" id="select-ano" onchange="this.form.submit()" class="bg-core-panel border border-core-line text-sm font-bold text-ink rounded-lg px-3 py-2 outline-none focus:border-accent transition-all cursor-pointer shadow-inner" {% if periodo != 'mes_exato' %}disabled style="opacity: 0.5"{% endif %}>
+                                <option value="2026" {% if ano_atual == 2026 %}selected{% endif %}>2026</option>
+                                <option value="2025" {% if ano_atual == 2025 %}selected{% endif %}>2025</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="flex bg-core-panel p-1.5 rounded-xl border border-core-line backdrop-blur-md flex-wrap justify-center gap-1 shadow-2xl">
+                    <button onclick="switchTab('tab-diario', this)" class="tab-btn active px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all bg-accent text-ink shadow-[0_0_15px_rgba(61,90,254,0.4)]">Hoje (Diário)</button>
+                    <button onclick="switchTab('tab-operacao', this)" class="tab-btn px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all text-ink-soft hover:text-ink hover:bg-core-deep">WhatsApp</button>
+                    <button onclick="switchTab('tab-grupos', this)" class="tab-btn px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all text-ink-soft hover:text-ink hover:bg-core-deep">Grupos VIP</button>
+                    <button onclick="switchTab('tab-radar', this)" class="tab-btn px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all text-ink-soft hover:text-ink hover:bg-core-deep">O.S. (Radar)</button>
+                    <button onclick="switchTab('tab-cs', this)" class="tab-btn px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all text-ink-soft hover:text-ink hover:bg-core-deep">CS & Saúde</button>
+                    <button onclick="switchTab('tab-mapa', this)" class="tab-btn px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all text-ink-soft hover:text-ink hover:bg-core-deep">Mapa SC</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-diario" class="tab-content block space-y-6">
+            <div class="hud-panel border-l-4 border-l-accent rounded-2xl p-6 mb-2">
+                <h2 class="text-lg font-black text-ink mb-1 uppercase tracking-widest"><i class="fa-solid fa-calendar-day mr-2 text-accent-soft"></i>Visão de Raio-X do Dia: {{ dia_selecionado_formatado }}</h2>
+                <p class="text-xs text-ink-soft">Produtividade consolidada exclusivamente para a data selecionada acima.</p>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="hud-panel border-t border-t-accent/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div class="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <h3 class="text-[10px] text-accent-soft font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-brands fa-whatsapp mr-1"></i> Chats Iniciados</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ ws_diario_iniciados|default:"0" }}</p>
+                </div>
+                <div class="hud-panel border-t border-t-success/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div class="absolute inset-0 bg-success/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <h3 class="text-[10px] text-success font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-solid fa-check-double mr-1"></i> Chats Resolvidos</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ ws_diario_finalizados|default:"0" }}</p>
+                </div>
+                <div class="hud-panel border-t border-t-orange-500/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div class="absolute inset-0 bg-warn/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <h3 class="text-[10px] text-warn font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-solid fa-ticket mr-1"></i> O.S. Abertas</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ os_diario_abertas|default:"0" }}</p>
+                </div>
+                <div class="hud-panel border-t border-t-purple-500/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div class="absolute inset-0 bg-special/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <h3 class="text-[10px] text-special font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-solid fa-flag-checkered mr-1"></i> O.S. Resolvidas</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ os_diario_resolvidas|default:"0" }}</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2"><i class="fa-brands fa-whatsapp mr-2 text-success"></i>Produção de WhatsApp (Top 7)</h2>
+                    <div id="chartDiaWs" class="chart-box"></div>
+                </div>
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2"><i class="fa-solid fa-ticket mr-2 text-warn"></i>Produção de O.S (Top 10)</h2>
+                    <div id="chartDiaOs" class="chart-box"></div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2"><i class="fa-solid fa-fire text-danger mr-2"></i>Top 10 Clientes (Chamados Hoje)</h2>
+                    <div id="chartDiaTopClientes" class="chart-box" style="height: 350px;"></div>
+                </div>
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2"><i class="fa-solid fa-chart-pie text-special mr-2"></i>Fechados por Setor (Hoje)</h2>
+                    <div id="chartDiaSetor" class="chart-box" style="height: 350px;"></div>
+                </div>
+            </div>
+
+            <h3 class="text-sm font-black text-ink mb-4 mt-10 border-b border-core-line pb-3 uppercase tracking-widest"><i class="fa-solid fa-users-viewfinder mr-2 text-special"></i>Monitoramento VIP (Hoje)</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink-soft uppercase tracking-widest mb-4">Desempenho da Equipe</h2>
+                    <div id="chartDiaGruposTec" class="chart-box"></div>
+                </div>
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink-soft uppercase tracking-widest mb-4">Top 10 Grupos Mais Agitados</h2>
+                    <div id="chartDiaGruposTop" class="chart-box"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-operacao" class="tab-content space-y-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="hud-panel border-t border-t-slate-500/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <h3 class="text-[10px] text-ink-soft font-bold uppercase tracking-widest mb-1 relative z-10">Total Movimentado</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ ws_total_mes }}</p>
+                </div>
+                <div class="hud-panel border-t border-t-success/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div class="absolute inset-0 bg-success/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <h3 class="text-[10px] text-success font-bold uppercase tracking-widest mb-1 relative z-10">Finalizados</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ ws_concluidos_count }}</p>
+                </div>
+                <div class="hud-panel border-t border-t-accent/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div class="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <h3 class="text-[10px] text-accent-soft font-bold uppercase tracking-widest mb-1 relative z-10">Em Atendimento (Agora)</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ ws_andamento_count }}</p>
+                </div>
+                <div class="hud-panel border-t border-t-orange-500/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div class="absolute inset-0 bg-warn/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <h3 class="text-[10px] text-warn font-bold uppercase tracking-widest mb-1 relative z-10">Fila (Sem Dono)</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ ws_fila_espera }}</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2">Atendimentos por Técnico (Top 7)</h2>
+                    <div id="chartProdWs" class="chart-box"></div>
+                </div>
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2">Fechados por Setor</h2>
+                    <div id="chartSetorWs" class="chart-box"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <div class="flex justify-between items-center mb-4 border-b border-core-line pb-2">
+                        <h2 class="text-xs font-black text-ink uppercase tracking-widest">Média de Avaliação (NPS ZAP)</h2>
+                        <span class="text-[10px] font-black text-warn bg-warn/10 px-2.5 py-1 rounded shadow-sm border border-warn/30">Geral: {{ ws_media_geral }}</span>
+                    </div>
+                    <div id="chartNotaWs" class="chart-box"></div>
+                </div>
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2">Funil Operacional em Tempo Real</h2>
+                    <div id="chartFunilWs" class="chart-box"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-grupos" class="tab-content space-y-6">
+            <div class="hud-panel border-l-4 border-l-purple-500 rounded-2xl p-6 mb-2 flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-black text-ink mb-1 uppercase tracking-widest"><i class="fa-solid fa-users mr-2 text-special"></i>Monitoramento de Grupos VIP</h2>
+                    <p class="text-xs text-ink-soft">Total de interações validadas no período selecionado.</p>
+                </div>
+                <div class="bg-special/20 px-5 py-3 rounded-xl border border-special/40 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+                    <span class="text-[10px] font-bold text-special uppercase block text-center tracking-widest">Interações Contabilizadas</span>
+                    <span class="text-3xl font-black text-ink block text-center mt-1 drop-shadow-md">{{ total_interacoes_vip_mes|default:"0" }}</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2">Desempenho da Equipe nos Grupos</h2>
+                    <div id="chartMesGruposTec" class="chart-box" style="height: 350px;"></div>
+                </div>
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2">Top 10 Grupos Mais Agitados</h2>
+                    <div id="chartMesGruposTop" class="chart-box" style="height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-radar" class="tab-content space-y-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="hud-panel border-t border-t-success/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div class="absolute inset-0 bg-success/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <h3 class="text-[10px] text-success font-bold uppercase tracking-widest mb-1 relative z-10">O.S. Resolvidas</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ os_concluidos_count }}</p>
+                </div>
+                <div class="hud-panel border-t border-t-accent/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div class="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <h3 class="text-[10px] text-accent-soft font-bold uppercase tracking-widest mb-1 relative z-10">O.S. Abertas (Backlog)</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ os_abertos_count }}</p>
+                </div>
+                <div class="hud-panel border-t border-t-red-500/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform shadow-[0_0_15px_rgba(239,68,68,0.15)]">
+                    <div class="absolute inset-0 bg-danger/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <h3 class="text-[10px] text-danger font-bold uppercase tracking-widest mb-1 relative z-10">Críticas Pendentes</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ os_prio_critica }}</p>
+                </div>
+                <div class="hud-panel border-t border-t-purple-500/50 rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div class="absolute inset-0 bg-special/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <h3 class="text-[10px] text-special font-bold uppercase tracking-widest mb-1 relative z-10">Implantações Ativas</h3>
+                    <p class="text-4xl font-black text-ink relative z-10 drop-shadow-md">{{ os_implantacoes }}</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2">Fluxo de O.S. (Evolução)</h2>
+                    <div id="chartTendOs" class="chart-box" style="height: 350px;"></div>
+                </div>
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2">Desempenho por Técnico (Top 10)</h2>
+                    <div id="chartTecPendentesOs" class="chart-box" style="height: 350px;"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2 w-full text-left">Prioridade do Backlog</h2>
+                    <div id="chartPrioOs" class="chart-box"></div>
+                </div>
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2 w-full text-left">Volume de O.S. por Setor</h2>
+                    <div id="chartSetorOs" class="chart-box"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-cs" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="hud-panel rounded-2xl p-8 flex flex-col justify-center items-center min-h-[300px] relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-accent/10 via-transparent to-transparent pointer-events-none"></div>
+                    <h3 class="text-[10px] text-ink-soft font-bold uppercase tracking-widest mb-4 relative z-10">Health Score Global</h3>
+                    <div class="text-[100px] font-black text-ink flex items-baseline leading-none drop-shadow-[0_0_20px_rgba(61,90,254,0.3)] relative z-10">
+                        {{ nps_geral|default:"0" }}<span class="text-4xl text-ink-faint ml-1">%</span>
+                    </div>
+                    <p class="mt-6 text-xs text-ink-soft font-bold uppercase tracking-widest relative z-10 border border-core-line bg-core-panel px-4 py-2 rounded-full">Total de Clientes Ativos: <span class="text-ink">{{ clientes_ativos|default:"0" }}</span></p>
+                </div>
+                <div class="hud-panel rounded-2xl p-6">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2 w-full text-left">Mapa de Risco da Carteira</h2>
+                    <div id="chartRiscoCs" class="chart-box"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2 w-full text-left">Base Histórica</h2>
+                    <div id="chartAtivosInativos" class="chart-box"></div>
+                </div>
+
+                <div class="hud-panel rounded-2xl p-6 flex flex-col items-center justify-center relative overflow-hidden">
+                    <div class="absolute -right-6 -top-2 opacity-10 pointer-events-none transition-transform duration-1000 drop-shadow-[0_0_20px_var(--tw-shadow-color)]" style="transform: rotate({{ rotacao_aviao|default:'0deg' }}); --tw-shadow-color: {{ cor_aviao|default:'#9ca3af' }};">
+                        <i class="fa-solid fa-plane text-[150px]" style="color: {{ cor_aviao|default:'#9ca3af' }};"></i>
+                    </div>
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-2 z-10">Tendência da Operação</h2>
+                    <div class="flex items-center gap-5 my-4 z-10">
+                        <div class="text-6xl font-black tracking-tighter drop-shadow-md" style="color: {{ cor_aviao|default:'#9ca3af' }};">
+                            {% if saldo_crescimento > 0 %}+{% endif %}{{ saldo_crescimento|default:"0" }}
+                        </div>
+                        <i class="fa-solid fa-plane text-5xl transition-transform duration-700 drop-shadow-lg" style="color: {{ cor_aviao|default:'#9ca3af' }}; transform: rotate({{ rotacao_aviao|default:'0deg' }});"></i>
+                    </div>
+                    <div class="text-[10px] font-black uppercase tracking-widest text-ink-soft z-10 bg-core-deep px-5 py-2 rounded-full border border-core-line shadow-inner">
+                        Situação: <span style="color: {{ cor_aviao|default:'#9ca3af' }};">{{ status_aviao|default:'VOO DE CRUZEIRO' }}</span>
+                    </div>
+                    <div class="mt-6 flex gap-4 text-[10px] font-black tracking-widest z-10 bg-core-deep px-4 py-3 rounded-xl border border-core-line shadow-inner w-full justify-center">
+                        <span class="text-success flex items-center gap-1.5"><i class="fa-solid fa-arrow-trend-up"></i> {{ qtd_novos|default:"0" }} ENTRADAS</span>
+                        <span class="text-ink-faint">|</span>
+                        <span class="text-danger flex items-center gap-1.5"><i class="fa-solid fa-arrow-trend-down"></i> {{ qtd_churn|default:"0" }} SAÍDAS</span>
+                    </div>
+                </div>
+
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2 w-full text-left">Crescimento por Software</h2>
+                    <div id="chartChurnSistema" class="chart-box"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2 w-full text-left"><i class="fa-solid fa-headset text-accent-soft mr-2"></i>CS Realizados (Equipe)</h2>
+                    <div id="chartCsTec" class="chart-box"></div>
+                </div>
+                
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-danger uppercase tracking-widest mb-4 border-b border-danger/40 pb-2 w-full text-left"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Atrasados / Acumulados</h2>
+                    <div id="chartCsPend" class="chart-box"></div>
+                </div>
+
+                <div class="hud-panel rounded-2xl p-6 group overflow-hidden flex flex-col h-[420px]">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2 w-full text-left"><i class="fa-solid fa-heart-pulse text-green-400 mr-2"></i>Últimos Atendidos (Mês)</h2>
+                    <div class="overflow-y-auto custom-scrollbar flex-1 pr-2 space-y-3">
+                        {% for c in clientes_cs_mes %}
+                        <div class="bg-core-panel border border-core-line rounded-lg p-3 flex justify-between items-center hover:border-accent/50 transition-colors">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] font-black text-ink uppercase truncate max-w-[150px]" title="{{ c.nome }}">{{ c.nome }}</span>
+                                <span class="text-[9px] text-ink-soft font-bold tracking-widest mt-0.5"><i class="fa-solid fa-user-ninja mr-1"></i>{{ c.tec }} • {{ c.data }}</span>
+                            </div>
+                            <span class="text-[10px] font-black px-2 py-1 rounded-md shadow-sm {% if c.score >= 75 %}bg-green-500/20 text-green-400 border border-green-500/30{% elif c.score >= 50 %}bg-warn/20 text-warn border border-warn/30{% else %}bg-danger/20 text-danger border border-danger/30{% endif %}">
+                                HS: {{ c.score }}
+                            </span>
+                        </div>
+                        {% empty %}
+                        <div class="flex flex-col items-center justify-center h-full opacity-50">
+                            <i class="fa-solid fa-box-open text-3xl text-ink-faint mb-2"></i>
+                            <p class="text-ink-soft text-[10px] font-black uppercase tracking-widest">Sem atendimentos</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2 w-full text-left">Curva ABC</h2>
+                    <div id="chartAbcCs" class="chart-box"></div>
+                </div>
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2 w-full text-left">Adoção de Serviços Extras</h2>
+                    <div id="chartServicosCs" class="chart-box"></div>
+                </div>
+                <div class="hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2 w-full text-left">Inadimplência</h2>
+                    <div id="chartFinCs" class="chart-box"></div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <div class="lg:col-span-2 hud-panel rounded-2xl p-6 group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2"><i class="fa-solid fa-fire text-warn mr-2"></i>Top 7 Clientes (Em Volume de Chamados)</h2>
+                    <div id="chartTopClientes" class="chart-box" style="height: 400px;"></div>
+                </div>
+                <div class="hud-panel rounded-2xl p-6 relative flex flex-col items-center group">
+                    <h2 class="text-xs font-black text-ink uppercase tracking-widest mb-4 border-b border-core-line pb-2 w-full text-center">Avaliação NPS Global</h2>
+                    
+                    <div id="chartNpsLogica" class="chart-box" style="height: 280px;"></div>
+                    
+                    <p class="text-[10px] text-ink-faint mt-2 text-center uppercase tracking-widest font-bold">Notas dadas ao fim do atendimento.</p>
+
+                    {% if qtd_detratores > 0 %}
+                    <button onclick="document.getElementById('modalDetratores').classList.remove('hidden')" class="mt-4 bg-danger/10 hover:bg-danger text-danger hover:text-ink border border-danger/50 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.2)] w-full mx-auto max-w-xs cursor-pointer z-30 relative">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i> Identificar Detratores ({{ qtd_detratores }})
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-mapa" class="tab-content space-y-6">
+            <div class="hud-panel rounded-2xl p-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-sm font-black text-ink uppercase tracking-widest mb-1"><i class="fa-solid fa-map-location-dot text-accent-soft mr-2"></i>Mapa de Força Comercial</h2>
+                        <p class="text-[10px] text-ink-soft uppercase tracking-widest font-bold">Filtre por sistema para ver a dominância regional</p>
+                    </div>
+                    <div class="flex bg-core-panel p-1.5 rounded-xl border border-core-line overflow-x-auto flex-wrap gap-1.5 max-w-full md:max-w-[60%] shadow-inner">
+                        <button onclick="filtrarMapa('TOTAL', this)" class="map-filter-btn active bg-accent text-ink px-4 py-1.5 text-[10px] font-black uppercase rounded-lg transition-all shadow-[0_0_10px_rgba(61,90,254,0.4)]">Geral</button>
+                        {% for sis in lista_sistemas_mapa %}
+                        <button onclick="filtrarMapa('{{ sis }}', this)" class="map-filter-btn text-ink-soft px-4 py-1.5 text-[10px] font-black uppercase rounded-lg transition-all hover:text-ink hover:bg-core-deep">{{ sis }}</button>
+                        {% endfor %}
+                    </div>
+                </div> 
+                <div id="mapa-sc" class="w-full rounded-xl border border-core-line shadow-2xl relative z-10" style="height: 600px;"></div>
+                
+                <div class="mt-8">
+                    <h3 class="text-xs font-black text-ink-soft uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-core-line pb-2"><i class="fa-solid fa-laptop-code text-accent-soft"></i> Detalhamento por Sistema</h3>
+                    <div class="overflow-x-auto rounded-xl border border-core-line bg-core-deep">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-core-deep text-[10px] uppercase text-ink-soft font-black tracking-widest">
+                                <tr>
+                                    <th class="p-4 border-b border-core-line">Sistema</th>
+                                    <th class="p-4 border-b border-core-line text-center">Qtd</th>
+                                    <th class="p-4 border-b border-core-line">Principais Clientes</th>
+                                    <th class="p-4 border-b border-core-line text-center">Exportar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-xs text-ink-soft">
+                                {% for sistema, clientes in tabela_sistemas.items %}
+                                <tr class="hover:bg-accent/10 transition-colors border-b border-core-line">
+                                    <td class="p-4 font-bold text-ink whitespace-nowrap">{{ sistema }}</td>
+                                    <td class="p-4 text-center"><span class="bg-success/20 border border-success/30 text-success px-2 py-1 rounded-md font-black shadow-sm">{{ clientes|length }}</span></td>
+                                    <td class="p-4 text-ink-soft italic">
+                                        {% for c in clientes|slice:":2" %}
+                                            {{ c.nome }} <span class="text-[9px] not-italic text-ink-faint">({{ c.cidade }})</span>
+                                            {% if c.telefone %}<span class="text-accent-soft/80 ml-1 font-mono text-[10px]">({{ c.telefone }})</span>{% endif %}
+                                            {% if not forloop.last %}<br>{% endif %}
+                                        {% endfor %}
+                                        {% if clientes|length > 2 %}<br><span class="text-[10px] font-bold text-ink-faint not-italic uppercase tracking-widest mt-1 inline-block">e outros {{ clientes|length|add:"-2" }}</span>{% endif %}
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <a href="{% url 'relatorio_sistema' %}?sistema={{ sistema|urlencode }}" target="_blank" class="bg-danger/10 text-danger hover:text-ink hover:bg-danger px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border border-danger/30 hover:border-danger hover:shadow-[0_0_15px_rgba(239,68,68,0.4)]" title="Gerar PDF">
+                                                <i class="fa-solid fa-file-pdf"></i> PDF
+                                            </a>
+                                            <a href="{% url 'relatorio_sistema_excel' %}?sistema={{ sistema|urlencode }}" class="bg-green-950/50 text-green-400 hover:text-ink hover:bg-green-600 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border border-green-500/30 hover:border-green-500 hover:shadow-[0_0_15px_rgba(34,197,94,0.4)]" title="Baixar Excel">
+                                                <i class="fa-solid fa-file-excel"></i> CSV
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="p-4 text-center text-ink-faint text-[10px] font-bold uppercase tracking-widest">Nenhum dado encontrado</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mt-8">
+
+                    <h3 class="text-xs font-black text-ink-soft uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-core-line pb-2"><i class="fa-solid fa-list-ul text-accent-soft"></i> Detalhamento por Município</h3>
+                    <div class="overflow-x-auto rounded-xl border border-core-line bg-core-deep">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-core-deep text-[10px] uppercase text-ink-soft font-black tracking-widest">
+                                <tr>
+                                    <th class="p-4 border-b border-core-line">Cidade</th>
+                                    <th class="p-4 border-b border-core-line text-center">Qtd</th>
+                                    <th class="p-4 border-b border-core-line">Principais Clientes e Contatos</th>
+                                    <th class="p-4 border-b border-core-line text-center">Relatório</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-xs text-ink-soft">
+                                {% for cidade, clientes in tabela_cidades.items %}
+                                <tr class="hover:bg-accent/10 transition-colors border-b border-core-line">
+                                    <td class="p-4 font-bold text-ink">{{ cidade }}</td>
+                                    <td class="p-4 text-center"><span class="bg-accent/10 border border-accent/30 text-accent-soft px-2 py-1 rounded-md font-black shadow-sm">{{ clientes|length }}</span></td>
+                                    <td class="p-4 text-ink-soft italic">
+                                        {% for c in clientes|slice:":2" %}
+                                            {{ c.nome }} 
+                                            {% if c.telefone %}<span class="text-accent-soft/80 ml-1 font-mono text-[10px]">({{ c.telefone }})</span>{% endif %}
+                                            {% if not forloop.last %}<br>{% endif %}
+                                        {% endfor %}
+                                        {% if clientes|length > 2 %}<br><span class="text-[10px] font-bold text-ink-faint not-italic uppercase tracking-widest mt-1 inline-block">e outros {{ clientes|length|add:"-2" }}</span>{% endif %}
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <a href="{% url 'relatorio_cidade' %}?cidade={{ cidade|urlencode }}" target="_blank" class="bg-danger/10 text-danger hover:text-ink hover:bg-danger px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border border-danger/30 hover:border-danger hover:shadow-[0_0_15px_rgba(239,68,68,0.4)]" title="Gerar PDF">
+                                                <i class="fa-solid fa-file-pdf"></i> PDF
+                                            </a>
+                                            <a href="{% url 'relatorio_cidade_excel' %}?cidade={{ cidade|urlencode }}" class="bg-green-950/50 text-green-400 hover:text-ink hover:bg-green-600 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border border-green-500/30 hover:border-green-500 hover:shadow-[0_0_15px_rgba(34,197,94,0.4)]" title="Baixar Excel">
+                                                <i class="fa-solid fa-file-excel"></i> CSV
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalDetratores" class="hidden fixed inset-0 bg-core-bg/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="hud-panel border-t-2 border-t-red-500 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col transform transition-all">
+        <div class="p-5 border-b border-core-line flex justify-between items-center bg-gradient-to-r from-danger/20 to-transparent">
+            <h3 class="text-ink font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-danger animate-pulse"></i> Relatório de Detratores (NPS 0-6)
+            </h3>
+            <button onclick="document.getElementById('modalDetratores').classList.add('hidden')" class="text-ink-soft hover:text-ink hover:bg-danger w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border border-transparent hover:border-danger">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="p-5 overflow-y-auto max-h-[60vh] custom-scrollbar bg-transparent">
+            {% if lista_detratores %}
+                <div class="space-y-3">
+                    {% for d in lista_detratores %}
+                    <div class="bg-core-deep border border-core-line rounded-xl p-4 flex justify-between items-center hover:border-danger/50 transition-all shadow-sm group">
+                        <div>
+                            <h4 class="text-xs font-black text-ink mb-1.5 uppercase tracking-widest">{{ d.cliente }}</h4>
+                            <p class="text-[10px] text-ink-soft font-bold uppercase tracking-widest flex items-center">
+                                <i class="fa-solid fa-user-ninja mr-1.5 text-accent-soft"></i> {{ d.tecnico }} 
+                                <span class="mx-2 text-ink-faint">|</span> 
+                                <i class="fa-regular fa-calendar mr-1.5 text-ink-faint"></i> {{ d.data }}
+                            </p>
+                        </div>
+                        <div class="text-right flex flex-col items-end gap-1.5">
+                            <span class="bg-danger/10 text-danger border border-danger/30 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm group-hover:bg-danger/20 transition-colors" title="Nota NPS">NPS: {{ d.nota_nps }}</span>
+                            <span class="text-[9px] text-ink-soft font-black uppercase tracking-widest bg-core-deep border border-core-line px-2 py-0.5 rounded-md" title="Nota dada para o Técnico">TÉC: {{ d.nota_tec }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-center text-ink-faint py-8 text-[10px] font-black uppercase tracking-widest"><i class="fa-solid fa-check-circle text-2xl block mb-2 text-success opacity-50"></i> Nenhum detrator no período.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+    // Inicializa a Animação SOMENTE do cabeçalho
+    document.addEventListener("DOMContentLoaded", function() {
+        AOS.init({ once: true, offset: 30, duration: 700 });
+    });
+
+    const data = {
+        diaWs: { labels: {{ ws_dia_labels_tec|default:"[]"|safe }}, res: {{ ws_dia_dados_concluidos|default:"[]"|safe }}, and: {{ ws_dia_dados_andamento|default:"[]"|safe }} },
+        diaOs: { labels: {{ os_dia_labels_tec|default:"[]"|safe }}, res: {{ os_dia_dados_resolvidas|default:"[]"|safe }} },
+        diaTop: { labels: {{ dia_labels_top|default:"[]"|safe }}, vals: {{ dia_dados_top|default:"[]"|safe }} },
+        diaSetor: { labels: {{ ws_dia_labels_setor|default:"[]"|safe }}, vals: {{ ws_dia_dados_setor|default:"[]"|safe }} },
+        diaGrpTec: { labels: {{ grp_dia_labels_tec|default:"[]"|safe }}, manha: {{ grp_dia_dados_manha|default:"[]"|safe }}, tarde: {{ grp_dia_dados_tarde|default:"[]"|safe }} },
+        diaGrpTop: { labels: {{ grp_dia_labels_top|default:"[]"|safe }}, vals: {{ grp_dia_dados_top|default:"[]"|safe }} },
+        
+        prodWs: { labels: {{ ws_labels_tech|default:"[]"|safe }}, res: {{ ws_dados_concluidos|default:"[]"|safe }}, and: {{ ws_dados_andamento|default:"[]"|safe }} },
+        setorWs: { labels: {{ ws_labels_setor|default:"[]"|safe }}, vals: {{ ws_dados_setor|default:"[]"|safe }} },
+        notaWs: { labels: {{ ws_labels_nota|default:"[]"|safe }}, vals: {{ ws_dados_nota|default:"[]"|safe }} },
+        
+        mesGrpTec: { labels: {{ grp_mes_labels_tec|default:"[]"|safe }}, manha: {{ grp_mes_dados_manha|default:"[]"|safe }}, tarde: {{ grp_mes_dados_tarde|default:"[]"|safe }} },
+        mesGrpTop: { labels: {{ grp_mes_labels_top|default:"[]"|safe }}, vals: {{ grp_mes_dados_top|default:"[]"|safe }} },
+        
+        tendOs: { labels: {{ os_labels_vol|default:"[]"|safe }}, abertas: {{ os_dados_vol|default:"[]"|safe }}, res: {{ os_dados_vol_fechados|default:"[]"|safe }} },
+        tecPendOs: { labels: {{ os_labels_tec_pendentes|default:"[]"|safe }}, res: {{ os_dados_tec_fechados|default:"[]"|safe }}, pend: {{ os_dados_tec_pendentes|default:"[]"|safe }} },
+        prioOs: { vals: {{ os_dados_prio|default:"[]"|safe }} },
+        setorOs: { labels: {{ os_labels_setor|default:"[]"|safe }}, vals: {{ os_dados_setor|default:"[]"|safe }} },
+        
+        riscoCs: { vals: {{ cs_dados_risco|default:"[]"|safe }} },
+        abcCs: { labels: {{ cs_labels_abc|default:"[]"|safe }}, vals: {{ cs_dados_abc|default:"[]"|safe }} },
+        servicosCs: { vals: {{ cs_dados_servicos|default:"[]"|safe }} },
+        finCs: { vals: {{ cs_dados_financeiro|default:"[]"|safe }} },
+        topClientes: { labels: {{ cs_labels_top|default:"[]"|safe }}, vals: {{ cs_dados_top|default:"[]"|safe }} },
+        npsLogica: { vals: {{ cs_dados_nps|default:"[]"|safe }} },
+        ativosInativos: { vals: {{ cs_dados_ativos_inativos|default:"[]"|safe }} },
+        churnSis: { labels: {{ churn_labels_sis|default:"[]"|safe }}, novos: {{ churn_dados_novos_sis|default:"[]"|safe }}, cancelados: {{ churn_dados_cancelados_sis|default:"[]"|safe }} },
+        csTec: { labels: {{ cs_labels_tec|default:"[]"|safe }}, vals: {{ cs_dados_tec|default:"[]"|safe }} },
+        csPend: { labels: {{ cs_labels_pend_tec|default:"[]"|safe }}, vals: {{ cs_dados_pend_tec|default:"[]"|safe }} }
+    };
+
+    // Cores Cyberpunk/Neon
+    // Cores das SÉRIES: fixas de propósito. "verde = resolvido" e
+    // "vermelho = risco" precisam ser as mesmas nos 3 temas, senão o
+    // dashboard confunde quem lê. Só o CHROME (eixo/grid/texto/tooltip)
+    // acompanha o tema — via THEME abaixo.
+    const colors = { blue: '#38bdf8', green: '#10b981', orange: '#f97316', purple: '#a855f7', red: '#ef4444', teal: '#06b6d4', yellow: '#eab308', slate: '#64748b' };
+    const palette = [colors.purple, colors.red, colors.teal, colors.orange, colors.blue, colors.slate];
+
+    // Lê um token CSS vivo do <html> (ex.: '--c-ink-soft' → 'rgb(148,163,184)')
+    function cssVar(nome) {
+        const v = getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+        return v ? `rgb(${v})` : '#94a3b8';
+    }
+    // Chrome dos gráficos, relido a cada render (por isso é função)
+    function tema() {
+        return {
+            ink:      cssVar('--c-ink'),
+            inkSoft:  cssVar('--c-ink-soft'),
+            inkFaint: cssVar('--c-ink-faint'),
+            line:     cssVar('--c-line'),
+            panel:    cssVar('--c-panel'),
+            bg:       cssVar('--c-bg'),
+        };
+    }
+    let THEME = tema();
+
+    let eChartsInstances = [];
+
+    function createChart(id, option) {
+        let el = document.getElementById(id);
+        if (!el) return;
+        let chart = echarts.init(el);
+        let baseOption = {
+            backgroundColor: 'transparent',
+            textStyle: { fontFamily: 'Inter, sans-serif' },
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: THEME.panel, borderColor: THEME.line, textStyle: { color: THEME.ink }, padding: 12, borderRadius: 8, backdropFilter: 'blur(8px)' },
+            grid: { left: '3%', right: '4%', bottom: '10%', top: '15%', containLabel: true }
+        };
+        chart.setOption(Object.assign({}, baseOption, option));
+        eChartsInstances.push(chart);
+    }
+
+    function createPie(id, name, labels, values, colorsArr, isDoughnut = true, roseType = false) {
+        let pieData = labels.map((l, i) => ({ name: l, value: values[i] }));
+        let extraProps = roseType ? { roseType: 'area' } : {};
+        createChart(id, {
+            tooltip: { trigger: 'item' },
+            legend: { bottom: 0, textStyle: { color: THEME.inkSoft, fontSize: 10, fontWeight: 'bold' }, icon: 'circle' },
+            series: [{ name: name, type: 'pie', radius: isDoughnut ? ['50%', '75%'] : '70%', center: ['50%', '45%'], itemStyle: { borderRadius: 4, borderColor: THEME.bg, borderWidth: 2 }, label: { show: false }, data: pieData, ...extraProps }],
+            color: colorsArr
+        });
+    }
+
+    function initAllECharts() {
+        eChartsInstances.forEach(c => c.dispose());
+        eChartsInstances = [];
+
+        createChart('chartDiaWs', {
+            legend: { top: 0, right: 0, textStyle: { color: THEME.inkSoft, fontSize: 10, fontWeight: 'bold' } },
+            xAxis: { type: 'category', data: data.diaWs.labels, axisLabel: { color: THEME.inkSoft, interval: 0, rotate: 45, fontSize: 9, fontWeight: 'bold' }, axisLine: { lineStyle: { color: THEME.line } } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            series: [
+                { name: 'Resolvidos', type: 'bar', data: data.diaWs.res, itemStyle: { color: colors.green, borderRadius: [4, 4, 0, 0] } },
+                { name: 'Em Andamento', type: 'bar', data: data.diaWs.and, itemStyle: { color: colors.blue, borderRadius: [4, 4, 0, 0] } }
+            ]
+        });
+
+        createChart('chartDiaOs', {
+            xAxis: { type: 'category', data: data.diaOs.labels, axisLabel: { color: THEME.inkSoft, interval: 0, rotate: 45, fontSize: 9, fontWeight: 'bold' }, axisLine: { lineStyle: { color: THEME.line } } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            series: [{ name: 'Resolvidas', type: 'bar', data: data.diaOs.res, itemStyle: { color: colors.purple, borderRadius: [4, 4, 0, 0] }, barMaxWidth: 60 }]
+        });
+
+        createChart('chartDiaTopClientes', {
+            xAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            yAxis: { type: 'category', data: data.diaTop.labels, axisLabel: { color: THEME.inkSoft, width: 140, overflow: 'truncate', interval: 0, fontSize: 9, fontWeight: 'bold' }, axisLine: { show: false } },
+            series: [{ name: 'Chamados', type: 'bar', data: data.diaTop.vals, itemStyle: { color: colors.red, borderRadius: [0, 4, 4, 0] } }]
+        });
+
+        createPie('chartDiaSetor', 'Setor', data.diaSetor.labels, data.diaSetor.vals, palette);
+
+        createChart('chartDiaGruposTec', {
+            legend: { top: 0, right: 0, textStyle: { color: THEME.inkSoft, fontSize: 10, fontWeight: 'bold' } },
+            xAxis: { type: 'category', data: data.diaGrpTec.labels, axisLabel: { color: THEME.inkSoft, interval: 0, rotate: 45, fontSize: 9, fontWeight: 'bold' } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            series: [
+                { name: 'Manhã', type: 'bar', stack: 'total', data: data.diaGrpTec.manha, itemStyle: { color: colors.teal } },
+                { name: 'Tarde', type: 'bar', stack: 'total', data: data.diaGrpTec.tarde, itemStyle: { color: colors.purple, borderRadius: [4, 4, 0, 0] } }
+            ]
+        });
+
+        createChart('chartDiaGruposTop', {
+            xAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            yAxis: { type: 'category', data: data.diaGrpTop.labels, axisLabel: { color: THEME.inkSoft, width: 140, overflow: 'truncate', interval: 0, fontSize: 9, fontWeight: 'bold' } },
+            series: [{ name: 'Mensagens', type: 'bar', data: data.diaGrpTop.vals, itemStyle: { color: colors.purple, borderRadius: [0, 4, 4, 0] } }]
+        });
+
+        createChart('chartProdWs', {
+            legend: { top: 0, right: 0, textStyle: { color: THEME.inkSoft, fontSize: 10, fontWeight: 'bold' } },
+            xAxis: { type: 'category', data: data.prodWs.labels, axisLabel: { color: THEME.inkSoft, interval: 0, rotate: 45, fontSize: 9, fontWeight: 'bold' } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            series: [
+                { name: 'Finalizados', type: 'bar', data: data.prodWs.res, itemStyle: { color: colors.green, borderRadius: [4, 4, 0, 0] } },
+                { name: 'Em Andamento', type: 'bar', data: data.prodWs.and, itemStyle: { color: colors.blue, borderRadius: [4, 4, 0, 0] } }
+            ]
+        });
+
+        createPie('chartSetorWs', 'Setor', data.setorWs.labels, data.setorWs.vals, palette);
+
+        createChart('chartNotaWs', {
+            xAxis: { type: 'category', data: data.notaWs.labels, axisLabel: { color: THEME.inkSoft, interval: 0, rotate: 45, fontSize: 9, fontWeight: 'bold' } },
+            yAxis: { type: 'value', max: 5, splitLine: { lineStyle: { color: THEME.line } } },
+            series: [{ name: 'Nota', type: 'bar', data: data.notaWs.vals, showBackground: true, backgroundStyle: { color: 'rgba(15, 23, 42, 0.5)' }, itemStyle: { color: colors.yellow, borderRadius: [4, 4, 0, 0] }, barMaxWidth: 60, label: { show: true, position: 'top', color: '#fff', fontWeight: 'bold' } }]
+        });
+
+        const valIa = {{ ws_na_ia|default:0 }};
+        const valFila = {{ ws_fila_espera|default:0 }};
+        const valAtend = {{ ws_andamento_count|default:0 }};
+        if (valIa + valFila + valAtend > 0) {
+            createChart('chartFunilWs', {
+                tooltip: { trigger: 'item', formatter: '{b}: {c}' },
+                series: [{
+                    name: 'Funil', type: 'funnel', left: '10%', right: '10%', top: '5%', bottom: '5%',
+                    sort: 'none', gap: 2, minSize: '20%',
+                    label: { show: true, position: 'inside', formatter: '{b}: {c}', fontSize: 10, fontWeight: 'bold' },
+                    itemStyle: { borderColor: THEME.bg, borderWidth: 2 },
+                    data: [
+                        { value: valIa, name: '1. Triagem (IA)' },
+                        { value: valFila, name: '2. Na Fila (Gargalo)' },
+                        { value: valAtend, name: '3. Com Técnicos' }
+                    ]
+                }],
+                color: [colors.purple, colors.orange, colors.blue]
+            });
+        } else {
+            document.getElementById('chartFunilWs').innerHTML = '<p class="text-ink-faint text-[10px] font-black uppercase tracking-widest flex h-full items-center justify-center opacity-50"><i class="fa-solid fa-ghost mr-2 text-xl"></i> Nenhum cliente na operação</p>';
+        }
+
+        createChart('chartMesGruposTec', {
+            legend: { top: 0, right: 0, textStyle: { color: THEME.inkSoft, fontSize: 10, fontWeight: 'bold' } },
+            xAxis: { type: 'category', data: data.mesGrpTec.labels, axisLabel: { color: THEME.inkSoft, interval: 0, rotate: 45, fontSize: 9, fontWeight: 'bold' } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            series: [
+                { name: 'Manhã', type: 'bar', stack: 'total', data: data.mesGrpTec.manha, itemStyle: { color: colors.teal } },
+                { name: 'Tarde', type: 'bar', stack: 'total', data: data.mesGrpTec.tarde, itemStyle: { color: colors.purple, borderRadius: [4, 4, 0, 0] } }
+            ]
+        });
+
+        createChart('chartMesGruposTop', {
+            xAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            yAxis: { type: 'category', data: data.mesGrpTop.labels, axisLabel: { color: THEME.inkSoft, width: 150, overflow: 'truncate', interval: 0, fontSize: 9, fontWeight: 'bold' } },
+            series: [{ name: 'Mensagens', type: 'bar', data: data.mesGrpTop.vals, itemStyle: { color: colors.purple, borderRadius: [0, 4, 4, 0] } }]
+        });
+
+        const osAbertas = data.tendOs.abertas;
+        const osResolvidas = data.tendOs.res;
+        const osSaldo = osAbertas.map((val, idx) => Math.max(0, val - (osResolvidas[idx] || 0)));
+
+        createChart('chartTendOs', {
+            tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+            legend: { top: 0, textStyle: { color: THEME.inkSoft, fontSize: 10, fontWeight: 'bold' } },
+            dataZoom: [
+                { type: 'inside', start: 0, end: 100 },
+                { type: 'slider', show: true, bottom: 0, height: 20, start: 50, end: 100, textStyle: { color: THEME.inkSoft }, borderColor: THEME.line }
+            ],
+            xAxis: { type: 'category', boundaryGap: false, data: data.tendOs.labels, axisLabel: { color: THEME.inkSoft, interval: 'auto', rotate: 45, fontSize: 9, fontWeight: 'bold' } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            series: [
+                { name: 'Fila Acumulada', type: 'bar', data: osSaldo, itemStyle: { color: 'rgba(239, 68, 68, 0.4)' } },
+                { name: 'Abertas', type: 'line', data: osAbertas, smooth: true, itemStyle: { color: colors.blue }, lineStyle: { width: 3, shadowColor: 'rgba(56,189,248,0.5)', shadowBlur: 10 } },
+                { name: 'Resolvidas', type: 'line', data: osResolvidas, smooth: true, itemStyle: { color: colors.green }, areaStyle: { color: colors.green, opacity: 0.1 }, lineStyle: { width: 3 } }
+            ]
+        });
+
+        createChart('chartTecPendentesOs', {
+            legend: { top: 0, right: 0, textStyle: { color: THEME.inkSoft, fontSize: 10, fontWeight: 'bold' } },
+            xAxis: { type: 'category', data: data.tecPendOs.labels, axisLabel: { color: THEME.inkSoft, interval: 0, rotate: 45, fontSize: 9, fontWeight: 'bold' } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            series: [
+                { name: 'Resolvidas', type: 'bar', stack: 'total', data: data.tecPendOs.res, itemStyle: { color: colors.green } },
+                { name: 'Pendentes', type: 'bar', stack: 'total', data: data.tecPendOs.pend, itemStyle: { color: colors.red, borderRadius: [4, 4, 0, 0] } }
+            ]
+        });
+
+        createPie('chartPrioOs', 'Prioridade', ["Crítica", "Alta", "Média", "Baixa"], data.prioOs.vals, [colors.red, colors.orange, colors.blue, colors.green], false, true);
+        createPie('chartSetorOs', 'Setor', data.setorOs.labels, data.setorOs.vals, palette, true);
+
+        createPie('chartRiscoCs', 'Risco', ["Crítico", "Atenção", "Saudável"], data.riscoCs.vals, [colors.red, colors.orange, colors.green]);
+        
+        createChart('chartAbcCs', {
+            xAxis: { type: 'category', data: data.abcCs.labels, axisLabel: { color: THEME.inkSoft, interval: 0, fontSize: 10, fontWeight: 'bold' } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            series: [{ name: 'Clientes', type: 'bar', data: data.abcCs.vals, itemStyle: { color: colors.blue, borderRadius: [4, 4, 0, 0] }, label: { show: true, position: 'top', color: '#fff', fontWeight: 'black' } }]
+        });
+
+        createChart('chartServicosCs', {
+            xAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            yAxis: { type: 'category', data: ['Backup', 'Hospedagem', 'Hardware'], axisLabel: { color: THEME.inkSoft, fontWeight: 'bold', fontSize: 9 } },
+            series: [{ name: 'Adesão', type: 'bar', data: data.servicosCs.vals, itemStyle: { color: colors.purple, borderRadius: [0, 4, 4, 0] } }]
+        });
+
+        createPie('chartFinCs', 'Financeiro', ["Em Dia", "Pendente"], data.finCs.vals, [colors.green, colors.red]);
+
+        createChart('chartTopClientes', {
+            xAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            yAxis: { type: 'category', data: data.topClientes.labels, axisLabel: { color: THEME.inkSoft, width: 150, overflow: 'truncate', interval: 0, fontSize: 9, fontWeight: 'bold' } },
+            series: [{ name: 'Volume', type: 'bar', data: data.topClientes.vals, itemStyle: { color: colors.orange, borderRadius: [0, 4, 4, 0] }, label: { show: true, position: 'right', color: '#fff', fontWeight: 'black' } }]
+        });
+
+        let npsChart = echarts.init(document.getElementById('chartNpsLogica'));
+        npsChart.setOption({
+            backgroundColor: 'transparent',
+            title: {
+                text: '{{ score_nps|default:"0" }}',
+                subtext: 'SCORE',
+                left: 'center', top: 'center',
+                textStyle: { color: '#fff', fontSize: 50, fontWeight: 900, textShadowColor: 'rgba(61,90,254,0.5)', textShadowBlur: 10 },
+                subtextStyle: { color: THEME.inkSoft, fontSize: 10, fontWeight: 'bold', letterSpacing: 2 }
+            },
+            tooltip: { trigger: 'item', backgroundColor: THEME.panel, borderColor: THEME.line },
+            legend: { bottom: 0, textStyle: { color: THEME.inkSoft, fontSize: 10, fontWeight: 'bold' }, icon: 'circle' },
+            series: [{
+                name: 'NPS', type: 'pie', radius: ['60%', '80%'], center: ['50%', '45%'],
+                itemStyle: { borderRadius: 4, borderColor: THEME.bg, borderWidth: 2 },
+                label: { show: false },
+                data: [
+                    { name: "Promotores", value: data.npsLogica.vals[0] },
+                    { name: "Neutros", value: data.npsLogica.vals[1] },
+                    { name: "Detratores", value: data.npsLogica.vals[2] }
+                ]
+            }],
+            color: [colors.green, colors.yellow, colors.red]
+        });
+        eChartsInstances.push(npsChart);
+
+        createPie('chartAtivosInativos', 'Base', ["Ativos", "Inativos"], data.ativosInativos.vals, [colors.green, colors.slate]);
+
+        createChart('chartCsTec', {
+            xAxis: { type: 'category', data: data.csTec.labels, axisLabel: { color: THEME.inkSoft, interval: 0, rotate: 45, fontSize: 9, fontWeight: 'bold' } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            series: [{ name: 'Realizados', type: 'bar', data: data.csTec.vals, itemStyle: { color: colors.blue, borderRadius: [4, 4, 0, 0] }, label: { show: true, position: 'top', color: '#fff', fontSize: 10, fontWeight: 'bold' } }]
+        });
+
+        createChart('chartCsPend', {
+            xAxis: { type: 'category', data: data.csPend.labels, axisLabel: { color: THEME.inkSoft, interval: 0, rotate: 45, fontSize: 9, fontWeight: 'bold' } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            series: [{ name: 'Atrasados', type: 'bar', data: data.csPend.vals, itemStyle: { color: colors.red, borderRadius: [4, 4, 0, 0] }, label: { show: true, position: 'top', color: '#fff', fontSize: 10, fontWeight: 'bold' } }]
+        });
+
+        let churnNegativo = data.churnSis.cancelados.map(v => -Math.abs(v)); 
+        createChart('chartChurnSistema', {
+            legend: { top: 0, textStyle: { color: THEME.inkSoft, fontSize: 10, fontWeight: 'bold' } },
+            xAxis: { type: 'category', data: data.churnSis.labels, axisLabel: { color: THEME.inkSoft, interval: 0, rotate: 45, fontSize: 9, fontWeight: 'bold' } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: THEME.line } } },
+            series: [
+                { name: 'Novos', type: 'bar', stack: 'total', data: data.churnSis.novos, itemStyle: { color: colors.green, borderRadius: [4, 4, 0, 0] }, label: { show: true, position: 'top', color: '#fff', fontSize: 10, fontWeight: 'bold' } },
+                { name: 'Cancelados', type: 'bar', stack: 'total', data: churnNegativo, itemStyle: { color: colors.red, borderRadius: [0, 0, 4, 4] }, label: { show: true, position: 'bottom', color: '#fff', fontSize: 10, fontWeight: 'bold', formatter: (p) => Math.abs(p.value) } } 
+            ]
+        });
+    }
+
+    function switchTab(tabId, btnElement) {
+        document.querySelectorAll('.tab-content').forEach(el => { el.classList.remove('block'); el.classList.add('hidden'); });
+        document.getElementById(tabId).classList.remove('hidden');
+        document.getElementById(tabId).classList.add('block');
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active', 'bg-accent', 'text-ink', 'shadow-[0_0_15px_rgba(61,90,254,0.4)]');
+            btn.classList.add('text-ink-soft');
+        });
+        if (btnElement) {
+            btnElement.classList.add('active', 'bg-accent', 'text-ink', 'shadow-[0_0_15px_rgba(61,90,254,0.4)]');
+            btnElement.classList.remove('text-ink-soft');
+        }
+        
+        const inputAba = document.getElementById('input-aba-ativa');
+        if (inputAba) inputAba.value = tabId;
+        
+        if (tabId === 'tab-diario') {
+            document.getElementById('filtro-dia').style.display = 'flex';
+            document.getElementById('filtro-mes').style.display = 'none';
+        } else {
+            document.getElementById('filtro-dia').style.display = 'none';
+            document.getElementById('filtro-mes').style.display = 'flex';
+        }
+        
+        // Timeout garante que os gráficos achem o tamanho da "caixa" depois que a aba apareceu
+        setTimeout(() => {
+            eChartsInstances.forEach(chart => chart.resize());
+            if (tabId === 'tab-mapa') renderizarMapa();
+        }, 150);
+    }
+
+    window.onload = function() {
+        initAllECharts();
+        const inputAba = document.getElementById('input-aba-ativa');
+        if (inputAba && inputAba.value) {
+            const btnInicial = document.querySelector(`button[onclick*="${inputAba.value}"]`);
+            if (btnInicial) switchTab(inputAba.value, btnInicial);
+            else switchTab('tab-diario', document.querySelector('.tab-btn')); 
+        } else {
+            switchTab('tab-diario', document.querySelector('.tab-btn'));
+        }
+    };
+
+    // JS NATIVO: Garante que se você girar o celular ou fechar o menu lateral, o gráfico não quebra
+    document.querySelectorAll('.chart-box').forEach(el => {
+        new ResizeObserver(() => {
+            eChartsInstances.forEach(chart => {
+                if(chart.getDom() === el) chart.resize();
+            });
+        }).observe(el);
+    });
+
+    window.addEventListener('resize', function() {
+        eChartsInstances.forEach(chart => chart.resize());
+    });
+
+    // Re-renderiza os gráficos quando o tema muda (dark/gray/light).
+    // O botão de tema do base.html troca o atributo data-theme no <html>;
+    // aqui reagimos a isso relendo os tokens e redesenhando tudo.
+    (function () {
+        const alvo = document.documentElement;
+        let ultimo = alvo.getAttribute('data-theme');
+        new MutationObserver(function () {
+            const atual = alvo.getAttribute('data-theme');
+            if (atual === ultimo) return;
+            ultimo = atual;
+            THEME = tema();                       // relê os tokens vivos
+            if (eChartsInstances.length) initAllECharts();   // redesenha gráficos
+            if (mapaInstanciado && geojsonLayer) geojsonLayer.setStyle(style); // recolore mapa
+        }).observe(alvo, { attributes: true, attributeFilter: ['data-theme'] });
+    })();
+
+    // MAPA (LEAFLET)
+    let map;
+    let geojsonLayer;
+    let mapaInstanciado = false;
+    let filtroAtual = 'TOTAL';
+    let maxClientesAtual = 1;
+    const dadosMapaGlobal = {{ mapa_dados_json|default:"{}"|safe }};
+
+    function removerAcentosJs(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() : ''; }
+
+    function atualizarMaximo() {
+        let dadosFiltro = dadosMapaGlobal[filtroAtual] || {};
+        let max = 0;
+        for (let cidade in dadosFiltro) {
+            if (cidade.length > 2 && dadosFiltro[cidade] > max) { max = dadosFiltro[cidade]; }
+        }
+        maxClientesAtual = max > 0 ? max : 1;
+    }
+
+    function getColor(d) {
+        if (d === 0) return 'rgba(255,255,255,0.02)';
+        let proporcao_linear = d / maxClientesAtual; 
+        if (proporcao_linear > 1) proporcao_linear = 1;
+        let proporcao = Math.sqrt(proporcao_linear); 
+        
+        return proporcao >= 0.80 ? '#991b1b' : 
+               proporcao > 0.70 ? '#dc2626' : 
+               proporcao > 0.60 ? '#ef4444' : 
+               proporcao > 0.50 ? '#ea580c' : 
+               proporcao > 0.40 ? '#f97316' : 
+               proporcao > 0.30 ? '#fb923c' : 
+               proporcao > 0.20 ? '#facc15' : 
+               proporcao > 0.10 ? '#fde68a' : '#fef3c7';  
+    }
+
+    function style(feature) {
+        let nomeProp = feature.properties.NM_MUN || feature.properties.name || feature.properties.NOME;
+        let nomeLimpo = removerAcentosJs(nomeProp);
+        let dadosFiltro = dadosMapaGlobal[filtroAtual] || {};
+        let contagem = dadosFiltro[nomeLimpo] || 0;
+        return { fillColor: getColor(contagem), weight: 1, opacity: 1, color: THEME.line, fillOpacity: contagem > 0 ? 0.8 : 0.3 };
+    }
+
+    function filtrarMapa(sistema, btn) {
+        filtroAtual = sistema;
+        atualizarMaximo();
+        document.querySelectorAll('.map-filter-btn').forEach(b => {
+            b.classList.remove('active', 'bg-accent', 'text-ink', 'shadow-[0_0_10px_rgba(61,90,254,0.4)]');
+            b.classList.add('text-ink-soft');
+        });
+        btn.classList.add('active', 'bg-accent', 'text-ink', 'shadow-[0_0_10px_rgba(61,90,254,0.4)]');
+        btn.classList.remove('text-ink-soft');
+        if(geojsonLayer) geojsonLayer.setStyle(style);
+    }
+
+    function renderizarMapa() {
+        if(mapaInstanciado) { map.invalidateSize(); return; }
+        atualizarMaximo();
+        map = L.map('mapa-sc').setView([-27.2, -50.4], 8);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 19
+        }).addTo(map);
+
+        fetch('https://raw.githubusercontent.com/tbrugz/geodata-br/master/geojson/geojs-42-mun.json')
+            .then(r => r.json())
+            .then(data => {
+                geojsonLayer = L.geoJson(data, {
+                    style: style,
+                    onEachFeature: (feature, layer) => {
+                        layer.on('mouseover', (e) => {
+                            let nomeProp = feature.properties.NM_MUN || feature.properties.name || feature.properties.NOME;
+                            let nomeLimpo = removerAcentosJs(nomeProp);
+                            let nomeBonito = nomeProp ? nomeProp.toUpperCase() : 'DESCONHECIDO';
+                            let dadosFiltro = dadosMapaGlobal[filtroAtual] || {};
+                            let qtd = dadosFiltro[nomeLimpo] || 0;
+                            layer.bindTooltip(`<div style="text-align:center; font-family: 'Inter', sans-serif;"><b>${nomeBonito}</b><br><span style="color:#38bdf8; font-weight:900;">${qtd} Clientes</span></div>`, {className: 'bg-core-panel border border-core-line text-ink'}).openTooltip();
+                            layer.setStyle({ weight: 2, color: '#38bdf8', fillOpacity: 1 });
+                        });
+                        layer.on('mouseout', (e) => { geojsonLayer.resetStyle(e.target); });
+                    }
+                }).addTo(map);
+                mapaInstanciado = true;
+            });
+    }
+</script>
+{% endblock %}

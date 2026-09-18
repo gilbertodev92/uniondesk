@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Gerenciamento de Usuários e Grupos</h2>
+
+    <!-- ======================== USUÁRIOS ======================== -->
+    <div class="card mb-5">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Usuários</h5>
+            <button class="btn btn-primary btn-sm"
+                    data-bs-toggle="modal" data-bs-target="#modalUsuario"
+                    onclick="openUsuarioForm('{% url 'users:usuario_add' %}')">
+                + Novo Usuário
+            </button>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Grupos</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in usuarios %}
+                        <tr>
+                            <td>{{ user.get_full_name }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% for g in user.groups.all %}
+                                    <span class="badge bg-info text-dark">{{ g.name }}</span>
+                                {% empty %}
+                                    -
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary"
+                                        data-bs-toggle="modal" data-bs-target="#modalUsuario"
+                                        onclick="openUsuarioForm('{% url 'users:usuario_edit' user.id %}')">
+                                    Editar
+                                </button>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6" class="text-center">Nenhum usuário cadastrado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ======================== GRUPOS ======================== -->
+    <div class="card mb-5">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Grupos</h5>
+            <button class="btn btn-primary btn-sm"
+                    data-bs-toggle="modal" data-bs-target="#modalGrupo"
+                    onclick="openGrupoForm('{% url 'users:grupo_add' %}')">
+                + Novo Grupo
+            </button>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Permissões</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grupo in grupos %}
+                        <tr>
+                            <td>{{ grupo.name }}</td>
+                            <td>
+                                {% for perm in grupo.permissions.all %}
+                                    <span class="badge bg-light text-dark">{{ perm.name }}</span>
+                                {% empty %}
+                                    -
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary"
+                                        data-bs-toggle="modal" data-bs-target="#modalGrupo"
+                                        onclick="openGrupoForm('{% url 'users:grupo_edit' grupo.id %}')">
+                                    Editar
+                                </button>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="3" class="text-center">Nenhum grupo cadastrado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== MODAIS ======================== -->
+<!-- Modal Usuário -->
+<div class="modal fade" id="modalUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="usuarioFormContainer">
+                <!-- Form carregado por AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Grupo -->
+<div class="modal fade" id="modalGrupo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Grupo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="grupoFormContainer">
+                <!-- Form carregado por AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openUsuarioForm(url) {
+    fetch(url)
+        .then(res => res.text())
+        .then(html => { document.getElementById('usuarioFormContainer').innerHTML = html; });
+}
+
+function openGrupoForm(url) {
+    fetch(url)
+        .then(res => res.text())
+        .then(html => { document.getElementById('grupoFormContainer').innerHTML = html; });
+}
+</script>
+{% endblock %}

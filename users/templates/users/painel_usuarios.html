@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Painel de Administração{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 p-4 md:p-10">
+  <div class="max-w-7xl mx-auto">
+    
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Painel de Administração</h1>
+        <p class="text-slate-500 mt-1">Gerencie usuários, permissões e sistemas da plataforma.</p>
+      </div>
+      <a href="{% url 'home' %}" class="inline-flex items-center text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Voltar para Home
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <p class="text-sm font-medium text-slate-500 uppercase">Total Usuários</p>
+        <p class="text-3xl font-bold text-slate-900">{{ usuarios|length }}</p>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <p class="text-sm font-medium text-slate-500 uppercase">Grupos Ativos</p>
+        <p class="text-3xl font-bold text-slate-900">{{ grupos|length }}</p>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <p class="text-sm font-medium text-slate-500 uppercase">Sistemas</p>
+        <p class="text-3xl font-bold text-slate-900">{{ sistemas|length }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white shadow-xl shadow-slate-200/50 rounded-2xl overflow-hidden border border-slate-200">
+      
+      <div class="border-b border-slate-200 bg-slate-50/50 px-6">
+        <nav class="flex -mb-px space-x-8" aria-label="Tabs">
+          <button onclick="showTab('usuarios')" id="tab-usuarios" 
+            class="tab-btn border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-all">
+            Usuários
+          </button>
+          <button onclick="showTab('grupos')" id="tab-grupos" 
+            class="tab-btn border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-all">
+            Grupos
+          </button>
+          <button onclick="showTab('sistemas')" id="tab-sistemas" 
+            class="tab-btn border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-all">
+            Sistemas
+          </button>
+        </nav>
+      </div>
+
+      <div class="p-6">
+        
+        <div id="content-usuarios" class="tab-pane">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-semibold text-slate-800">Listagem de Usuários</h3>
+            <a href="{% url 'usuario_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-lg shadow-md shadow-blue-200 transition-all flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Novo Usuário
+            </a>
+          </div>
+          <div class="overflow-x-auto rounded-lg border border-slate-200">
+            <table class="min-w-full divide-y divide-slate-200">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Username</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Grupos</th>
+                  <th class="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Ações</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-slate-200">
+                {% for usuario in usuarios %}
+                <tr class="hover:bg-slate-50/80 transition-colors">
+                  <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-900">{{ usuario.username }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-slate-600">{{ usuario.email|default:"—" }}</td>
+                  <td class="px-6 py-4">
+                    <div class="flex flex-wrap gap-1">
+                      {% for grupo in usuario.groups.all %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">{{ grupo.name }}</span>
+                      {% empty %}
+                        <span class="text-slate-400 text-xs italic">Nenhum</span>
+                      {% endfor %}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-center">
+                    {% if usuario.is_active %}
+                      <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-green-100 text-green-700">Ativo</span>
+                    {% else %}
+                      <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-red-100 text-red-700">Inativo</span>
+                    {% endif %}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <a href="{% url 'usuario_edit' usuario.id %}" class="text-blue-600 hover:text-blue-900 transition-colors">Editar</a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="px-6 py-10 text-center text-slate-500 italic">Nenhum usuário cadastrado no sistema.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="content-grupos" class="tab-pane hidden">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-semibold text-slate-800">Grupos e Permissões</h3>
+            <a href="{% url 'grupo_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-lg transition-all flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Novo Grupo
+            </a>
+          </div>
+          <div class="overflow-x-auto rounded-lg border border-slate-200">
+            <table class="min-w-full divide-y divide-slate-200">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Nome do Grupo</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Permissões</th>
+                  <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-slate-200">
+                {% for grupo in grupos %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                  <td class="px-6 py-4 whitespace-nowrap font-semibold text-slate-900">{{ grupo.name }}</td>
+                  <td class="px-6 py-4">
+                    <div class="flex flex-wrap gap-1">
+                      {% for perm in grupo.permissions.all|slice:":5" %}
+                        <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px]">{{ perm.name }}</span>
+                      {% endfor %}
+                      {% if grupo.permissions.count > 5 %}
+                        <span class="text-[10px] text-slate-400 font-medium">+ {{ grupo.permissions.count|add:"-5" }} mais</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <a href="{% url 'grupo_edit' grupo.id %}" class="text-blue-600 hover:underline text-sm font-medium">Configurar</a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="px-6 py-10 text-center text-slate-500 italic">Não existem grupos definidos.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="content-sistemas" class="tab-pane hidden">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-semibold text-slate-800">Sistemas Integrados</h3>
+            <a href="{% url 'sistema_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-lg transition-all flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Novo Sistema
+            </a>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for sistema in sistemas %}
+            <div class="border border-slate-200 rounded-xl p-4 hover:border-blue-300 transition-all hover:shadow-md bg-white">
+               <div class="flex justify-between items-start mb-2">
+                 <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">{{ sistema.codigo|default:"SISTEMA" }}</span>
+                 <a href="{% url 'sistema_edit' pk=sistema.pk %}" class="text-slate-400 hover:text-blue-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                 </a>
+               </div>
+               <h4 class="text-lg font-bold text-slate-800">{{ sistema.nome }}</h4>
+               <p class="text-sm text-slate-500 mt-1">Fabricante: {{ sistema.fabricante|default:"—" }}</p>
+            </div>
+            {% empty %}
+            <div class="col-span-full py-12 text-center border-2 border-dashed border-slate-200 rounded-2xl">
+              <p class="text-slate-400 italic">Nenhum sistema registrado.</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /**
+   * Gerenciamento de Abas
+   */
+  function showTab(tabName) {
+    // 1. Ocultar todos os conteúdos
+    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+    
+    // 2. Mostrar o conteúdo selecionado
+    const target = document.getElementById(`content-${tabName}`);
+    if (target) target.classList.remove('hidden');
+
+    // 3. Resetar estilos de todos os botões
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('border-blue-600', 'text-blue-600');
+      btn.classList.add('border-transparent', 'text-slate-500');
+    });
+
+    // 4. Aplicar estilo ativo no botão clicado
+    const activeBtn = document.getElementById(`tab-${tabName}`);
+    if (activeBtn) {
+      activeBtn.classList.remove('border-transparent', 'text-slate-500');
+      activeBtn.classList.add('border-blue-600', 'text-blue-600');
+    }
+
+    // Salvar preferência no localStorage (Opcional)
+    localStorage.setItem('admin_active_tab', tabName);
+  }
+
+  // Inicialização
+  document.addEventListener('DOMContentLoaded', () => {
+    const savedTab = localStorage.getItem('admin_active_tab') || 'usuarios';
+    showTab(savedTab);
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Raio-X (God Mode) | Lógica Desk{% endblock %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+<style>
+    /* 🔥 TEMA OPERACIONAL CYBER / GOD MODE */
+    body { font-family: 'Inter', sans-serif; background-color: #020617; }
+    
+    .cyber-bg {
+        background-color: #020617;
+        background-image: 
+            radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.06) 0%, transparent 55%),
+            radial-gradient(circle at 0% 100%, rgba(244, 63, 94, 0.03) 0%, transparent 40%);
+    }
+
+    .hud-panel {
+        background: rgba(15, 23, 42, 0.75);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(51, 65, 85, 0.5);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .hud-panel:hover {
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+</style>
+
+<div class="cyber-bg min-h-screen p-4 md:p-6 text-slate-200 antialiased">
+    <div class="max-w-[1700px] mx-auto space-y-6">
+        
+        <div class="hud-panel rounded-xl p-5 border-t-2 border-t-blue-500 flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl">
+            <div>
+                <h1 class="text-xl font-black text-white uppercase tracking-widest flex items-center gap-2.5">
+                    <i class="fa-solid fa-crosshairs text-blue-500 animate-pulse"></i> Raio-X Operacional (God Mode)
+                </h1>
+                <p class="text-xs text-slate-400 font-medium mt-1">
+                    Auditoria Geral de Desempenho • Período CLT Base Calculado: <span class="text-blue-400 font-bold font-mono">{{ horas_clt }}h</span>
+                </p>
+            </div>
+            
+            <form method="GET" class="flex flex-wrap items-center gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                <div class="flex items-center gap-2 px-2 text-sm">
+                    <span class="text-xs font-bold uppercase text-slate-500">De:</span>
+                    <input type="date" name="inicio" value="{{ inicio }}" class="bg-transparent text-white font-mono font-bold outline-none cursor-pointer">
+                </div>
+                <div class="flex items-center gap-2 px-2 border-l border-slate-800 text-sm">
+                    <span class="text-xs font-bold uppercase text-slate-500">Até:</span>
+                    <input type="date" name="fim" value="{{ fim }}" class="bg-transparent text-white font-mono font-bold outline-none cursor-pointer">
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all shadow-[0_0_10px_rgba(37,99,235,0.4)]">
+                    <i class="fa-solid fa-filter mr-1"></i> Filtrar
+                </button>
+            </form>
+        </div>
+
+        <div class="hud-panel rounded-xl overflow-hidden shadow-2xl">
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <thead class="bg-slate-950 text-xs uppercase text-slate-400 font-black tracking-widest border-b border-slate-800">
+                        <tr>
+                            <th class="p-3.5 text-center w-12">Rank</th>
+                            <th class="p-3.5">Colaborador / Setor</th>
+                            <th class="p-3.5 text-center border-x border-slate-800/60">Jornada Alvo</th>
+                            <th class="p-3.5 text-center text-orange-400"><i class="fa-solid fa-ticket mr-1"></i> O.S. Concluídas</th>
+                            <th class="p-3.5 text-center text-fuchsia-400"><i class="fa-solid fa-rocket mr-1"></i> Implantações</th>
+                            <th class="p-3.5 text-center text-rose-400"><i class="fa-solid fa-heart-pulse mr-1"></i> Contatos CS</th>
+                            <th class="p-3.5 text-center text-green-400"><i class="fa-solid fa-calendar-day mr-1"></i> Visitas</th>
+                            <th class="p-3.5 text-center text-emerald-400 border-x border-slate-800/60"><i class="fa-brands fa-whatsapp mr-1"></i> Msgs Zap</th>
+                            <th class="p-3.5 text-center bg-blue-950/20 font-bold text-blue-300">Prod/Hora</th>
+                            <th class="p-3.5 text-center bg-blue-950/30 text-sm text-blue-400 font-black">Score Total</th>
+                            <th class="p-3.5 text-center border-l border-slate-800/60">Nota</th>
+                            <th class="p-3.5 text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-slate-200 divide-y divide-slate-800/40">
+                        {% for t in auditoria %}
+                        <tr class="hover:bg-slate-800/30 transition-colors group">
+                            <td class="p-3 text-center font-mono font-black text-slate-500 group-hover:text-blue-400 text-base">#{{ forloop.counter }}</td>
+                            
+                            <td class="p-3">
+                                <div class="flex flex-col">
+                                    <span class="font-black text-white uppercase text-sm tracking-wide group-hover:text-blue-400 transition-colors">{{ t.nome }}</span>
+                                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-0.5">{{ t.setor }}</span>
+                                </div>
+                            </td>
+                            
+                            <td class="p-3 text-center font-mono font-bold text-slate-400 border-x border-slate-800/40">{{ t.horas }}h</td>
+                            
+                            <td class="p-3 text-center font-bold text-base text-slate-100">{{ t.os }}</td>
+                            <td class="p-3 text-center font-bold text-base text-slate-100">{{ t.imp }}</td>
+                            <td class="p-3 text-center font-bold text-base text-slate-100">{{ t.cs }}</td>
+                            <td class="p-3 text-center font-bold text-base text-slate-100">{{ t.agenda }}</td>
+                            <td class="p-3 text-center font-mono text-slate-400 border-x border-slate-800/40">{{ t.msgs }}</td>
+                            
+                            <td class="p-3 text-center bg-blue-950/10 font-mono font-black text-emerald-400 text-sm">{{ t.eficiencia }}</td>
+                            <td class="p-3 text-center bg-blue-950/20 font-black text-blue-400 text-base tracking-wide drop-shadow-[0_0_6px_rgba(59,130,246,0.3)]">{{ t.score }}</td>
+                            
+                            <td class="p-3 border-l border-slate-800/40">
+                                <div class="flex items-center justify-center gap-3">
+                                    <span class="inline-flex items-center justify-center w-11 h-9 rounded border font-black text-base {{ t.classe_css }}">
+                                        {{ t.letra }}
+                                    </span>
+                                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 hidden xl:inline-block w-32 text-left leading-tight">{{ t.titulo }}</span>
+                                </div>
+                            </td>
+                            
+                            <td class="p-3 text-center">
+                                <a href="{% url 'raio_x:detalhe_usuario' t.id %}?inicio={{ inicio }}&fim={{ fim }}" class="inline-flex items-center gap-1.5 bg-slate-950 hover:bg-blue-600 text-blue-400 hover:text-white border border-slate-800 hover:border-blue-500 px-3.5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all shadow-inner">
+                                    <i class="fa-solid fa-chart-pie"></i> Raio-X
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="12" class="p-12 text-center text-slate-500">
+                                <i class="fa-solid fa-ghost text-5xl mb-4 opacity-40 block"></i>
+                                <span class="text-xs font-black uppercase tracking-widest">Nenhum registro produtivo encontrado nesse intervalo de datas.</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

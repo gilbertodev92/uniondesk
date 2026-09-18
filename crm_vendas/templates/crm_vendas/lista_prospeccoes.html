@@ -1,0 +1,500 @@
+{% extends 'crm_vendas/crm_base.html' %}
+
+{% block titulo %}Mesa de Prospecção{% endblock %}
+{% block cabecalho %}Mesa de Prospecção{% endblock %}
+{% block subtitulo %}<p>Assuma o contato, estude e lance no funil</p>{% endblock %}
+
+{% block acoes_topo %}
+  <form id="formCSV" style="display:none">
+    <input type="file" id="csvFileInput" accept=".csv" onchange="enviarPlanilhaCSV()">
+  </form>
+
+  <button type="button" class="crm-btn" onclick="document.getElementById('csvFileInput').click()"
+          title="Importar CSV com as colunas: empresa, cnpj, contato, telefone, cidade, segmento, observacao">
+    <i class="fa-solid fa-file-csv"></i> Importar CSV
+  </button>
+
+  <a href="{% url 'crm_vendas:lista_descartadas' %}" class="crm-btn" title="Ver contatos descartados">
+    <i class="fa-solid fa-filter-circle-xmark"></i> Descartados
+  </a>
+
+  <button type="button" class="crm-btn crm-btn--primary" onclick="abrirModalLead()">
+    <i class="fa-solid fa-plus"></i> Novo contato
+  </button>
+{% endblock %}
+
+
+{% block estilos %}
+<style>
+/* ── barra de filtros ── */
+.mp-filtros{
+  background:rgb(var(--c-panel));
+  border:1px solid rgb(var(--c-line));
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:16px;
+}
+.mp-filtros form{display:flex; gap:9px; flex-wrap:wrap; align-items:center;}
+.mp-filtros .crm-search{width:260px; max-width:100%;}
+.mp-filtros__sep{width:1px; height:24px; background:rgb(var(--c-line)); flex-shrink:0;}
+.mp-data{
+  height:36px; font-family:inherit; font-size:12.5px;
+  background:rgb(var(--c-bg)); color:rgb(var(--c-ink-soft));
+  border:1px solid rgb(var(--c-line)); border-radius:9px;
+  padding:0 10px; outline:none; cursor:pointer;
+}
+.mp-data:focus{border-color:rgb(var(--c-accent) / .5);}
+html[data-theme="dark"] .mp-data::-webkit-calendar-picker-indicator,
+html[data-theme="gray"] .mp-data::-webkit-calendar-picker-indicator{filter:invert(.7);}
+
+/* ── células clicáveis ── */
+.mp-cel{cursor:pointer;}
+.mp-empresa{font-weight:600; color:rgb(var(--c-ink)); font-size:13.5px; margin-bottom:2px;}
+.mp-cnpj{font-size:11.5px; color:rgb(var(--c-ink-faint)); font-family:'JetBrains Mono',monospace;}
+.mp-datas{font-size:10.5px; color:rgb(var(--c-ink-faint)); margin-top:4px;}
+.mp-obs{
+  font-size:12.5px; color:rgb(var(--c-ink-soft)); line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.mp-obs--vazio{color:rgb(var(--c-ink-faint)); font-style:italic;}
+
+/* ── dono ── */
+.mp-dono{display:flex; align-items:center; gap:8px; font-size:12.5px; color:rgb(var(--c-ink-soft)); font-weight:500;}
+.mp-assumir{
+  display:inline-flex; align-items:center; gap:6px;
+  height:30px; padding:0 12px; border-radius:8px; cursor:pointer;
+  background:rgb(var(--c-accent) / .12);
+  border:1px solid rgb(var(--c-accent) / .32);
+  color:rgb(var(--c-accent-soft));
+  font-family:inherit; font-size:11.5px; font-weight:700;
+  white-space:nowrap; transition:all .15s;
+}
+.mp-assumir:hover{background:rgb(var(--c-accent)); border-color:rgb(var(--c-accent)); color:#fff;}
+
+/* ── ações ── */
+.mp-acoes{display:flex; align-items:center; gap:7px; justify-content:flex-end;}
+.mp-descartar{
+  width:30px; height:30px; border-radius:8px; cursor:pointer; flex-shrink:0;
+  background:transparent; border:1px solid rgb(var(--c-line));
+  color:rgb(var(--c-ink-faint)); font-size:11px;
+  display:flex; align-items:center; justify-content:center; transition:all .15s;
+}
+.mp-descartar:hover{background:rgb(var(--c-danger)); border-color:rgb(var(--c-danger)); color:#fff;}
+.mp-qualificar{
+  display:inline-flex; align-items:center; gap:6px;
+  height:30px; padding:0 12px; border-radius:8px; cursor:pointer;
+  background:rgb(var(--c-success) / .12);
+  border:1px solid rgb(var(--c-success) / .32);
+  color:rgb(var(--c-success));
+  font-family:inherit; font-size:11.5px; font-weight:700;
+  white-space:nowrap; transition:all .15s;
+}
+.mp-qualificar:hover{background:rgb(var(--c-success)); border-color:rgb(var(--c-success)); color:#fff;}
+.mp-qualificar:disabled{opacity:.5; cursor:not-allowed;}
+
+/* ── modal de descarte ── */
+.mp-modal{
+  position:fixed; inset:0; z-index:1050;
+  background:rgba(0,0,0,.6); backdrop-filter:blur(3px);
+  display:none; align-items:center; justify-content:center; padding:20px;
+}
+.mp-modal.is-open{display:flex;}
+.mp-modal__box{
+  width:100%; max-width:420px;
+  background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line));
+  border-radius:14px; overflow:hidden;
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.7);
+}
+.mp-modal__head{
+  padding:16px 20px; border-bottom:1px solid rgb(var(--c-line));
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.mp-modal__head h3{
+  font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600;
+  color:rgb(var(--c-danger)); display:flex; align-items:center; gap:9px;
+}
+.mp-modal__body{padding:20px;}
+.mp-modal__foot{
+  padding:14px 20px; border-top:1px solid rgb(var(--c-line));
+  display:flex; justify-content:flex-end; gap:10px;
+  background:rgb(var(--c-bg) / .5);
+}
+.mp-modal label{
+  display:block; font-size:9.5px; font-weight:700; color:rgb(var(--c-ink-faint));
+  text-transform:uppercase; letter-spacing:.1em; margin-bottom:6px;
+}
+
+/* ── responsivo: a tabela vira cartões ── */
+@media (max-width:860px){
+  .mp-filtros form{gap:8px;}
+  .mp-filtros .crm-search{width:100%;}
+  .mp-filtros__sep{display:none;}
+  .mp-filtros .crm-select, .mp-data{flex:1 1 calc(50% - 4px); min-width:0;}
+
+  .mp-tabela thead{display:none;}
+  .mp-tabela, .mp-tabela tbody, .mp-tabela tr, .mp-tabela td{display:block; width:100%;}
+  .mp-tabela{min-width:0;}
+  .mp-tabela tr{
+    background:rgb(var(--c-panel));
+    border:1px solid rgb(var(--c-line));
+    border-radius:12px; padding:13px; margin-bottom:11px;
+  }
+  .mp-tabela tr:hover{background:rgb(var(--c-panel));}
+  .mp-tabela td{border:none; padding:0 0 9px 0;}
+  .mp-tabela td:last-child{padding-bottom:0;}
+  .mp-tabela td[data-rotulo]::before{
+    content:attr(data-rotulo);
+    display:block; font-size:9px; font-weight:700;
+    color:rgb(var(--c-ink-faint)); text-transform:uppercase;
+    letter-spacing:.1em; margin-bottom:3px;
+  }
+  .mp-acoes{justify-content:flex-start; padding-top:10px; border-top:1px solid rgb(var(--c-line));}
+  .mp-qualificar{flex:1; justify-content:center;}
+  .mp-vazio-mobile{border:none !important; background:transparent !important;}
+}
+</style>
+{% endblock %}
+
+
+{% block conteudo %}
+{% csrf_token %}
+
+<!-- ═══════════ FILTROS ═══════════ -->
+<div class="mp-filtros">
+  <form method="GET">
+    <div class="crm-search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" name="busca_nome" value="{{ busca_nome }}" placeholder="Buscar empresa ou contato...">
+    </div>
+
+    <select name="cidade" class="crm-select" onchange="this.form.submit()">
+      <option value="">Todas as cidades</option>
+      {% for c in cidades %}<option value="{{ c }}" {% if cidade_atual == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+
+    <select name="segmento" class="crm-select" onchange="this.form.submit()">
+      <option value="">Todos os segmentos</option>
+      {% for s in segmentos %}<option value="{{ s }}" {% if segmento_atual == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select>
+
+    <div class="mp-filtros__sep"></div>
+
+    <input type="date" name="data_inicio" class="mp-data" value="{{ request.GET.data_inicio }}"
+           onchange="this.form.submit()" title="Data inicial">
+    <input type="date" name="data_fim" class="mp-data" value="{{ request.GET.data_fim }}"
+           onchange="this.form.submit()" title="Data final">
+
+    <div class="mp-filtros__sep"></div>
+
+    <select name="vendedor" class="crm-select" onchange="this.form.submit()">
+      <option value="">Todos os responsáveis</option>
+      {% for v in vendedores %}
+        <option value="{{ v.id }}" {% if vendedor_atual == v.id|stringformat:"s" %}selected{% endif %}>{{ v.first_name|default:v.username }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="ordem" class="crm-select" onchange="this.form.submit()">
+      <option value="">Mais recentes</option>
+      <option value="antigos" {% if request.GET.ordem == 'antigos' %}selected{% endif %}>Mais antigos</option>
+      <option value="empresa" {% if request.GET.ordem == 'empresa' %}selected{% endif %}>Nome da empresa</option>
+    </select>
+
+    <select name="itens_pagina" class="crm-select" onchange="this.form.submit()" title="Linhas por página">
+      <option value="25" {% if itens_pagina == '25' %}selected{% endif %}>25 por página</option>
+      <option value="50" {% if itens_pagina == '50' %}selected{% endif %}>50 por página</option>
+      <option value="100" {% if itens_pagina == '100' %}selected{% endif %}>100 por página</option>
+    </select>
+
+    <button type="submit" class="crm-btn" title="Aplicar filtros"><i class="fa-solid fa-filter"></i></button>
+    <a href="?" class="crm-btn crm-btn--ghost" title="Limpar filtros"><i class="fa-solid fa-eraser"></i></a>
+  </form>
+</div>
+
+
+<!-- ═══════════ TABELA ═══════════ -->
+<div class="crm-panel">
+  <div class="crm-table-wrap">
+    <table class="crm-table mp-tabela">
+      <thead>
+        <tr>
+          <th style="width:24%">Empresa</th>
+          <th style="width:16%">Contato</th>
+          <th style="width:14%">Local / segmento</th>
+          <th style="width:24%">Observações</th>
+          <th style="width:12%">Responsável</th>
+          <th style="width:10%; text-align:right">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lead in leads %}
+        <tr id="row-{{ lead.id }}">
+          <td class="mp-cel" data-rotulo="Empresa" onclick="abrirFichaProspeccao('{{ lead.id }}')">
+            <div class="mp-empresa">{{ lead.nome_empresa }}</div>
+            <div class="mp-cnpj">{{ lead.cnpj|default:"CNPJ não informado" }}</div>
+            <div class="mp-datas">
+              Criado {{ lead.data_criacao|date:"d/m/Y" }} · atualizado {{ lead.ultima_atualizacao|date:"d/m H:i" }}
+            </div>
+          </td>
+
+          <td class="mp-cel" data-rotulo="Contato" onclick="abrirFichaProspeccao('{{ lead.id }}')">
+            <div class="crm-td-strong">{{ lead.nome_contato|default:"—" }}</div>
+            <div class="crm-td-sub"><i class="fa-solid fa-phone"></i> {{ lead.telefone|default:"—" }}</div>
+          </td>
+
+          <td class="mp-cel" data-rotulo="Local" onclick="abrirFichaProspeccao('{{ lead.id }}')">
+            <div class="crm-td-strong" style="font-weight:500">
+              <i class="fa-solid fa-location-dot" style="color:rgb(var(--c-ink-faint));font-size:11px"></i>
+              {{ lead.cidade|default:"—" }}
+            </div>
+            <span class="crm-chip crm-chip--neutral" style="margin-top:5px">
+              {{ lead.segmento.nome|default:"Geral" }}
+            </span>
+          </td>
+
+          <td class="mp-cel" data-rotulo="Observações" onclick="abrirFichaProspeccao('{{ lead.id }}')">
+            {% if lead.dor_principal or lead.observacao_rapida %}
+              <p class="mp-obs">{{ lead.dor_principal|default:lead.observacao_rapida }}</p>
+            {% else %}
+              <p class="mp-obs mp-obs--vazio">Sem observações</p>
+            {% endif %}
+          </td>
+
+          <td id="dono-{{ lead.id }}" data-rotulo="Responsável">
+            {% if lead.vendedor_prospeccao %}
+              <div class="mp-dono" title="Assumido em {{ lead.data_prospeccao|date:'d/m/Y H:i' }}">
+                <div class="crm-avatar" style="width:24px;height:24px;font-size:10px">
+                  {{ lead.vendedor_prospeccao.first_name|default:lead.vendedor_prospeccao.username|make_list|first|upper }}
+                </div>
+                {{ lead.vendedor_prospeccao.first_name|default:lead.vendedor_prospeccao.username }}
+              </div>
+            {% else %}
+              <button class="mp-assumir" onclick="assumirContato('{{ lead.id }}', this)">
+                <i class="fa-solid fa-hand-pointer"></i> Assumir
+              </button>
+            {% endif %}
+          </td>
+
+          <td data-rotulo="">
+            <div class="mp-acoes">
+              <button class="mp-descartar" onclick="abrirModalDescarte('{{ lead.id }}')" title="Descartar contato">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+              <button class="mp-qualificar" onclick="promoverAoFunil('{{ lead.id }}', this)" title="Enviar para o funil de vendas">
+                Qualificar <i class="fa-solid fa-arrow-right" style="font-size:10px"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr class="mp-vazio-mobile">
+          <td colspan="6">
+            <div class="crm-empty">
+              <i class="fa-solid fa-satellite-dish"></i>
+              <h3>O radar está limpo</h3>
+              <p>Importe um CSV ou cadastre contatos manualmente para começar.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if leads.has_other_pages %}
+  <div class="crm-pagination">
+    <span>Página {{ leads.number }} de {{ leads.paginator.num_pages }} · {{ leads.paginator.count }} contato{{ leads.paginator.count|pluralize }}</span>
+    <div class="pages">
+      {% comment %}
+      Os filtros são repetidos em cada link de propósito. Montar a querystring
+      uma vez só exigiria passar request.GET.x como argumento de filtro, e isso
+      levanta VariableDoesNotExist quando o parâmetro não está na URL — usado
+      sozinho ele é silencioso, como argumento de filtro não é.
+      {% endcomment %}
+      {% if leads.has_previous %}
+        <a href="?page=1&busca_nome={{ busca_nome }}&cidade={{ cidade_atual }}&segmento={{ segmento_atual }}&vendedor={{ vendedor_atual }}&itens_pagina={{ itens_pagina }}&data_inicio={{ request.GET.data_inicio }}&data_fim={{ request.GET.data_fim }}&ordem={{ request.GET.ordem }}"
+           class="crm-btn crm-btn--sm" title="Primeira página"><i class="fa-solid fa-angles-left"></i></a>
+        <a href="?page={{ leads.previous_page_number }}&busca_nome={{ busca_nome }}&cidade={{ cidade_atual }}&segmento={{ segmento_atual }}&vendedor={{ vendedor_atual }}&itens_pagina={{ itens_pagina }}&data_inicio={{ request.GET.data_inicio }}&data_fim={{ request.GET.data_fim }}&ordem={{ request.GET.ordem }}"
+           class="crm-btn crm-btn--sm"><i class="fa-solid fa-angle-left"></i> Anterior</a>
+      {% endif %}
+      {% if leads.has_next %}
+        <a href="?page={{ leads.next_page_number }}&busca_nome={{ busca_nome }}&cidade={{ cidade_atual }}&segmento={{ segmento_atual }}&vendedor={{ vendedor_atual }}&itens_pagina={{ itens_pagina }}&data_inicio={{ request.GET.data_inicio }}&data_fim={{ request.GET.data_fim }}&ordem={{ request.GET.ordem }}"
+           class="crm-btn crm-btn--sm">Próxima <i class="fa-solid fa-angle-right"></i></a>
+        <a href="?page={{ leads.paginator.num_pages }}&busca_nome={{ busca_nome }}&cidade={{ cidade_atual }}&segmento={{ segmento_atual }}&vendedor={{ vendedor_atual }}&itens_pagina={{ itens_pagina }}&data_inicio={{ request.GET.data_inicio }}&data_fim={{ request.GET.data_fim }}&ordem={{ request.GET.ordem }}"
+           class="crm-btn crm-btn--sm" title="Última página"><i class="fa-solid fa-angles-right"></i></a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+
+{% block modais %}
+  {% include 'crm_vendas/partials/_modal_novo_lead.html' %}
+  {% include 'crm_vendas/partials/_offcanvas_prospeccao.html' %}
+
+  <!-- descarte -->
+  <div id="modalDescarte" class="mp-modal" onmousedown="if(event.target===this) fecharModalDescarte()">
+    <div class="mp-modal__box">
+      <div class="mp-modal__head">
+        <h3><i class="fa-solid fa-trash-can"></i> Descartar contato</h3>
+        <button type="button" class="crm-btn crm-btn--ghost" onclick="fecharModalDescarte()"
+                style="width:34px;padding:0;justify-content:center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="mp-modal__body">
+        <input type="hidden" id="descarte-lead-id">
+        <label for="motivo-descarte">Por que este contato não seguiu?</label>
+        <select id="motivo-descarte" class="crm-select" style="width:100%">
+          <option value="">Selecione o motivo...</option>
+          <option value="Não atendeu / sem retorno">Não atendeu / sem retorno</option>
+          <option value="Telefone inválido">Telefone inválido</option>
+          <option value="Não tem perfil">Não tem perfil</option>
+          <option value="Já é cliente">Já é cliente</option>
+          <option value="Sem interesse">Sem interesse</option>
+          <option value="Já usa concorrente">Já usa concorrente</option>
+          <option value="Empresa encerrada">Empresa encerrada</option>
+          <option value="Contato duplicado">Contato duplicado</option>
+        </select>
+        <p style="font-size:11.5px;color:rgb(var(--c-ink-faint));margin-top:9px">
+          O contato vai para a lista de descartados e sai da mesa. Nada é apagado.
+        </p>
+      </div>
+      <div class="mp-modal__foot">
+        <button type="button" class="crm-btn" onclick="fecharModalDescarte()">Cancelar</button>
+        <button type="button" class="crm-btn crm-btn--danger" onclick="confirmarDescarte()">
+          <i class="fa-solid fa-trash-can"></i> Descartar
+        </button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+const csrfTokenGlobal = document.querySelector('[name=csrfmiddlewaretoken]')
+  ? document.querySelector('[name=csrfmiddlewaretoken]').value
+  : '{{ csrf_token }}';
+
+/* ── some com a linha depois de uma ação, com transição ── */
+function mpRemoverLinha(leadId, direcao){
+  const row = document.getElementById(`row-${leadId}`);
+  if (!row) return;
+  row.style.transition = 'opacity .25s, transform .25s';
+  row.style.opacity = '0';
+  row.style.transform = direcao === 'lado' ? 'translateX(28px)' : 'scale(.97)';
+  setTimeout(() => row.remove(), 260);
+}
+
+/* ═══════════ DESCARTE ═══════════ */
+function abrirModalDescarte(leadId){
+  document.getElementById('descarte-lead-id').value = leadId;
+  document.getElementById('motivo-descarte').value = '';
+  document.getElementById('modalDescarte').classList.add('is-open');
+}
+function fecharModalDescarte(){
+  document.getElementById('modalDescarte').classList.remove('is-open');
+}
+
+async function confirmarDescarte(){
+  const leadId = document.getElementById('descarte-lead-id').value;
+  const motivo = document.getElementById('motivo-descarte').value;
+  if (!motivo){ alert('Selecione o motivo do descarte.'); return; }
+
+  try{
+    const r = await fetch(`/comercial/api/lead/${leadId}/descartar/`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':csrfTokenGlobal},
+      body: JSON.stringify({motivo})
+    });
+    if ((await r.json()).status === 'sucesso'){
+      fecharModalDescarte();
+      mpRemoverLinha(leadId, 'escala');
+    } else {
+      alert('Não foi possível descartar.');
+    }
+  }catch(e){ alert('Erro ao descartar.'); }
+}
+
+/* ═══════════ ASSUMIR ═══════════ */
+async function assumirContato(leadId, btn){
+  const original = btn.innerHTML;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  btn.disabled = true;
+
+  try{
+    const r = await fetch(`/comercial/api/lead/${leadId}/assumir/`, {
+      method:'POST', headers:{'X-CSRFToken':csrfTokenGlobal}
+    });
+    const data = await r.json();
+    if (data.status === 'sucesso'){
+      const inicial = (data.nome || '?').charAt(0).toUpperCase();
+      document.getElementById(`dono-${leadId}`).innerHTML = `
+        <div class="mp-dono">
+          <div class="crm-avatar" style="width:24px;height:24px;font-size:10px">${inicial}</div>
+          ${data.nome}
+        </div>`;
+    } else {
+      btn.innerHTML = original; btn.disabled = false;
+      alert('Não foi possível assumir este contato.');
+    }
+  }catch(e){
+    btn.innerHTML = original; btn.disabled = false;
+    alert('Erro de conexão.');
+  }
+}
+
+/* ═══════════ QUALIFICAR (manda pro funil) ═══════════ */
+async function promoverAoFunil(leadId, btn){
+  const original = btn.innerHTML;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  btn.disabled = true;
+
+  try{
+    const r = await fetch("{% url 'crm_vendas:atualizar_etapa_lead' %}", {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':csrfTokenGlobal},
+      body: JSON.stringify({lead_id: leadId, nova_etapa: '1_LEAD'})
+    });
+    if ((await r.json()).status === 'sucesso'){
+      mpRemoverLinha(leadId, 'lado');
+    } else {
+      alert('Não foi possível qualificar.');
+      btn.innerHTML = original; btn.disabled = false;
+    }
+  }catch(e){
+    alert('Erro de conexão.');
+    btn.innerHTML = original; btn.disabled = false;
+  }
+}
+
+/* ═══════════ IMPORTAR CSV ═══════════ */
+async function enviarPlanilhaCSV(){
+  const input = document.getElementById('csvFileInput');
+  if (!input.files.length) return;
+
+  const fd = new FormData();
+  fd.append('arquivo_csv', input.files[0]);
+
+  try{
+    const r = await fetch("{% url 'crm_vendas:importar_leads_csv' %}", {
+      method:'POST', headers:{'X-CSRFToken':csrfTokenGlobal}, body: fd
+    });
+    const data = await r.json();
+    alert(data.message);
+  }catch(e){
+    alert('Falha ao enviar a planilha.');
+  }
+  window.location.reload();
+}
+
+/* Esc fecha o modal de descarte */
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && document.getElementById('modalDescarte').classList.contains('is-open')){
+    fecharModalDescarte();
+  }
+});
+</script>
+{% endblock %}

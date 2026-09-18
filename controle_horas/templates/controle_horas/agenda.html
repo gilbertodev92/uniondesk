@@ -1,0 +1,253 @@
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   AGENDA / CALENDÁRIO DE ESCALA
+   FullCalendar tematizado com os tokens do sistema. Eventos viram
+   "bolinhas" (dot) coloridas por TIPO — cabe o mês inteiro sem rolar.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* cores por tipo de evento (as mesmas da API) */
+#cp-panel-agenda{
+  --ev-plantao:#d97706;
+  --ev-home:#4f46e5;
+  --ev-ferias:#e623bb;
+  --ev-folga:#0e7500;
+}
+
+/* barra de controles: legenda + escala rápida + alternador de vista */
+.ag-bar{
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  background:#111827; border:1px solid #1e293b;
+  border-radius:12px; padding:11px 16px; margin-bottom:12px;
+}
+.ag-bar__label{
+  font-size:10.5px; font-weight:800; color:#94a3b8;
+  text-transform:uppercase; letter-spacing:.06em;
+  display:flex; align-items:center; gap:6px;
+}
+.ag-leg{display:flex; align-items:center; gap:7px;}
+.ag-leg__dot{width:11px; height:11px; border-radius:50%; flex-shrink:0;}
+.ag-leg__txt{font-size:12px; font-weight:600; color:#cbd5e1;}
+
+/* alternador mês / semana */
+.ag-toggle{display:flex; gap:2px; background:#0f172a; border:1px solid #334155; border-radius:9px; padding:3px; margin-left:auto;}
+.ag-toggle button{
+  border:none; background:transparent; color:#94a3b8;
+  font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;
+  padding:6px 14px; border-radius:6px; transition:all .14s;
+}
+.ag-toggle button.is-active{background:#3b82f6; color:#fff;}
+
+/* escala rápida (gestor) */
+.ag-escala{
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  background:#0f172a; border:1px dashed #3b82f6;
+  border-radius:12px; padding:11px 16px; margin-bottom:12px;
+}
+.ag-escala__label{font-size:10.5px; font-weight:800; color:#60a5fa; text-transform:uppercase; letter-spacing:.06em; display:flex; align-items:center; gap:6px;}
+.ag-select{
+  background:#1e293b; color:#f8fafc; border:1px solid #334155;
+  padding:8px 12px; border-radius:7px; font-family:inherit;
+  font-size:12px; font-weight:600; outline:none; cursor:pointer;
+}
+.ag-select:focus{border-color:#3b82f6;}
+.ag-escala__dica{font-size:11px; color:#94a3b8; margin-left:auto;}
+.ag-escala__dica b{font-weight:800;}
+.ag-escala__dica .add{color:#34d399;}
+.ag-escala__dica .del{color:#f87171;}
+
+/* caixa do calendário */
+.ag-cal-box{background:#111827; border:1px solid #1e293b; border-radius:12px; padding:16px;}
+
+/* ── FullCalendar tematizado ── */
+#calendar{
+  --fc-page-bg-color:transparent;
+  --fc-neutral-bg-color:#1e293b;
+  --fc-neutral-text-color:#cbd5e1;
+  --fc-border-color:#273244;
+  --fc-button-text-color:#f8fafc;
+  --fc-button-bg-color:#1e293b;
+  --fc-button-border-color:#334155;
+  --fc-button-hover-bg-color:#334155;
+  --fc-button-hover-border-color:#475569;
+  --fc-button-active-bg-color:#3b82f6;
+  --fc-button-active-border-color:#3b82f6;
+  --fc-today-bg-color:rgba(59,130,246,0.10);
+  font-family:'Inter',sans-serif;
+}
+.fc-theme-standard th{
+  background:#0f172a; border-color:#273244; padding:9px 0;
+  color:#94a3b8; font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em;
+}
+.fc-theme-standard td{border-color:#273244;}
+.fc-daygrid-day-number{color:#e2e8f0; font-weight:600; padding:5px 7px !important; text-decoration:none; font-size:12px;}
+.fc-daygrid-day.fc-day-today .fc-daygrid-day-number{color:#60a5fa; font-weight:800;}
+.fc-toolbar-title{font-size:15px !important; color:#f8fafc; font-weight:800; text-transform:capitalize;}
+.fc-daygrid-day:hover{background:rgba(255,255,255,0.02);}
+.fc .fc-daygrid-day.fc-day-other{opacity:.4;}
+
+/* ── EVENTO COMO BOLINHA + NOME (compacto) ── */
+.fc-daygrid-event{
+  border:none !important; background:transparent !important;
+  margin:1px 3px !important; padding:0 !important;
+  box-shadow:none !important;
+}
+.ag-ev{
+  display:flex; align-items:center; gap:6px;
+  padding:2px 4px; border-radius:5px; cursor:pointer;
+  transition:background .12s;
+}
+.ag-ev:hover{background:rgba(255,255,255,0.06);}
+.ag-ev__dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+.ag-ev__nome{
+  font-size:11px; font-weight:600; color:#e2e8f0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+/* "+N mais" do FullCalendar tematizado */
+.fc-daygrid-more-link{
+  font-size:10.5px !important; font-weight:700; color:#60a5fa !important;
+  margin:1px 6px !important;
+}
+.fc-popover{background:#1e293b !important; border:1px solid #334155 !important; border-radius:10px !important;}
+.fc-popover-header{background:#0f172a !important; color:#f8fafc !important;}
+
+/* semana: eventos aparecem como blocos coloridos sólidos, mais legíveis */
+.fc-timeGridWeek-view .ag-ev, .fc-dayGridWeek-view .ag-ev{padding:3px 7px;}
+.fc-dayGridWeek-view .ag-ev__nome{font-size:12px;}
+
+/* responsivo */
+@media (max-width:720px){
+  .ag-bar, .ag-escala{padding:10px 12px; gap:10px;}
+  .ag-escala__dica{display:none;}
+  .ag-toggle{margin-left:0;}
+  .fc-toolbar.fc-header-toolbar{flex-direction:column; gap:8px;}
+  .ag-cal-box{padding:10px;}
+}
+</style>
+
+<div id="cp-panel-agenda" class="cp-panel" role="tabpanel" aria-labelledby="cp-btn-agenda">
+
+  <!-- legenda + alternador de vista -->
+  <div class="ag-bar">
+    <span class="ag-bar__label"><i class="fa-solid fa-circle-info"></i> Legenda</span>
+    <div class="ag-leg"><span class="ag-leg__dot" style="background:var(--ev-plantao)"></span><span class="ag-leg__txt">Plantão</span></div>
+    <div class="ag-leg"><span class="ag-leg__dot" style="background:var(--ev-home)"></span><span class="ag-leg__txt">Home Office</span></div>
+    <div class="ag-leg"><span class="ag-leg__dot" style="background:var(--ev-ferias)"></span><span class="ag-leg__txt">Férias</span></div>
+    <div class="ag-leg"><span class="ag-leg__dot" style="background:var(--ev-folga)"></span><span class="ag-leg__txt">Folga</span></div>
+
+    <div class="ag-toggle" role="group" aria-label="Alternar visão">
+      <button type="button" id="ag-btn-mes" class="is-active" onclick="agTrocarVista('dayGridMonth', this)">Mês</button>
+      <button type="button" id="ag-btn-semana" onclick="agTrocarVista('dayGridWeek', this)">Semana</button>
+    </div>
+  </div>
+
+  {% if is_gestor %}
+  <div class="ag-escala">
+    <span class="ag-escala__label"><i class="fa-solid fa-wand-magic-sparkles"></i> Escala rápida</span>
+
+    <select id="agenda-usuario-select" class="ag-select" style="min-width:180px">
+      <option value="">— Escolha o colaborador —</option>
+      {% for u in resumo_fechamento %}
+        <option value="{{ u.usuario__id }}">{{ u.usuario__first_name|default:u.usuario__username }}</option>
+      {% endfor %}
+    </select>
+
+    <select id="agenda-tipo-select" class="ag-select">
+      <option value="plantao">Plantão</option>
+      <option value="home_office">Home Office</option>
+      <option value="ferias">Férias</option>
+      <option value="folga_compensada">Folga Compensada</option>
+    </select>
+
+    <span class="ag-escala__dica">
+      Clique no <b class="add">dia</b> para adicionar · clique no <b class="del">nome</b> para remover
+    </span>
+  </div>
+  {% endif %}
+
+  <div class="ag-cal-box">
+    <div id="calendar"></div>
+  </div>
+</div>
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.11/locales/pt-br.global.min.js'></script>
+
+<script>
+var agCalendar = null;
+
+function agTrocarVista(vista, btn){
+  if (!agCalendar) return;
+  agCalendar.changeView(vista);
+  document.querySelectorAll('.ag-toggle button').forEach(b => b.classList.remove('is-active'));
+  btn.classList.add('is-active');
+}
+
+function inicializarAgenda(){
+  var calendarEl = document.getElementById('calendar');
+  var isGestor = {% if is_gestor %}true{% else %}false{% endif %};
+
+  if (calendarEl.innerHTML) return;   // já inicializado
+
+  agCalendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    locale: 'pt-br',
+    height: 'auto',                   // cresce com o conteúdo, sem barra interna
+    events: '/controle-horas/api/eventos/',
+    headerToolbar: { left:'prev,next today', center:'title', right:'' },
+    fixedWeekCount: false,            // não força 6 semanas quando o mês cabe em 5
+    dayMaxEvents: 4,                  // acima disso mostra "+N mais" (evita rolagem)
+    moreLinkText: n => '+' + n + ' mais',
+
+    // cada evento vira bolinha colorida + nome curto
+    eventContent: function(arg){
+      const cor = arg.event.backgroundColor || '#64748b';
+      const nome = arg.event.title || '';
+      return { html:
+        `<div class="ag-ev" title="${nome}">
+           <span class="ag-ev__dot" style="background:${cor}"></span>
+           <span class="ag-ev__nome">${nome}</span>
+         </div>` };
+    },
+
+    dateClick: function(info){
+      if (!isGestor) return;
+      const selectUser = document.getElementById('agenda-usuario-select');
+      if (!selectUser || !selectUser.value){
+        alert("Selecione um colaborador no topo primeiro para poder agendá-lo!");
+        return;
+      }
+      const usuarioId = selectUser.value;
+      const tipoEvento = document.getElementById('agenda-tipo-select').value;
+      const csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}';
+
+      info.dayEl.style.backgroundColor = 'rgba(52,211,153,0.15)';
+
+      fetch('/controle-horas/api/eventos/salvar/', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+        body: JSON.stringify({usuario_id:usuarioId, data:info.dateStr, tipo:tipoEvento})
+      }).then(r => r.json()).then(d => {
+        if (d.status === 'sucesso') agCalendar.refetchEvents();
+        else alert("Erro ao salvar o agendamento.");
+        setTimeout(() => { info.dayEl.style.backgroundColor = ''; }, 200);
+      }).catch(err => { console.error(err); info.dayEl.style.backgroundColor = ''; });
+    },
+
+    eventClick: function(info){
+      if (!isGestor) return;
+      if (!confirm("Deseja REMOVER " + info.event.title + " desta data?")) return;
+      const csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}';
+      fetch('/controle-horas/api/eventos/remover/', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+        body: JSON.stringify({evento_id: info.event.id})
+      }).then(r => r.json()).then(d => {
+        if (d.status === 'sucesso') info.event.remove();
+        else alert("Erro ao remover: " + d.message);
+      });
+    }
+  });
+
+  agCalendar.render();
+}
+</script>

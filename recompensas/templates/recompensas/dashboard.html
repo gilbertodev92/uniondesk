@@ -1,0 +1,782 @@
+{% extends "base.html" %}
+{% block title %}Central RPG | UnionDESK{% endblock %}
+{% block content %}
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   CENTRAL RPG — consome tokens do base.html (dark/gray/light)
+   Psicologia das cores:
+     pó mágico  → special (roxo, magia/raridade)
+     LC (moeda) → warn (dourado, desejo/recompensa)
+     XP/nível   → accent (progresso)
+     resgatar   → success (verde, ação)
+   ═══════════════════════════════════════════════════════════ */
+.rpg-wrap { background: rgb(var(--c-bg)); min-height: 100%; }
+
+/* ── IMPONÊNCIA: profundidade e atmosfera épica ── */
+.rpg-wrap {
+    background-image:
+        radial-gradient(ellipse at 15% 0%, rgb(var(--c-accent) / 0.06), transparent 50%),
+        radial-gradient(ellipse at 85% 100%, rgb(var(--c-special) / 0.05), transparent 55%);
+}
+/* cartão com profundidade real (sombra + brilho de borda superior) */
+.rpg-card {
+    background:
+        linear-gradient(180deg, rgb(var(--c-ink) / 0.02), transparent 40%),
+        rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 16px;
+    box-shadow: 0 1px 0 rgb(var(--c-ink) / 0.04) inset, 0 4px 16px rgba(0,0,0,.15);
+    transition: border-color .2s, transform .2s, box-shadow .2s;
+}
+.rpg-card:hover {
+    border-color: rgb(var(--c-accent) / 0.4);
+    box-shadow: 0 1px 0 rgb(var(--c-ink) / 0.06) inset, 0 8px 28px rgba(0,0,0,.25), 0 0 20px rgb(var(--c-accent) / 0.08);
+}
+/* cabeçalho do jogador: painel heróico */
+.rpg-hero {
+    background:
+        radial-gradient(ellipse at 0% 0%, rgb(var(--c-accent) / 0.1), transparent 60%),
+        linear-gradient(180deg, rgb(var(--c-ink) / 0.03), transparent 50%),
+        rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    box-shadow: 0 4px 24px rgba(0,0,0,.2);
+    position: relative; overflow: hidden;
+}
+.rpg-hero::after {
+    content: ''; position: absolute; top: 0; right: 0; width: 40%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgb(var(--c-accent) / 0.04));
+    pointer-events: none;
+}
+/* HUD de moeda: pequenas joias */
+.hud-gem {
+    background: linear-gradient(180deg, rgb(var(--c-ink) / 0.03), rgb(var(--c-panel)));
+    border: 1px solid rgb(var(--c-line)); border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15), 0 1px 0 rgb(var(--c-ink) / 0.05) inset;
+    transition: transform .2s, box-shadow .2s;
+}
+.hud-gem:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.25); }
+
+.moeda-lc  { color: rgb(var(--c-warn)); }
+.moeda-po  { color: rgb(var(--c-special)); }
+.moeda-xp  { color: rgb(var(--c-accent)); }
+
+/* raridades — padrão universal de games (fixas de propósito, nos 3 temas) */
+.rar-comum    { --rar: 148,163,184; }
+.rar-raro     { --rar: 59,130,246; }
+.rar-epico    { --rar: 168,85,247; }
+.rar-lendario { --rar: 245,180,20; }
+.rar-badge {
+    color: rgb(var(--rar)); background: rgb(var(--rar) / 0.12);
+    border: 1px solid rgb(var(--rar) / 0.35);
+    font-size: 9px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 2px 8px; border-radius: 6px;
+}
+
+/* cartão base */
+.rpg-card {
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 16px;
+    transition: border-color .2s, transform .2s;
+}
+.rpg-card:hover { border-color: rgb(var(--c-accent) / 0.35); }
+
+/* ── ABAS ── */
+.rpg-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid rgb(var(--c-line)); }
+.rpg-tab {
+    padding: 10px 18px; font-size: 12px; font-weight: 700; letter-spacing: 0.03em;
+    color: rgb(var(--c-ink-faint)); background: transparent; border: none; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px; transition: .15s;
+    display: inline-flex; align-items: center; gap: 7px;
+}
+.rpg-tab:hover { color: rgb(var(--c-ink)); }
+.rpg-tab.active { color: rgb(var(--c-accent)); border-bottom-color: rgb(var(--c-accent)); }
+.rpg-tab .badge {
+    background: rgb(var(--c-success)); color: #fff; font-size: 9px; font-weight: 800;
+    min-width: 16px; height: 16px; border-radius: 8px; display: inline-flex;
+    align-items: center; justify-content: center; padding: 0 4px;
+}
+.rpg-panel { display: none; }
+.rpg-panel.active { display: block; animation: rpgFade .4s ease; }
+@keyframes rpgFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ── barra de progresso ── */
+.rpg-bar { background: rgb(var(--c-bg)); border: 1px solid rgb(var(--c-line)); border-radius: 99px; overflow: hidden; height: 8px; }
+.rpg-bar-fill { height: 100%; border-radius: 99px; background: rgb(var(--c-accent)); transition: width .6s ease; }
+.rpg-bar-fill.is-done { background: rgb(var(--c-success)); }
+
+/* ── botões ── */
+.rpg-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px 16px; border-radius: 10px; font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; border: 1px solid; transition: .15s;
+}
+.rpg-btn--go { background: rgb(var(--c-success)); border-color: rgb(var(--c-success)); color: #fff; }
+.rpg-btn--go:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.rpg-btn--accent { background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); color: #fff; }
+.rpg-btn--ghost { background: transparent; border-color: rgb(var(--c-line)); color: rgb(var(--c-ink-soft)); }
+.rpg-btn--ghost:hover { border-color: rgb(var(--c-accent) / 0.5); color: rgb(var(--c-ink)); }
+.rpg-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ── roleta ── */
+@keyframes rpgSpin { 100% { transform: rotate(1440deg); } }
+.roleta-disco {
+    width: 200px; height: 200px; border-radius: 50%; margin: 0 auto;
+    border: 6px solid rgb(var(--c-special) / 0.3);
+    background:
+      radial-gradient(circle at center, rgb(var(--c-panel)) 30%, transparent 31%),
+      conic-gradient(rgb(var(--c-special) / 0.15) 0deg 45deg, rgb(var(--c-accent) / 0.15) 45deg 90deg,
+                     rgb(var(--c-warn) / 0.15) 90deg 135deg, rgb(var(--c-signal) / 0.15) 135deg 180deg,
+                     rgb(var(--c-special) / 0.15) 180deg 225deg, rgb(var(--c-accent) / 0.15) 225deg 270deg,
+                     rgb(var(--c-warn) / 0.15) 270deg 315deg, rgb(var(--c-signal) / 0.15) 315deg 360deg);
+    display: flex; align-items: center; justify-content: center; position: relative;
+}
+.roleta-disco.spinning { animation: rpgSpin 1.2s cubic-bezier(.2,.8,.2,1); }
+.roleta-disco i { font-size: 3rem; color: rgb(var(--c-special)); }
+
+/* ── pop-up de boas-vindas ── */
+.rpg-modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(6px);
+    z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.rpg-welcome {
+    max-width: 560px; width: 100%; background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-accent) / 0.3); border-radius: 22px; padding: 0; overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,.5); position: relative;
+}
+.rpg-welcome__hero {
+    padding: 32px 32px 24px; text-align: center; position: relative; overflow: hidden;
+    background: linear-gradient(180deg, rgb(var(--c-accent) / 0.12), transparent);
+}
+.rpg-welcome__hero::before {
+    content: ''; position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgb(var(--c-special) / 0.25), transparent 70%);
+}
+.rpg-welcome__medal {
+    width: 68px; height: 68px; border-radius: 50%; margin: 0 auto 16px; position: relative; z-index: 2;
+    background: rgb(var(--c-accent) / 0.15); border: 2px solid rgb(var(--c-accent) / 0.5);
+    display: flex; align-items: center; justify-content: center;
+}
+.rpg-welcome__medal i { font-size: 1.8rem; color: rgb(var(--c-accent)); }
+.rpg-welcome__body { padding: 8px 32px 28px; }
+.rpg-welcome__feat {
+    display: flex; gap: 12px; align-items: flex-start; padding: 11px 0;
+    border-top: 1px solid rgb(var(--c-line));
+}
+.rpg-welcome__feat i { width: 20px; text-align: center; margin-top: 2px; }
+
+.rpg-scroll::-webkit-scrollbar { width: 6px; }
+.rpg-scroll::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+    .roleta-disco.spinning, .rpg-panel.active { animation: none; }
+}
+
+/* modal de craft */
+.rpg-craft-modal {
+    max-width: 420px; width: 100%; background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-special) / 0.3); border-radius: 20px; padding: 24px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.5);
+}
+.craft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin-top: 8px; }
+.craft-peca-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 8px;
+    background: rgb(var(--c-bg)); border: 1px solid rgb(var(--c-line)); border-radius: 12px;
+    color: rgb(var(--c-ink-soft)); cursor: pointer; transition: .15s; font-size: 11px; font-weight: 700;
+}
+.craft-peca-btn:hover {
+    border-color: rgb(var(--c-special)); color: rgb(var(--c-special));
+    background: rgb(var(--c-special) / 0.08); transform: translateY(-2px);
+}
+.craft-peca-btn i { font-size: 1.4rem; }
+
+/* ── LOJINHA RPG ── */
+.loja-balcao {
+    background: linear-gradient(135deg, rgb(var(--c-warn) / 0.08), rgb(var(--c-panel)));
+    border: 1px solid rgb(var(--c-warn) / 0.25); border-radius: 16px; padding: 20px 24px;
+}
+.loja-vendedor {
+    width: 54px; height: 54px; border-radius: 50%; shrink: 0;
+    background: rgb(var(--c-warn) / 0.15); border: 2px solid rgb(var(--c-warn) / 0.4);
+    display: flex; align-items: center; justify-content: center;
+}
+.loja-vendedor i { font-size: 1.5rem; color: rgb(var(--c-warn)); }
+
+.loja-item {
+    position: relative; background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line)); border-radius: 18px; padding: 22px 18px 18px;
+    display: flex; flex-direction: column; align-items: center; overflow: hidden;
+    transition: transform .2s, border-color .2s;
+}
+.loja-item:hover { transform: translateY(-4px); border-color: rgb(var(--c-warn) / 0.5); }
+.loja-item__brilho {
+    position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 120px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgb(var(--c-warn) / 0.18), transparent 70%);
+}
+.loja-item__icone {
+    width: 64px; height: 64px; border-radius: 18px; position: relative; z-index: 2;
+    background: rgb(var(--c-warn) / 0.12); border: 1px solid rgb(var(--c-warn) / 0.3);
+    display: flex; align-items: center; justify-content: center;
+}
+.loja-item__icone i { font-size: 1.8rem; color: rgb(var(--c-warn)); }
+.loja-etiqueta {
+    display: inline-flex; align-items: center; gap: 5px; margin-top: 2px;
+    background: rgb(var(--c-warn)); color: #1a1200; font-weight: 900; font-size: 15px;
+    padding: 5px 16px; border-radius: 99px; box-shadow: 0 4px 12px rgb(var(--c-warn) / 0.3);
+}
+
+/* ── AVATARES: bordas épicas, uma a cada 10 níveis (estilo LoL) ── */
+.rpg-frame {
+    position: relative; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; color: rgb(var(--c-ink)); background: rgb(var(--c-panel));
+    isolation: isolate; flex-shrink: 0;
+}
+.rpg-frame::before {
+    content: ''; position: absolute; inset: -3px; border-radius: 50%; z-index: -1;
+    background: var(--frame-ring, rgb(148,163,184)); padding: 3px;
+}
+.rpg-frame::after {
+    content: ''; position: absolute; inset: -3px; border-radius: 50%; z-index: -2;
+    opacity: var(--frame-aura-op, 0); filter: blur(6px);
+    background: var(--frame-aura, transparent);
+    animation: frameAura 3s ease-in-out infinite;
+}
+@keyframes frameAura { 0%,100% { opacity: var(--frame-aura-op,0); } 50% { opacity: calc(var(--frame-aura-op,0) * 1.6); } }
+.tier-1  { --frame-ring: rgb(120,128,140); }
+.tier-2  { --frame-ring: linear-gradient(135deg, #a97142, #d89c6a, #a97142); }
+.tier-3  { --frame-ring: linear-gradient(135deg, #8a94a6, #e8edf5, #8a94a6); }
+.tier-4  { --frame-ring: linear-gradient(135deg, #b8860b, #ffd970, #b8860b); --frame-aura: rgb(255,199,0); --frame-aura-op: .25; }
+.tier-5  { --frame-ring: linear-gradient(135deg, #2a9d8f, #8ff0e2, #2a9d8f); --frame-aura: rgb(45,212,191); --frame-aura-op: .3; }
+.tier-6  { --frame-ring: linear-gradient(135deg, #1a7a3c, #4ade80, #1a7a3c); --frame-aura: rgb(74,222,128); --frame-aura-op: .35; }
+.tier-7  { --frame-ring: linear-gradient(135deg, #1e40af, #60a5fa, #1e40af); --frame-aura: rgb(96,165,250); --frame-aura-op: .4; }
+.tier-8  { --frame-ring: linear-gradient(135deg, #7c3aed, #c4b5fd, #7c3aed); --frame-aura: rgb(168,85,247); --frame-aura-op: .45; }
+.tier-9  { --frame-ring: linear-gradient(135deg, #b91c1c, #fca5a5, #ff6b35, #b91c1c); --frame-aura: rgb(239,68,68); --frame-aura-op: .5; }
+.tier-9::before  { animation: frameRotate 6s linear infinite; }
+.tier-10 { --frame-ring: conic-gradient(#ffd700, #ff6b35, #ff2d95, #a855f7, #3b82f6, #4ade80, #ffd700); --frame-aura: rgb(255,199,0); --frame-aura-op: .6; }
+.tier-10::before { animation: frameRotate 4s linear infinite; padding: 3.5px; }
+@keyframes frameRotate { 100% { transform: rotate(360deg); } }
+.rpg-crown {
+    display: none; position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #ffd700; text-shadow: 0 0 6px rgba(255,215,0,.8); z-index: 3;
+}
+.tier-9 .rpg-crown, .tier-10 .rpg-crown { display: block; }
+@media (prefers-reduced-motion: reduce) {
+    .tier-9::before, .tier-10::before, .rpg-frame::after { animation: none; }
+}
+</style>
+
+<div class="rpg-wrap w-full rounded-tl-3xl border-l border-t border-core-line p-5 md:p-7 overflow-y-auto rpg-scroll">
+
+  <!-- ═══ CABEÇALHO DO JOGADOR ═══ -->
+  <div class="rpg-hero rounded-2xl p-5 md:p-6 mb-6" data-aos="fade-down">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <!-- identidade -->
+      <div class="flex items-center gap-4">
+        <div class="rpg-frame {% if carteira.nivel_atual >= 90 %}tier-10{% elif carteira.nivel_atual >= 80 %}tier-9{% elif carteira.nivel_atual >= 70 %}tier-8{% elif carteira.nivel_atual >= 60 %}tier-7{% elif carteira.nivel_atual >= 50 %}tier-6{% elif carteira.nivel_atual >= 40 %}tier-5{% elif carteira.nivel_atual >= 30 %}tier-4{% elif carteira.nivel_atual >= 20 %}tier-3{% elif carteira.nivel_atual >= 10 %}tier-2{% else %}tier-1{% endif %} shrink-0" style="width:64px;height:64px">
+          <span class="rpg-crown" style="font-size:14px;top:-16px">♛</span>
+          <span class="font-display text-2xl font-black moeda-xp">{{ carteira.nivel_atual }}</span>
+        </div>
+        <div>
+          <p class="font-mono text-[10px] uppercase tracking-[0.2em] text-accent-soft mb-1">{{ carteira.get_patente_display }}</p>
+          <h1 class="font-display text-xl md:text-2xl font-black text-ink leading-none">{{ request.user.get_full_name|default:request.user.username }}</h1>
+          <div class="mt-2 w-44">
+            <div class="rpg-bar"><div class="rpg-bar-fill" style="width: {{ carteira.porcentagem_barra_xp }}%"></div></div>
+            <p class="font-mono text-[9px] text-ink-faint mt-1">{{ carteira.xp_total }} / {{ carteira.xp_proximo_nivel }} XP</p>
+          </div>
+        </div>
+      </div>
+      <!-- moedas + check-in -->
+      <div class="flex items-center gap-3">
+        <button onclick="lvTourAbrir()" title="Como funciona o Logicaverso"
+                class="hud-gem px-3 py-3 text-center hover:border-accent transition-colors"
+                style="min-width:56px; cursor:pointer">
+          <i class="fa-solid fa-circle-question moeda-xp" style="font-size:18px"></i>
+          <p class="font-mono text-[8px] uppercase tracking-wider text-ink-faint mt-1">Ajuda</p>
+        </button>
+        <div class="hud-gem px-4 py-3 text-center" style="min-width:92px">
+          <i class="fa-solid fa-coins moeda-lc"></i>
+          <p class="font-display text-lg font-black text-ink mt-1 leading-none" id="hud-lc">{{ carteira.saldo_moedas }}</p>
+          <p class="font-mono text-[8px] uppercase tracking-wider text-ink-faint mt-1">Lógica Coins</p>
+        </div>
+        <div class="hud-gem px-4 py-3 text-center" style="min-width:92px">
+          <i class="fa-solid fa-wand-magic-sparkles moeda-po"></i>
+          <p class="font-display text-lg font-black text-ink mt-1 leading-none" id="hud-po">{{ carteira.po_magico }}</p>
+          <p class="font-mono text-[8px] uppercase tracking-wider text-ink-faint mt-1">Pó Mágico</p>
+        </div>
+        {% if pode_resgatar_diario %}
+        <button onclick="rpgCheckin()" class="rpg-btn rpg-btn--go" style="height:100%" id="btn-checkin">
+          <i class="fa-solid fa-gift"></i> Check-in
+        </button>
+        {% else %}
+        <div class="hud-gem px-4 py-3 text-center" style="min-width:92px">
+          <i class="fa-solid fa-fire text-danger"></i>
+          <p class="font-display text-lg font-black text-ink mt-1 leading-none">{{ carteira.ofensiva_diaria }}</p>
+          <p class="font-mono text-[8px] uppercase tracking-wider text-ink-faint mt-1">Ofensiva</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ABAS ═══ -->
+  <div class="rpg-tabs mb-6" role="tablist">
+    <button class="rpg-tab active" onclick="rpgTab('missoes', this)"><i class="fa-solid fa-scroll"></i> Missões {% if missoes_prontas %}<span class="badge">{{ missoes_prontas }}</span>{% endif %}</button>
+    <button class="rpg-tab" onclick="rpgTab('passe', this)"><i class="fa-solid fa-users"></i> Passe da Equipe</button>
+    <button class="rpg-tab" onclick="rpgTab('roleta', this)"><i class="fa-solid fa-dice"></i> Roleta</button>
+    <button class="rpg-tab" onclick="rpgTab('inventario', this)"><i class="fa-solid fa-box-open"></i> Inventário</button>
+    <button class="rpg-tab" onclick="rpgTab('loja', this)"><i class="fa-solid fa-store"></i> Loja</button>
+    <button class="rpg-tab" onclick="rpgTab('mercado', this)"><i class="fa-solid fa-handshake"></i> Mercado</button>
+    <button class="rpg-tab" onclick="rpgTab('ranking', this)"><i class="fa-solid fa-ranking-star"></i> Ranking</button>
+  </div>
+
+  <div id="rpg-panels">
+
+    <!-- ═══ ABA MISSÕES ═══ -->
+    <div id="panel-missoes" class="rpg-panel active">
+      {% for tipo, lista in missoes.items %}
+        {% if lista %}
+        <h3 class="font-display text-sm font-black text-ink uppercase tracking-wide mb-3 mt-5 flex items-center gap-2">
+          {% if tipo == 'DIARIA' %}<i class="fa-solid fa-sun moeda-lc"></i> Diárias
+          {% elif tipo == 'SEMANAL' %}<i class="fa-solid fa-calendar-week moeda-xp"></i> Semanais
+          {% else %}<i class="fa-solid fa-calendar-days moeda-po"></i> Mensais{% endif %}
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {% for m in lista %}
+          <div class="rpg-card p-4">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <h4 class="text-ink font-bold text-sm">{{ m.missao.titulo }}</h4>
+              <div class="text-right shrink-0">
+                <span class="moeda-lc font-mono text-[10px] font-bold">+{{ m.missao.recompensa_lc }}</span>
+                <span class="moeda-xp font-mono text-[10px] font-bold ml-1">+{{ m.missao.recompensa_xp }}xp</span>
+              </div>
+            </div>
+            {% if m.missao.descricao %}<p class="text-ink-faint text-xs mb-3">{{ m.missao.descricao }}</p>{% endif %}
+            <div class="flex items-center gap-3">
+              <div class="rpg-bar flex-1"><div class="rpg-bar-fill {% if m.pronta %}is-done{% endif %}" style="width: {{ m.porcentagem }}%"></div></div>
+              <span class="font-mono text-[10px] text-ink-soft font-bold shrink-0">{{ m.progresso.progresso_atual }}/{{ m.missao.meta_quantidade }}</span>
+            </div>
+            {% if m.pronta %}
+              <button onclick="rpgResgatarMissao({{ m.progresso.id }}, this)" class="rpg-btn rpg-btn--go w-full mt-3">
+                <i class="fa-solid fa-bolt"></i> Resgatar
+              </button>
+            {% elif m.progresso.recompensa_resgatada %}
+              <button class="rpg-btn rpg-btn--ghost w-full mt-3" disabled><i class="fa-solid fa-check"></i> Concluída</button>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- ═══ ABA PASSE COLETIVO ═══ -->
+    <div id="panel-passe" class="rpg-panel">
+      {% if passe %}
+      <div class="rpg-card p-6 mt-5">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-display text-lg font-black text-ink flex items-center gap-2"><i class="fa-solid fa-users text-success"></i> {{ passe.titulo }}</h3>
+          <span class="font-display text-2xl font-black text-success">{{ passe.pontos_atuais }}</span>
+        </div>
+        <p class="text-ink-soft text-xs mb-4">Meta coletiva do mês. Cada ação de vocês soma aqui. Bateu o marco, todo mundo ganha.</p>
+        <div class="rpg-bar mb-6" style="height:14px"><div class="rpg-bar-fill is-done" style="width: {{ passe.porcentagem }}%"></div></div>
+        <div class="space-y-2">
+          {% for marco in marcos %}
+          <div class="flex items-center gap-3 p-3 rounded-xl {% if marco.atingido %}bg-success/10 border border-success/25{% else %}rpg-card{% endif %}">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 {% if marco.atingido %}bg-success/20{% else %}bg-core-bg{% endif %}">
+              <i class="fa-solid {{ marco.icone }} {% if marco.atingido %}text-success{% else %}text-ink-faint{% endif %}"></i>
+            </div>
+            <div class="flex-1">
+              <p class="text-ink font-bold text-sm">{{ marco.recompensa_titulo }}</p>
+              {% if marco.recompensa_descricao %}<p class="text-ink-faint text-xs">{{ marco.recompensa_descricao }}</p>{% endif %}
+            </div>
+            <div class="text-right shrink-0">
+              <span class="font-mono text-[11px] font-bold {% if marco.atingido %}text-success{% else %}text-ink-faint{% endif %}">{{ marco.pontos_necessarios }} pts</span>
+              {% if marco.atingido %}<p class="text-success text-[9px] font-bold uppercase mt-0.5"><i class="fa-solid fa-check"></i> Conquistado</p>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% else %}
+      <div class="rpg-card p-10 text-center mt-5">
+        <i class="fa-solid fa-users text-ink-faint text-3xl mb-3"></i>
+        <p class="text-ink-soft text-sm">O passe coletivo deste mês ainda será configurado pela gestão.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ═══ ABA ROLETA ═══ -->
+    <div id="panel-roleta" class="rpg-panel">
+      <div class="rpg-card p-8 mt-5 text-center max-w-md mx-auto">
+        <div class="roleta-disco mb-6" id="roleta-disco"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <p class="text-ink-soft text-sm mb-1">Gire e ganhe uma <strong class="text-ink">peça</strong> de quebra-cabeça.</p>
+        <p class="text-ink-faint text-xs mb-5">Custa <strong class="moeda-lc">120 LC</strong> por giro.</p>
+        <div id="roleta-resultado" class="mb-4" style="min-height:60px"></div>
+        <button onclick="rpgGirar(this)" class="rpg-btn rpg-btn--accent w-full" style="padding:13px" id="btn-girar">
+          <i class="fa-solid fa-dice"></i> Girar (120 LC)
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ ABA INVENTÁRIO ═══ -->
+    <div id="panel-inventario" class="rpg-panel">
+      <!-- itens completos -->
+      <h3 class="font-display text-sm font-black text-ink uppercase tracking-wide mb-3 mt-5">Itens completos</h3>
+      {% if itens_completos %}
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
+        {% for it in itens_completos %}
+        <div class="rpg-card p-4 flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-special/10 border border-special/25 flex items-center justify-center shrink-0">
+            <i class="fa-solid {{ it.item.icone|default:'fa-box' }} moeda-po"></i>
+          </div>
+          <div class="flex-1"><p class="text-ink font-bold text-sm">{{ it.nome_snapshot }}</p><p class="text-ink-faint text-xs">Pronto para resgatar com a gestão</p></div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-ink-faint text-xs mb-6">Nenhum item completo ainda. Junte as peças na roleta!</p>
+      {% endif %}
+
+      <!-- peças em progresso -->
+      <h3 class="font-display text-sm font-black text-ink uppercase tracking-wide mb-3">Peças coletadas</h3>
+      {% if inventario_pecas %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {% for grupo in inventario_pecas %}
+        <div class="rpg-card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid {{ grupo.item.icone|default:'fa-puzzle-piece' }} moeda-po"></i>
+              <span class="text-ink font-bold text-sm">{{ grupo.item.nome }}</span>
+            </div>
+            <span class="font-mono text-xs font-bold {% if grupo.completo %}text-success{% else %}text-ink-soft{% endif %}">{{ grupo.tem }}/{{ grupo.total }}</span>
+          </div>
+          <div class="rpg-bar mb-3"><div class="rpg-bar-fill {% if grupo.completo %}is-done{% endif %}" style="width: {% widthratio grupo.tem grupo.total 100 %}%"></div></div>
+          {% if grupo.completo %}
+            <button onclick="rpgMontar({{ grupo.item.id }}, this)" class="rpg-btn rpg-btn--go w-full"><i class="fa-solid fa-hammer"></i> Montar item</button>
+          {% else %}
+            <p class="text-ink-faint text-[10px]">Faltam peças. Gire mais ou crafte com pó mágico na aba abaixo.</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-ink-faint text-xs">Nenhuma peça ainda. Vá para a Roleta e comece a colecionar!</p>
+      {% endif %}
+
+      <!-- craft com pó -->
+      <h3 class="font-display text-sm font-black text-ink uppercase tracking-wide mb-3 mt-6">Craftar com pó mágico <span class="moeda-po font-mono text-xs">({{ carteira.po_magico }} disponível)</span></h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+        {% for item in itens_colecionaveis %}
+        <div class="rpg-card p-4">
+          <span class="rar-badge rar-{{ item.raridade|lower }}">{{ item.get_raridade_display }}</span>
+          <p class="text-ink font-bold text-sm mt-2">{{ item.nome }}</p>
+          <p class="text-ink-faint text-[10px] mb-3">Craftar 1 peça: <strong class="moeda-po">{{ item.po_para_craftar }} pó</strong></p>
+          <button onclick="rpgCraftar({{ item.id }}, {{ item.total_pecas }}, this)" class="rpg-btn rpg-btn--ghost w-full text-[10px]">
+            <i class="fa-solid fa-wand-sparkles"></i> Craftar peça
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ═══ ABA LOJA ═══ -->
+    <div id="panel-loja" class="rpg-panel">
+      <!-- cabeçalho da lojinha: o "balcão" -->
+      <div class="loja-balcao mt-5 mb-6">
+        <div class="flex items-center gap-4">
+          <div class="loja-vendedor"><i class="fa-solid fa-user-tie"></i></div>
+          <div>
+            <p class="font-mono text-[10px] uppercase tracking-[0.2em] text-accent-soft mb-1">Loja Oficial da Lógica</p>
+            <h3 class="font-display text-lg font-black text-ink leading-none">Bem-vindo ao balcão!</h3>
+            <p class="text-ink-soft text-xs mt-1">Troque suas <strong class="moeda-lc">Lógica Coins</strong> por recompensas de verdade.</p>
+          </div>
+        </div>
+      </div>
+      <!-- prateleira de itens -->
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {% for item in itens_loja %}
+        <div class="loja-item">
+          <div class="loja-item__brilho"></div>
+          <div class="loja-item__icone"><i class="fa-solid {{ item.icone|default:'fa-gift' }}"></i></div>
+          <p class="text-ink font-black text-base text-center mt-3">{{ item.nome }}</p>
+          {% if item.descricao %}<p class="text-ink-faint text-xs text-center mt-1 mb-3 px-2">{{ item.descricao }}</p>{% endif %}
+          <div class="loja-etiqueta"><i class="fa-solid fa-coins"></i> {{ item.preco_lc }} <span class="text-[9px]">LC</span></div>
+          <form method="post" action="{% url 'recompensas:resgatar_item' item.id %}" class="mt-3">
+            {% csrf_token %}
+            <button type="submit" class="rpg-btn rpg-btn--go w-full"><i class="fa-solid fa-bag-shopping"></i> Comprar</button>
+          </form>
+        </div>
+        {% empty %}
+        <div class="rpg-card p-10 text-center xl:col-span-3">
+          <i class="fa-solid fa-store-slash text-ink-faint text-3xl mb-3"></i>
+          <p class="text-ink-soft text-sm">A loja está sendo abastecida. Volte em breve!</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ═══ ABA MERCADO ═══ -->
+    <div id="panel-mercado" class="rpg-panel">
+      <div class="rpg-card p-4 mt-5 mb-4 flex items-center gap-3">
+        <i class="fa-solid fa-circle-info text-accent-soft"></i>
+        <p class="text-ink-soft text-xs">Compre peças e itens que os colegas colocaram à venda. Para vender os seus, use o botão em cada peça do Inventário.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {% for anuncio in anuncios %}
+        <div class="rpg-card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="rar-badge {% if anuncio.tipo_conteudo == 'ITEM' %}rar-epico{% else %}rar-raro{% endif %}">{{ anuncio.get_tipo_conteudo_display }}</span>
+            <span class="moeda-lc font-mono text-sm font-bold">{{ anuncio.preco_lc }} LC</span>
+          </div>
+          {% if anuncio.tipo_conteudo == 'ITEM' and anuncio.item_inventario %}
+            <p class="text-ink font-bold text-sm">{{ anuncio.item_inventario.nome_snapshot }}</p>
+          {% elif anuncio.peca_inventario %}
+            <p class="text-ink font-bold text-sm">Peça {{ anuncio.peca_inventario.numero_peca }} de {{ anuncio.peca_inventario.item.nome }}</p>
+          {% endif %}
+          <p class="text-ink-faint text-[10px] mb-3">Vendedor: {{ anuncio.vendedor.get_full_name|default:anuncio.vendedor.username }}</p>
+          <button onclick="rpgComprar({{ anuncio.id }}, this)" class="rpg-btn rpg-btn--accent w-full text-[10px]"><i class="fa-solid fa-cart-shopping"></i> Comprar</button>
+        </div>
+        {% empty %}
+        <p class="text-ink-faint text-xs">Nenhum anúncio ativo no momento. Seja o primeiro a vender!</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ═══ ABA RANKING ═══ -->
+    <div id="panel-ranking" class="rpg-panel">
+      <div class="rpg-card p-5 mt-5">
+        <h3 class="font-display text-sm font-black text-ink uppercase tracking-wide mb-4"><i class="fa-solid fa-ranking-star moeda-lc"></i> Top Analistas</h3>
+        <div class="space-y-2">
+          {% for c in ranking %}
+          <div class="flex items-center gap-3 p-2 rounded-lg {% if c.usuario == request.user %}bg-accent/10 border border-accent/25{% endif %}">
+            <span class="font-display font-black text-sm w-5 text-center shrink-0 {% if forloop.counter == 1 %}moeda-lc{% elif forloop.counter <= 3 %}moeda-xp{% else %}text-ink-faint{% endif %}">{{ forloop.counter }}</span>
+            <!-- avatar com borda épica que evolui a cada 10 níveis -->
+            <div class="rpg-frame {% if c.nivel_atual >= 90 %}tier-10{% elif c.nivel_atual >= 80 %}tier-9{% elif c.nivel_atual >= 70 %}tier-8{% elif c.nivel_atual >= 60 %}tier-7{% elif c.nivel_atual >= 50 %}tier-6{% elif c.nivel_atual >= 40 %}tier-5{% elif c.nivel_atual >= 30 %}tier-4{% elif c.nivel_atual >= 20 %}tier-3{% elif c.nivel_atual >= 10 %}tier-2{% else %}tier-1{% endif %}" style="width:40px;height:40px;font-size:14px">
+              <span class="rpg-crown">♛</span>{{ c.usuario.get_full_name|default:c.usuario.username|first|upper }}
+            </div>
+            <span class="flex-1 text-ink text-sm font-medium">{{ c.usuario.get_full_name|default:c.usuario.username }}</span>
+            <span class="font-mono text-[10px] text-ink-faint">Nv {{ c.nivel_atual }}</span>
+            <span class="moeda-xp font-mono text-xs font-bold w-16 text-right">{{ c.xp_total }} xp</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- extrato -->
+      <div class="rpg-card p-5 mt-4">
+        <h3 class="font-display text-sm font-black text-ink uppercase tracking-wide mb-4"><i class="fa-solid fa-receipt text-ink-soft"></i> Extrato recente</h3>
+        <div class="space-y-1">
+          {% for t in extrato %}
+          <div class="flex items-center justify-between py-2 border-b border-core-line last:border-0">
+            <span class="text-ink-soft text-xs">{{ t.descricao }}</span>
+            <span class="font-mono text-[11px] font-bold shrink-0 ml-2 {% if t.tipo == 'GANHO' %}text-success{% else %}text-danger{% endif %}">
+              {% if t.tipo == 'GANHO' %}+{% else %}-{% endif %}{{ t.valor_moedas }} LC
+            </span>
+          </div>
+          {% empty %}
+          <p class="text-ink-faint text-xs">Sem movimentações ainda.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ═══ POP-UP DE BOAS-VINDAS ═══ -->
+<div id="rpg-welcome-legado" class="rpg-modal-bg" style="display:none">
+  <div class="rpg-welcome" data-aos="zoom-in">
+    <div class="rpg-welcome__hero">
+      <div class="rpg-welcome__medal"><i class="fa-solid fa-dragon"></i></div>
+      <p class="font-mono text-[10px] uppercase tracking-[0.25em] text-accent-soft mb-2">Nova Temporada</p>
+      <h2 class="font-display text-2xl font-black text-ink leading-tight">Bem-vindo à nova Central, Analista!</h2>
+      <p class="text-ink-soft text-sm mt-3 leading-relaxed">
+        Reconstruímos tudo do zero — mais justo, mais divertido, e desta vez <strong class="text-ink">jogado em equipe</strong>.
+        Seu esforço da temporada anterior virou <strong class="moeda-po">Pó Mágico</strong> de largada. Bora começar?
+      </p>
+    </div>
+    <div class="rpg-welcome__body">
+      <div class="rpg-welcome__feat">
+        <i class="fa-solid fa-scale-balanced moeda-xp"></i>
+        <div><p class="text-ink font-bold text-sm">Rendimento inteligente</p><p class="text-ink-soft text-xs mt-0.5">Repetir a mesma tarefa rende menos ao longo do mês. Variar e ajudar os colegas vale mais — todo mundo compete junto.</p></div>
+      </div>
+      <div class="rpg-welcome__feat">
+        <i class="fa-solid fa-dice moeda-po"></i>
+        <div><p class="text-ink font-bold text-sm">Roleta com peças</p><p class="text-ink-soft text-xs mt-0.5">Gire e junte peças de quebra-cabeça. Complete um item — Home Office, Day Off, Headset — ou desencante o que não quer e crafte o que falta.</p></div>
+      </div>
+      <div class="rpg-welcome__feat">
+        <i class="fa-solid fa-users text-success"></i>
+        <div><p class="text-ink font-bold text-sm">Passe coletivo</p><p class="text-ink-soft text-xs mt-0.5">Uma meta da equipe inteira. Bateu os marcos, todo mundo ganha — de lanche na tarde até folga geral.</p></div>
+      </div>
+      <div class="rpg-welcome__feat">
+        <i class="fa-solid fa-handshake moeda-lc"></i>
+        <div><p class="text-ink font-bold text-sm">Mercado entre vocês</p><p class="text-ink-soft text-xs mt-0.5">Venda e troque peças e itens com os colegas pelo preço que quiser. A economia é de vocês.</p></div>
+      </div>
+      <button onclick="rpgFecharWelcome()" class="rpg-btn rpg-btn--accent w-full mt-5" style="padding:13px">
+        <i class="fa-solid fa-play"></i> Começar a jogar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL DE CRAFT ═══ -->
+<div id="craft-modal" class="rpg-modal-bg" style="display:none">
+  <div class="rpg-craft-modal">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-xl bg-special/10 border border-special/30 flex items-center justify-center shrink-0">
+        <i class="fa-solid fa-wand-magic-sparkles moeda-po"></i>
+      </div>
+      <div>
+        <h3 class="font-display text-lg font-black text-ink leading-none">Craftar peça</h3>
+        <p class="text-ink-faint text-xs mt-1">Escolha qual peça você quer fabricar</p>
+      </div>
+    </div>
+    <div id="craft-pecas-grid" class="craft-grid"></div>
+    <button onclick="rpgFecharCraft()" class="rpg-btn rpg-btn--ghost w-full mt-4">Cancelar</button>
+  </div>
+</div>
+
+{% block rpg_data %}{% endblock %}
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.AOS) AOS.init({ once: true, duration: 500 });
+  });
+  function rpgTab(id, btn) {
+    document.querySelectorAll('.rpg-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.rpg-tab').forEach(t => t.classList.remove('active'));
+    const panel = document.getElementById('panel-' + id);
+    if (panel) panel.classList.add('active');
+    btn.classList.add('active');
+  }
+  function rpgFecharWelcome() {
+    document.getElementById('rpg-welcome').style.display = 'none';
+    try { localStorage.setItem('rpg_welcome_v1', '1'); } catch(e) {}
+  }
+  // (o antigo pop-up foi substituído pelo tour em slides — ver _logicaverso_tour)
+  document.addEventListener('DOMContentLoaded', function () {
+    let visto = true;  // desativado: quem cuida do onboarding agora é o Tour
+    if (!visto) document.getElementById('rpg-welcome-legado').style.display = 'flex';
+  });
+
+  // ── helper CSRF ──
+  function rpgCsrf() {
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+  }
+  async function rpgPost(url, body) {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': rpgCsrf() },
+      body: JSON.stringify(body || {}),
+    });
+    return r.json();
+  }
+
+  // ── Check-in ──
+  async function rpgCheckin() {
+    const btn = document.getElementById('btn-checkin');
+    if (btn) btn.disabled = true;
+    const d = await rpgPost("{% url 'recompensas:resgate_diario' %}");
+    if (d.sucesso) {
+      document.getElementById('hud-lc').textContent = d.novo_saldo;
+      rpgToast(`+${d.lc_ganho} LC · +${d.xp_ganho} XP` + (d.po_bonus ? ` · +${d.po_bonus} pó!` : ''), true);
+      setTimeout(() => location.reload(), 1200);
+    } else { rpgToast(d.mensagem, false); if (btn) btn.disabled = false; }
+  }
+
+  // ── Roleta ──
+  async function rpgGirar(btn) {
+    btn.disabled = true;
+    const disco = document.getElementById('roleta-disco');
+    disco.classList.add('spinning');
+    const d = await rpgPost("{% url 'recompensas:girar_tigrinho' %}");
+    setTimeout(() => {
+      disco.classList.remove('spinning');
+      const res = document.getElementById('roleta-resultado');
+      if (d.sucesso) {
+        document.getElementById('hud-lc').textContent = d.novo_saldo;
+        res.innerHTML = `<div class="rpg-card p-3"><span class="rar-badge rar-${d.raridade}">${d.raridade}</span>
+          <p class="text-ink font-bold text-sm mt-2">Peça ${d.peca} de ${d.item}!</p>
+          <p class="text-ink-faint text-[10px]">Adicionada ao inventário (${d.peca}/${d.total_pecas})</p></div>`;
+      } else { res.innerHTML = `<p class="text-danger text-sm">${d.mensagem}</p>`; }
+      btn.disabled = false;
+    }, 1200);
+  }
+
+  // ── Craft / Montar / Desencantar ──
+  let craftCtx = { itemId: null, total: 0 };
+  function rpgCraftar(itemId, totalPecas, btn) {
+    craftCtx = { itemId: itemId, total: totalPecas };
+    const grid = document.getElementById('craft-pecas-grid');
+    grid.innerHTML = '';
+    for (let i = 1; i <= totalPecas; i++) {
+      const b = document.createElement('button');
+      b.className = 'craft-peca-btn';
+      b.innerHTML = `<i class="fa-solid fa-puzzle-piece"></i><span>Peça ${i}</span>`;
+      b.onclick = () => rpgCraftarConfirmar(i);
+      grid.appendChild(b);
+    }
+    document.getElementById('craft-modal').classList.add('show');
+  }
+  function rpgFecharCraft() { document.getElementById('craft-modal').classList.remove('show'); }
+  async function rpgCraftarConfirmar(numeroPeca) {
+    rpgFecharCraft();
+    const d = await rpgPost("{% url 'recompensas:craftar' %}", { item_id: craftCtx.itemId, numero_peca: numeroPeca });
+    rpgToast(d.mensagem, d.sucesso);
+    if (d.sucesso) { document.getElementById('hud-po').textContent = d.po; setTimeout(() => location.reload(), 1000); }
+  }
+  async function rpgCraftarAntigo(itemId, totalPecas, btn) {
+    if (d.sucesso) { document.getElementById('hud-po').textContent = d.po; setTimeout(() => location.reload(), 1000); }
+    else btn.disabled = false;
+  }
+  async function rpgMontar(itemId, btn) {
+    btn.disabled = true;
+    const d = await rpgPost("{% url 'recompensas:montar' %}", { item_id: itemId });
+    rpgToast(d.mensagem, d.sucesso);
+    if (d.sucesso) setTimeout(() => location.reload(), 1000); else btn.disabled = false;
+  }
+
+  // ── Resgatar missão ──
+  async function rpgResgatarMissao(progId, btn) {
+    btn.disabled = true;
+    const d = await rpgPost("{% url 'recompensas:resgatar_missao' %}", { progresso_id: progId });
+    if (d.sucesso) {
+      document.getElementById('hud-lc').textContent = d.novo_saldo;
+      rpgToast(`Missão resgatada! +${d.lc_ganho} LC · +${d.xp_ganho} XP`, true);
+      setTimeout(() => location.reload(), 1200);
+    } else { rpgToast(d.mensagem, false); btn.disabled = false; }
+  }
+
+  // ── Comprar no mercado ──
+  async function rpgComprar(anuncioId, btn) {
+    btn.disabled = true;
+    const d = await rpgPost(`/recompensas/mercado/comprar/${anuncioId}/`);
+    rpgToast(d.mensagem, d.sucesso);
+    if (d.sucesso) { if (d.novo_saldo !== undefined) document.getElementById('hud-lc').textContent = d.novo_saldo; setTimeout(() => location.reload(), 1000); }
+    else btn.disabled = false;
+  }
+
+  // ── Toast ──
+  function rpgToast(msg, ok) {
+    const t = document.createElement('div');
+    t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:3000;
+      padding:12px 22px;border-radius:12px;font-weight:700;font-size:13px;color:#fff;
+      background:${ok ? 'rgb(var(--c-success))' : 'rgb(var(--c-danger))'};box-shadow:0 10px 30px rgba(0,0,0,.3)`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2600);
+  }
+</script>
+
+{# ═══ Camadas do Logicaverso: tour de onboarding + efeitos épicos ═══ #}
+{% include "recompensas/_logicaverso_tour.html" %}
+{% include "recompensas/_logicaverso_fx.html" %}
+
+{% endblock %}

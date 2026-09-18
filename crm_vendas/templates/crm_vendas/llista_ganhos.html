@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ganhos - CRM</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; height: 100vh; display: flex; flex-direction: column; }
+        
+        .topbar { display: flex; justify-content: space-between; align-items: center; padding: 0 24px; background-color: rgba(30, 41, 59, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #334155; z-index: 10; height: 60px; }
+        .topbar h1 a { font-size: 1.1rem; font-weight: 700; color: #f1f5f9; text-decoration: none; }
+        .btn-voltar { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; color: #94a3b8; text-decoration: none; border-radius: 8px; background: rgba(255,255,255,0.03); }
+        .btn-voltar:hover { background: #334155; color: #fff; }
+
+        .content-area { padding: 20px 32px; overflow-y: auto; flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; }
+        
+        .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
+        .page-header h2 { font-size: 1.5rem; font-weight: 800; color: #f8fafc; }
+        .page-header p { color: #94a3b8; font-size: 0.9rem; margin-top: 4px; }
+
+        .table-container { background: #161e2e; border: 1px solid #334155; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #0f172a; padding: 12px 16px; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #334155; }
+        td { padding: 16px; border-bottom: 1px solid #1e293b; font-size: 0.9rem; color: #e2e8f0; vertical-align: middle; cursor: pointer; }
+        tr:hover td { background: rgba(16, 185, 129, 0.05); }
+        
+        .empresa-nome { font-weight: 700; color: #f8fafc; font-size: 0.95rem;}
+        .sub-text { font-size: 0.8rem; color: #64748b; margin-top: 2px;}
+        .valor-ganho { font-weight: 800; color: #10b981; font-size: 1rem; }
+        
+        .badge-trophy { background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;}
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'crm_vendas:kanban' %}" class="btn-voltar" title="Voltar ao Funil"><i class="fa-solid fa-arrow-left"></i></a>
+            <h1><a href="{% url 'crm_vendas:kanban' %}">Pipeline LÓGICA</a></h1>
+        </div>
+    </div>
+
+    <div class="content-area">
+        <div class="page-header">
+            <div>
+                <h2><i class="fa-solid fa-trophy text-emerald-500 mr-2"></i> Negócios Ganhos</h2>
+                <p>Galeria de troféus. Todos os clientes que fecharam com a equipe.</p>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cliente / Empresa</th>
+                        <th>Telefone / Contato</th>
+                        <th>Valor Negociado</th>
+                        <th>Data de Fechamento</th>
+                        <th>Consultor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lead in leads %}
+                    <tr onclick="abrirFichaLead('{{ lead.id }}')">
+                        <td>
+                            <div class="empresa-nome">{{ lead.nome_empresa }}</div>
+                            <div class="sub-text">CNPJ: {{ lead.cnpj|default:"-" }}</div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; color: #cbd5e1;"><i class="fa-regular fa-user mr-1"></i> {{ lead.nome_contato }}</div>
+                            <div class="sub-text"><i class="fa-solid fa-phone mr-1"></i> {{ lead.telefone }}</div>
+                        </td>
+                        <td>
+                            <div class="valor-ganho">R$ {{ lead.valor_ticket_medio|floatformat:2 }}</div>
+                        </td>
+                        <td>
+                            <div class="badge-trophy"><i class="fa-solid fa-check"></i> {{ lead.data_fechamento|date:"d/m/Y" }}</div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; color: #94a3b8;"><i class="fa-solid fa-user-tie mr-1"></i> {{ lead.vendedor_responsavel.first_name|default:lead.vendedor_responsavel.username }}</div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" style="text-align:center; padding: 40px; color:#64748b;">Nenhum negócio ganho registrado neste filtro.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% include 'crm_vendas/partials/_offcanvas_lead.html' %}
+</body>
+</html>

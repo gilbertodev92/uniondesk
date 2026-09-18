@@ -1,0 +1,1108 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ── RESET ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.cs-root {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    background: rgb(var(--c-bg));
+    color: rgb(var(--c-ink));
+    min-height: calc(100vh - 1rem);
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px 0 0 0;
+    border-left: 1px solid rgb(var(--c-line));
+    border-top: 1px solid rgb(var(--c-line));
+    overflow: hidden;
+}
+
+/* ── TOPBAR ──────────────────────────────────────────────── */
+.cs-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 16px 24px;
+    background: rgb(var(--c-panel));
+    border-bottom: 1px solid rgb(var(--c-line));
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.cs-topbar__eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgb(var(--c-accent));
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.cs-topbar__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: rgb(var(--c-ink));
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+
+.cs-score {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-radius: 9px;
+    background: rgb(var(--c-deep));
+    border: 1px solid rgb(var(--c-accent) / 0.27);
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(var(--c-ink-soft));
+    white-space: nowrap;
+}
+.cs-score strong { color: rgb(var(--c-accent)); font-size: 16px; font-weight: 700; }
+
+.cs-topbar__actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.cs-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    border: 1px solid;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+    cursor: pointer;
+    font-family: inherit;
+}
+.cs-btn--ghost { color: rgb(var(--c-ink-soft)); background: rgb(var(--c-line)); border-color: rgb(var(--c-line)); }
+.cs-btn--ghost:hover { background: rgb(var(--c-line)); }
+.cs-btn--ghost i { color: rgb(var(--c-warn)); }
+.cs-btn--primary { color: #fff; background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+.cs-btn--primary:hover { background: rgb(var(--c-accent)); }
+
+/* ── TABS ────────────────────────────────────────────────── */
+.cs-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 24px;
+    background: rgb(var(--c-bg));
+    border-bottom: 1px solid rgb(var(--c-line));
+    flex-shrink: 0;
+    overflow-x: auto;
+}
+
+.cs-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgb(var(--c-ink-faint));
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    margin-bottom: -1px;
+    white-space: nowrap;
+    font-family: inherit;
+}
+.cs-tab-btn i { font-size: 14px; }
+.cs-tab-btn:hover { color: rgb(var(--c-ink-soft)); }
+.cs-tab-btn.active { color: rgb(var(--c-accent)); border-bottom-color: rgb(var(--c-accent)); }
+
+.cs-tab-badge {
+    background: rgb(var(--c-line));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 8px;
+    color: rgb(var(--c-ink-soft));
+}
+.cs-tab-btn.active .cs-tab-badge { background: rgb(var(--c-accent) / 0.2); border-color: rgb(var(--c-accent)); color: rgb(var(--c-accent)); }
+
+/* ── CONTENT ─────────────────────────────────────────────── */
+.cs-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    min-height: 0;
+}
+.cs-content::-webkit-scrollbar { width: 4px; }
+.cs-content::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 4px; }
+
+.cs-panel { display: none; }
+.cs-panel.active { display: block; }
+
+/* ── WORKSPACE GRID ──────────────────────────────────────── */
+.cs-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.cs-card {
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 230px);
+    min-height: 400px;
+    overflow: hidden;
+}
+
+.cs-card__head {
+    padding: 14px 18px;
+    border-bottom: 1px solid rgb(var(--c-line));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.cs-card__head--uti { background: rgb(var(--c-danger) / 0.15); border-bottom-color: rgb(var(--c-danger) / 0.2); }
+.cs-card__head--tasks { background: rgb(var(--c-deep)); border-bottom-color: rgb(var(--c-accent) / 0.2); }
+
+.cs-card__title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cs-card__title--uti { color: rgb(var(--c-danger)); }
+.cs-card__title--tasks { color: rgb(var(--c-accent)); }
+
+.cs-card__count {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    color: #fff;
+}
+.cs-card__count--uti { background: rgb(var(--c-danger)); }
+.cs-card__count--tasks { background: rgb(var(--c-accent)); }
+
+.cs-card__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.cs-card__body::-webkit-scrollbar { width: 4px; }
+.cs-card__body::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 4px; }
+
+/* ── ITEM CARD ───────────────────────────────────────────── */
+.cs-item {
+    background: rgb(var(--c-bg));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 10px;
+    padding: 13px 15px;
+    position: relative;
+    border-left: 3px solid;
+}
+.cs-item--danger  { border-left-color: rgb(var(--c-danger)); }
+.cs-item--info    { border-left-color: rgb(var(--c-accent)); }
+.cs-item--overdue { border-left-color: rgb(var(--c-danger)); }
+
+.cs-item__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 7px;
+    gap: 8px;
+}
+
+.cs-item__badge {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 9px;
+    border-radius: 5px;
+    border: 1px solid;
+    white-space: nowrap;
+}
+.cs-item__badge--danger { color: rgb(var(--c-danger)); background: rgb(var(--c-danger) / 0.15); border-color: rgb(var(--c-danger) / 0.27); }
+.cs-item__badge--info   { color: rgb(var(--c-accent)); background: rgb(var(--c-deep)); border-color: rgb(var(--c-accent) / 0.27); }
+
+.cs-item__date {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(var(--c-ink-faint));
+    font-family: 'Courier New', monospace;
+}
+
+.cs-item__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgb(var(--c-ink));
+    margin-bottom: 6px;
+}
+
+.cs-item__desc {
+    font-size: 12px;
+    color: rgb(var(--c-ink-faint));
+    font-style: italic;
+    margin-bottom: 10px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cs-item__action {
+    display: block;
+    text-align: center;
+    width: 100%;
+    padding: 9px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    border: 1px solid;
+    transition: background 0.15s, color 0.15s;
+}
+.cs-item__action--danger { color: rgb(var(--c-danger)); background: rgb(var(--c-danger) / 0.15); border-color: rgb(var(--c-danger) / 0.27); }
+.cs-item__action--danger:hover { background: rgb(var(--c-danger)); color: #fff; }
+.cs-item__action--info { color: rgb(var(--c-accent)); background: rgb(var(--c-deep)); border-color: rgb(var(--c-accent) / 0.27); }
+.cs-item__action--info:hover { background: rgb(var(--c-accent)); color: #fff; }
+
+/* ── EMPTY STATE ─────────────────────────────────────────── */
+.cs-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    height: 100%;
+    padding: 40px 20px;
+    color: rgb(var(--c-line));
+    gap: 12px;
+}
+.cs-empty i { font-size: 40px; }
+.cs-empty p { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgb(var(--c-ink-faint)); }
+.cs-empty--good i { color: rgb(var(--c-success) / 0.27); }
+.cs-empty--good .cs-empty-sub { color: rgb(var(--c-success)); font-size: 11px; margin-top: -6px; }
+
+/* ── METRICS TAB ─────────────────────────────────────────── */
+.cs-metric-bar-row { margin-bottom: 16px; }
+.cs-metric-bar-row:last-child { margin-bottom: 0; }
+
+.cs-metric-bar-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+}
+.cs-metric-bar-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(var(--c-ink-soft));
+}
+.cs-metric-bar-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(var(--c-ink-faint));
+}
+
+.cs-metric-bar-track {
+    width: 100%;
+    height: 8px;
+    background: rgb(var(--c-line));
+    border-radius: 4px;
+    overflow: hidden;
+}
+.cs-metric-bar-fill { height: 100%; border-radius: 4px; }
+.cs-fill--rose   { background: rgb(var(--c-danger)); }
+.cs-fill--orange { background: rgb(var(--c-warn)); }
+.cs-fill--yellow { background: rgb(var(--c-warn)); }
+.cs-fill--blue   { background: rgb(var(--c-accent)); }
+.cs-fill--slate  { background: rgb(var(--c-ink-faint)); }
+
+.cs-churn-item {
+    background: rgb(var(--c-bg));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 10px;
+    padding: 12px 15px;
+    border-left: 3px solid rgb(var(--c-danger) / 0.4);
+    margin-bottom: 10px;
+}
+.cs-churn-item:last-child { margin-bottom: 0; }
+.cs-churn-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 8px;
+}
+.cs-churn-name { font-size: 13px; font-weight: 700; color: rgb(var(--c-ink)); }
+.cs-churn-date { font-size: 11px; font-weight: 600; color: rgb(var(--c-ink-faint)); font-family: 'Courier New', monospace; }
+.cs-churn-reason {
+    font-size: 12px;
+    color: rgb(var(--c-danger));
+    font-style: italic;
+    border-left: 2px solid rgb(var(--c-danger) / 0.27);
+    padding-left: 9px;
+}
+
+/* ── CARDS ROW (UPSELL) ──────────────────────────────────── */
+.cs-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.cs-kpi {
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+.cs-kpi-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgb(var(--c-ink-faint));
+    margin-bottom: 8px;
+}
+.cs-kpi-value { font-size: 32px; font-weight: 700; }
+.cs-kpi--open  .cs-kpi-value { color: rgb(var(--c-accent)); }
+.cs-kpi--open  .cs-kpi-label { color: rgb(var(--c-accent)); }
+.cs-kpi--won   .cs-kpi-value { color: rgb(var(--c-success)); }
+.cs-kpi--won   .cs-kpi-label { color: rgb(var(--c-success)); }
+.cs-kpi--lost  .cs-kpi-value { color: rgb(var(--c-danger)); }
+.cs-kpi--lost  .cs-kpi-label { color: rgb(var(--c-danger)); }
+
+/* ── TABLE (shared by upsell + base) ────────────────────── */
+.cs-table-wrap {
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 12px;
+    overflow: hidden;
+}
+.cs-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.cs-table thead th {
+    padding: 11px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: rgb(var(--c-ink-faint));
+    background: rgb(var(--c-bg));
+    border-bottom: 1px solid rgb(var(--c-line));
+    white-space: nowrap;
+    text-align: left;
+}
+.cs-table thead th.center { text-align: center; }
+.cs-table thead th.right { text-align: right; }
+.cs-table tbody tr {
+    border-bottom: 1px solid rgb(var(--c-line));
+    transition: background 0.1s;
+}
+.cs-table tbody tr:last-child { border-bottom: none; }
+.cs-table tbody tr:hover { background: rgb(var(--c-panel)); }
+.cs-table tbody td { padding: 12px 16px; vertical-align: middle; }
+.cs-table tbody td.center { text-align: center; }
+.cs-table tbody td.right { text-align: right; }
+
+.cs-cell-name { font-size: 13px; font-weight: 600; color: rgb(var(--c-ink)); }
+.cs-cell-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 4px;
+    margin-top: 4px;
+    color: rgb(var(--c-accent));
+    background: rgb(var(--c-deep));
+    border: 1px solid rgb(var(--c-accent) / 0.27);
+}
+.cs-cell-mono { font-size: 12px; font-weight: 500; color: rgb(var(--c-ink-faint)); font-family: 'Courier New', monospace; }
+
+.cs-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid;
+    white-space: nowrap;
+}
+.cs-pill--seller { color: rgb(var(--c-success)); background: rgb(var(--c-success) / 0.15); border-color: rgb(var(--c-success) / 0.27); }
+.cs-pill--open  { color: rgb(var(--c-accent)); background: rgb(var(--c-deep)); border-color: rgb(var(--c-accent) / 0.27); }
+.cs-pill--won   { color: rgb(var(--c-success)); background: rgb(var(--c-success) / 0.15); border-color: rgb(var(--c-success) / 0.27); }
+.cs-pill--lost  { color: rgb(var(--c-danger)); background: rgb(var(--c-danger) / 0.15); border-color: rgb(var(--c-danger) / 0.27); }
+.cs-pill--active   { color: rgb(var(--c-success)); background: rgb(var(--c-success) / 0.15); border-color: rgb(var(--c-success) / 0.27); }
+.cs-pill--inactive { color: rgb(var(--c-ink-faint)); background: rgb(var(--c-line)); border-color: rgb(var(--c-line) / 0.27); }
+
+.cs-money {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    color: rgb(var(--c-success));
+    background: rgb(var(--c-success) / 0.15);
+    border: 1px solid rgb(var(--c-success) / 0.2);
+    padding: 3px 9px;
+    border-radius: 6px;
+}
+
+.cs-health {
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+}
+.cs-health--good { color: rgb(var(--c-success)); }
+.cs-health--ok   { color: rgb(var(--c-warn)); }
+.cs-health--bad  { color: rgb(var(--c-danger)); }
+
+.cs-arrow-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    color: rgb(var(--c-accent));
+    background: rgb(var(--c-deep));
+    border: 1px solid rgb(var(--c-accent) / 0.2);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+.cs-arrow-link:hover { background: rgb(var(--c-accent)); color: #fff; }
+
+.cs-table-empty {
+    text-align: center;
+    padding: 50px 20px;
+    color: rgb(var(--c-line));
+}
+.cs-table-empty i { font-size: 36px; display: block; margin-bottom: 10px; }
+.cs-table-empty p { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgb(var(--c-ink-faint)); }
+
+/* ── BASE TAB - SEARCH ───────────────────────────────────── */
+.cs-search-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.cs-search-wrap {
+    position: relative;
+    flex: 1;
+}
+.cs-search-wrap i {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: rgb(var(--c-ink-faint));
+    font-size: 14px;
+}
+.cs-search-wrap input {
+    width: 100%;
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 8px;
+    color: rgb(var(--c-ink));
+    font-family: inherit;
+    font-size: 13px;
+    padding: 10px 14px 10px 36px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.cs-search-wrap input:focus { border-color: rgb(var(--c-accent)); }
+.cs-search-wrap input::placeholder { color: rgb(var(--c-ink-faint)); }
+
+.cs-search-btn {
+    background: rgb(var(--c-accent));
+    border: 1px solid rgb(var(--c-accent));
+    border-radius: 8px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+.cs-search-btn:hover { background: rgb(var(--c-accent)); }
+
+.cs-load-more {
+    display: block;
+    width: fit-content;
+    margin: 18px auto 0;
+    background: rgb(var(--c-line));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 8px;
+    color: rgb(var(--c-ink-soft));
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.cs-load-more:hover { background: rgb(var(--c-accent)); color: #fff; border-color: rgb(var(--c-accent)); }
+
+/* ── LOADING SPINNER (lazy panels) ──────────────────────── */
+.cs-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 20px;
+    color: rgb(var(--c-ink-faint));
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+.cs-loading i { font-size: 18px; animation: cs-spin 0.8s linear infinite; }
+@keyframes cs-spin { to { transform: rotate(360deg); } }
+
+/* ── FOCUS ───────────────────────────────────────────────── */
+:focus-visible { outline: 2px solid rgb(var(--c-accent)); outline-offset: 2px; }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 1100px) {
+    .cs-grid-2 { grid-template-columns: 1fr; }
+    .cs-grid-3 { grid-template-columns: 1fr; }
+    .cs-card { height: 420px; }
+}
+
+/* Botão registrar churn */
+.cs-churn-add-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:rgb(var(--c-danger)); background:rgb(var(--c-danger) / 0.12); border:1px solid rgb(var(--c-danger) / 0.3); border-radius:8px; cursor:pointer; transition:.15s; }
+.cs-churn-add-btn:hover { background:rgb(var(--c-danger)); color:#fff; }
+
+/* Modal de churn */
+.cs-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(3px); z-index:1000; display:none; align-items:center; justify-content:center; padding:20px; }
+.cs-modal-overlay.show { display:flex; }
+.cs-modal { background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:16px; padding:24px; max-width:460px; width:100%; }
+.cs-modal__title { font-size:16px; font-weight:800; color:rgb(var(--c-ink)); display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.cs-modal__title i { color:rgb(var(--c-danger)); }
+.cs-modal__sub { font-size:12px; color:rgb(var(--c-ink-soft)); margin-bottom:18px; line-height:1.5; }
+.cs-modal__label { display:block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:rgb(var(--c-ink-faint)); margin-bottom:6px; }
+.cs-modal__input { width:100%; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); color:rgb(var(--c-ink)); border-radius:9px; padding:10px 12px; font-size:13px; outline:none; margin-bottom:14px; font-family:inherit; }
+.cs-modal__input:focus { border-color:rgb(var(--c-danger)); }
+.cs-modal__results { position:relative; }
+.cs-modal__dropdown { position:absolute; top:100%; left:0; right:0; background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:9px; margin-top:-8px; max-height:180px; overflow-y:auto; z-index:10; display:none; }
+.cs-modal__dropdown.show { display:block; }
+.cs-modal__opt { padding:10px 12px; cursor:pointer; font-size:13px; color:rgb(var(--c-ink)); border-bottom:1px solid rgb(var(--c-line)); }
+.cs-modal__opt:hover { background:rgb(var(--c-danger) / 0.1); }
+.cs-modal__actions { display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
+.cs-modal__btn { padding:10px 18px; border-radius:9px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer; border:1px solid; }
+.cs-modal__btn--cancel { background:transparent; border-color:rgb(var(--c-line)); color:rgb(var(--c-ink-soft)); }
+.cs-modal__btn--confirm { background:rgb(var(--c-danger)); border-color:rgb(var(--c-danger)); color:#fff; }
+.cs-modal__btn--confirm:disabled { opacity:0.5; cursor:not-allowed; }
+</style>
+
+<div class="cs-root" role="main">
+
+    <!-- TOPBAR -->
+    <header class="cs-topbar">
+        <div>
+            <div class="cs-topbar__eyebrow">
+                <i class="fa-solid fa-heart-pulse" aria-hidden="true"></i>
+                Customer Success
+            </div>
+            <h1 class="cs-topbar__title">Painel de Retenção</h1>
+        </div>
+
+        <div class="cs-score" role="status" aria-label="Score médio global da base">
+            Score médio global <strong>{{ score_medio }}%</strong>
+        </div>
+
+        <div class="cs-topbar__actions">
+            <a href="{% url 'cs_satisfacao:criar_cs' %}" class="cs-btn cs-btn--ghost">
+                <i class="fa-solid fa-bolt" aria-hidden="true"></i> Registro rápido
+            </a>
+            <a href="{% url 'cliente_create' %}" class="cs-btn cs-btn--primary">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Novo cliente
+            </a>
+        </div>
+    </header>
+
+    <!-- TABS -->
+    <nav class="cs-tabs" role="tablist" aria-label="Seções do painel de retenção">
+        <button class="cs-tab-btn active" role="tab" aria-selected="true" aria-controls="cs-panel-workspace" id="cs-btn-workspace" onclick="csOpenTab('workspace', this)">
+            <i class="fa-solid fa-briefcase" aria-hidden="true"></i> Mesa de Trabalho
+        </button>
+        <button class="cs-tab-btn" role="tab" aria-selected="false" aria-controls="cs-panel-metricas" id="cs-btn-metricas" onclick="csOpenTab('metricas', this)">
+            <i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Métricas & Churn
+        </button>
+        <button class="cs-tab-btn" role="tab" aria-selected="false" aria-controls="cs-panel-upsell" id="cs-btn-upsell" onclick="csOpenTab('upsell', this)">
+            <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i> Upsell & Indicações
+        </button>
+        <button class="cs-tab-btn" role="tab" aria-selected="false" aria-controls="cs-panel-base" id="cs-btn-base" onclick="csOpenTab('base', this)">
+            <i class="fa-solid fa-database" aria-hidden="true"></i> Base Completa
+            <span class="cs-tab-badge">{{ dados_base|length }}</span>
+        </button>
+    </nav>
+
+    <!-- CONTENT -->
+    <div class="cs-content">
+
+        <!-- ════════════ WORKSPACE (renderizado de imediato) ════════════ -->
+        <div id="cs-panel-workspace" class="cs-panel active" role="tabpanel" aria-labelledby="cs-btn-workspace">
+            <div class="cs-grid-2">
+
+                <!-- UTI -->
+                <div class="cs-card">
+                    <div class="cs-card__head cs-card__head--uti">
+                        <span class="cs-card__title cs-card__title--uti">
+                            <i class="fa-solid fa-truck-medical" aria-hidden="true"></i> UTI — Risco
+                        </span>
+                        <span class="cs-card__count cs-card__count--uti">{{ clientes_uti|length }}</span>
+                    </div>
+                    <div class="cs-card__body" aria-live="polite">
+                        {% for item in clientes_uti %}
+                        <div class="cs-item cs-item--danger">
+                            <div class="cs-item__top">
+                                <span class="cs-item__badge cs-item__badge--danger">{{ item.score }}% saúde</span>
+                            </div>
+                            <h3 class="cs-item__title">{{ item.cliente.razao_social }}</h3>
+                            <a href="{% url 'cs_satisfacao:detalhe_cliente' item.cliente.pk %}" class="cs-item__action cs-item__action--danger">
+                                Analisar cliente
+                            </a>
+                        </div>
+                        {% empty %}
+                        <div class="cs-empty cs-empty--good">
+                            <i class="fa-solid fa-shield-heart" aria-hidden="true"></i>
+                            <p>Nenhum cliente na UTI</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- TAREFAS -->
+                <div class="cs-card">
+                    <div class="cs-card__head cs-card__head--tasks">
+                        <span class="cs-card__title cs-card__title--tasks">
+                            <i class="fa-regular fa-calendar-check" aria-hidden="true"></i> Para hoje / atrasos
+                        </span>
+                        <span class="cs-card__count cs-card__count--tasks">{{ tarefas_pendentes|length }}</span>
+                    </div>
+                    <div class="cs-card__body" aria-live="polite">
+                        {% for tarefa in tarefas_pendentes %}
+                        <div class="cs-item {% if tarefa.data_prevista < hoje %}cs-item--overdue{% else %}cs-item--info{% endif %}">
+                            <div class="cs-item__top">
+                                <span class="cs-item__badge {% if tarefa.data_prevista < hoje %}cs-item__badge--danger{% else %}cs-item__badge--info{% endif %}">
+                                    {{ tarefa.get_tipo_contato_display }}
+                                </span>
+                                <span class="cs-item__date">{{ tarefa.data_prevista|date:"d/m" }}</span>
+                            </div>
+                            <h3 class="cs-item__title">{{ tarefa.cliente.razao_social }}</h3>
+                            <p class="cs-item__desc">{{ tarefa.observacoes|default:"Sem descrição prévia." }}</p>
+                            <a href="{% url 'cs_satisfacao:detalhe_cliente' tarefa.cliente.pk %}" class="cs-item__action {% if tarefa.data_prevista < hoje %}cs-item__action--danger{% else %}cs-item__action--info{% endif %}">
+                                Executar
+                            </a>
+                        </div>
+                        {% empty %}
+                        <div class="cs-empty cs-empty--good">
+                            <i class="fa-solid fa-mug-hot" aria-hidden="true"></i>
+                            <p>Tudo limpo por hoje</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ════════════ MÉTRICAS — lazy via template ════════════ -->
+        <div id="cs-panel-metricas" class="cs-panel" role="tabpanel" aria-labelledby="cs-btn-metricas"></div>
+
+        <!-- ════════════ UPSELL — lazy via template ════════════ -->
+        <div id="cs-panel-upsell" class="cs-panel" role="tabpanel" aria-labelledby="cs-btn-upsell"></div>
+
+        <!-- ════════════ BASE — lazy via template ════════════ -->
+        <div id="cs-panel-base" class="cs-panel" role="tabpanel" aria-labelledby="cs-btn-base"></div>
+
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     TEMPLATES — não renderizados nem baixados até a 1ª troca de aba.
+     Isso reduz drasticamente o custo de carregamento inicial.
+═══════════════════════════════════════════════════════════════ -->
+
+<template id="cs-tpl-metricas">
+    <div class="cs-grid-2">
+
+        <!-- ORIGEM DOS ATRITOS -->
+        <div class="cs-table-wrap" style="padding: 20px;">
+            <div class="cs-card__title" style="color:rgb(var(--c-special)); margin-bottom:4px;">
+                <i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Origem dos atritos
+            </div>
+            <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:rgb(var(--c-ink-faint));margin-bottom:18px;">
+                Dores registradas — últimos 30 dias
+            </p>
+
+            {% if total_dores > 0 %}
+            <div class="cs-metric-bar-row">
+                <div class="cs-metric-bar-top">
+                    <span class="cs-metric-bar-label">Ameaça da concorrência</span>
+                    <span class="cs-metric-bar-value">{{ dores.concorrencia }} registros</span>
+                </div>
+                <div class="cs-metric-bar-track"><div class="cs-metric-bar-fill cs-fill--rose" style="width: {% widthratio dores.concorrencia total_dores 100 %}%"></div></div>
+            </div>
+            <div class="cs-metric-bar-row">
+                <div class="cs-metric-bar-top">
+                    <span class="cs-metric-bar-label">Bugs / falhas no sistema</span>
+                    <span class="cs-metric-bar-value">{{ dores.bugs }} registros</span>
+                </div>
+                <div class="cs-metric-bar-track"><div class="cs-metric-bar-fill cs-fill--orange" style="width: {% widthratio dores.bugs total_dores 100 %}%"></div></div>
+            </div>
+            <div class="cs-metric-bar-row">
+                <div class="cs-metric-bar-top">
+                    <span class="cs-metric-bar-label">Reclamação de atendimento</span>
+                    <span class="cs-metric-bar-value">{{ dores.atendimento }} registros</span>
+                </div>
+                <div class="cs-metric-bar-track"><div class="cs-metric-bar-fill cs-fill--yellow" style="width: {% widthratio dores.atendimento total_dores 100 %}%"></div></div>
+            </div>
+            <div class="cs-metric-bar-row">
+                <div class="cs-metric-bar-top">
+                    <span class="cs-metric-bar-label">Falta de funcionalidade</span>
+                    <span class="cs-metric-bar-value">{{ dores.funcionalidade }} registros</span>
+                </div>
+                <div class="cs-metric-bar-track"><div class="cs-metric-bar-fill cs-fill--blue" style="width: {% widthratio dores.funcionalidade total_dores 100 %}%"></div></div>
+            </div>
+            <div class="cs-metric-bar-row">
+                <div class="cs-metric-bar-top">
+                    <span class="cs-metric-bar-label">Dificuldade financeira</span>
+                    <span class="cs-metric-bar-value">{{ dores.financeiro }} registros</span>
+                </div>
+                <div class="cs-metric-bar-track"><div class="cs-metric-bar-fill cs-fill--slate" style="width: {% widthratio dores.financeiro total_dores 100 %}%"></div></div>
+            </div>
+            {% else %}
+            <div class="cs-table-empty">
+                <i class="fa-solid fa-face-smile" style="color:rgb(var(--c-success) / 0.4)" aria-hidden="true"></i>
+                <p>Nenhum atrito este mês</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- CHURN -->
+        <div class="cs-table-wrap" style="display:flex; flex-direction:column; max-height: 480px;">
+            <div style="padding:16px 20px; border-bottom:1px solid rgb(var(--c-line)); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div class="cs-card__title" style="color:rgb(var(--c-danger));">
+                        <i class="fa-solid fa-skull-crossbones" aria-hidden="true"></i> Churn — cancelamentos
+                    </div>
+                    <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:rgb(var(--c-ink-faint));margin-top:4px;">Últimos 30 dias</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="cs-pill cs-pill--lost" style="font-size:13px; padding:4px 12px;">{{ total_cancelamentos }}</span>
+                    <button type="button" onclick="csAbrirModalChurn()" class="cs-churn-add-btn">
+                        <i class="fa-solid fa-plus"></i> Registrar
+                    </button>
+                </div>
+            </div>
+            <div style="padding:16px 20px; overflow-y:auto;">
+                {% for cancelamento in cancelamentos_recentes %}
+                <div class="cs-churn-item">
+                    <div class="cs-churn-top">
+                        <span class="cs-churn-name">{{ cancelamento.cliente.razao_social }}</span>
+                        <span class="cs-churn-date">{{ cancelamento.data_cancelamento|date:"d/m/y" }}</span>
+                    </div>
+                    <p class="cs-churn-reason">{{ cancelamento.motivo }}</p>
+                </div>
+                {% empty %}
+                <div class="cs-table-empty">
+                    <i class="fa-solid fa-shield-halved" style="color:rgb(var(--c-success) / 0.4)" aria-hidden="true"></i>
+                    <p>Zero cancelamentos</p>
+                    <p style="color:rgb(var(--c-success)); font-size:11px; margin-top:6px; letter-spacing:0.05em;">Retenção de 100% nos últimos 30 dias</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</template>
+
+<template id="cs-tpl-upsell">
+    <div class="cs-grid-3">
+        <div class="cs-kpi cs-kpi--open">
+            <div class="cs-kpi-label">Em negociação</div>
+            <div class="cs-kpi-value">{{ upsells_em_aberto }}</div>
+        </div>
+        <div class="cs-kpi cs-kpi--won">
+            <div class="cs-kpi-label">Fechados (ganhos)</div>
+            <div class="cs-kpi-value">{{ upsells_ganhos }}</div>
+        </div>
+        <div class="cs-kpi cs-kpi--lost">
+            <div class="cs-kpi-label">Perdidos</div>
+            <div class="cs-kpi-value">{{ upsells_perdidos }}</div>
+        </div>
+    </div>
+
+    <div class="cs-table-wrap">
+        <table class="cs-table">
+            <thead>
+                <tr>
+                    <th>Cliente indicado</th>
+                    <th class="center">Data envio</th>
+                    <th class="center">Quem indicou</th>
+                    <th class="center">Status no CRM</th>
+                    <th class="right">Valor negociado</th>
+                    <th class="right">Vendedor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lead in oportunidades_geradas %}
+                <tr>
+                    <td>
+                        <span class="cs-cell-name">{{ lead.nome_empresa }}</span>
+                        {% if lead.cliente_existente %}<br><span class="cs-cell-tag">Cliente base</span>{% endif %}
+                    </td>
+                    <td class="center"><span class="cs-cell-mono">{{ lead.data_criacao|date:"d/m/y H:i" }}</span></td>
+                    <td class="center">
+                        <span class="cs-pill cs-pill--seller">
+                            <i class="fa-solid fa-headset" aria-hidden="true"></i>
+                            {% if lead.vendedor_prospeccao.first_name %}{{ lead.vendedor_prospeccao.first_name }}{% else %}{{ lead.vendedor_prospeccao.username|default:"Sistema" }}{% endif %}
+                        </span>
+                    </td>
+                    <td class="center">
+                        <span class="cs-pill {% if lead.etapa == '6_GANHO' %}cs-pill--won{% elif lead.etapa == '7_PERDIDO' %}cs-pill--lost{% else %}cs-pill--open{% endif %}">
+                            {{ lead.get_etapa_display }}
+                        </span>
+                    </td>
+                    <td class="right"><span class="cs-money">R$ {{ lead.valor_ticket_medio|floatformat:2 }}</span></td>
+                    <td class="right">
+                        <span class="cs-cell-mono">
+                            {% if lead.vendedor_responsavel %}{{ lead.vendedor_responsavel.first_name|default:lead.vendedor_responsavel.username }}{% else %}Aguardando{% endif %}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="cs-table-empty">
+                            <i class="fa-solid fa-ghost" aria-hidden="true"></i>
+                            <p>Nenhuma indicação registrada</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</template>
+
+<template id="cs-tpl-base">
+    <form method="get" class="cs-search-bar">
+        <div class="cs-search-wrap">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input type="text" name="busca" placeholder="Buscar razão social ou CNPJ..." value="{{ request.GET.busca }}" aria-label="Buscar na base de clientes">
+        </div>
+        <button type="submit" class="cs-search-btn">
+            <i class="fa-solid fa-search" aria-hidden="true"></i> Pesquisar base
+        </button>
+    </form>
+
+    <div class="cs-table-wrap">
+        <table class="cs-table">
+            <thead>
+                <tr>
+                    <th>Cliente / CNPJ</th>
+                    <th class="center">Saúde atual</th>
+                    <th class="center">Status</th>
+                    <th class="right">Ficha</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in dados_base %}
+                <tr>
+                    <td>
+                        <span class="cs-cell-name">{{ item.cliente.razao_social }}</span><br>
+                        <span class="cs-cell-mono">CNPJ: {{ item.cliente.cnpj }}</span>
+                    </td>
+                    <td class="center">
+                        <span class="cs-health {% if item.score >= 75 %}cs-health--good{% elif item.score >= 50 %}cs-health--ok{% else %}cs-health--bad{% endif %}">{{ item.score }}%</span>
+                    </td>
+                    <td class="center">
+                        {% if item.cliente.ativo %}
+                        <span class="cs-pill cs-pill--active"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Operante</span>
+                        {% else %}
+                        <span class="cs-pill cs-pill--inactive">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td class="right">
+                        <a href="{% url 'cs_satisfacao:detalhe_cliente' item.cliente.pk %}" class="cs-arrow-link" aria-label="Abrir ficha de {{ item.cliente.razao_social }}">
+                            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">
+                        <div class="cs-table-empty">
+                            <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+                            <p>Nenhum cliente encontrado</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if not mostrar_todos %}
+    <a href="?todos=1" class="cs-load-more">
+        <i class="fa-solid fa-layer-group" aria-hidden="true"></i> Carregar toda a base ({{ dados|length }} clientes)
+    </a>
+    {% endif %}
+</template>
+
+<!-- ═══ MODAL: Registrar cancelamento (churn) ═══ -->
+<div id="cs-modal-churn" class="cs-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="cs-modal-churn-title">
+    <div class="cs-modal">
+        <div class="cs-modal__title" id="cs-modal-churn-title"><i class="fa-solid fa-skull-crossbones"></i> Registrar cancelamento</div>
+        <p class="cs-modal__sub">Isso encerra o contrato do cliente e o marca como inativo. As tarefas de CS pendentes dele serão canceladas. Não dá para desfazer pela tela.</p>
+
+        <form method="post" action="{% url 'cs_satisfacao:cancelar_cliente' %}" id="cs-churn-form">
+            {% csrf_token %}
+            <label class="cs-modal__label">Cliente</label>
+            <div class="cs-modal__results">
+                <input type="text" id="cs-churn-busca" class="cs-modal__input" placeholder="Digite nome ou CNPJ..." autocomplete="off">
+                <div id="cs-churn-dropdown" class="cs-modal__dropdown"></div>
+            </div>
+            <input type="hidden" name="cliente_id" id="cs-churn-cliente-id">
+
+            <label class="cs-modal__label">Motivo do cancelamento</label>
+            <textarea name="motivo" class="cs-modal__input" rows="3" placeholder="Ex: migrou para concorrente, fechou a empresa, preço..." required></textarea>
+
+            <div class="cs-modal__actions">
+                <button type="button" class="cs-modal__btn cs-modal__btn--cancel" onclick="csFecharModalChurn()">Cancelar</button>
+                <button type="submit" class="cs-modal__btn cs-modal__btn--confirm" id="cs-churn-submit" disabled>Confirmar cancelamento</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // ── Modal de churn ──
+    window.csAbrirModalChurn = function () {
+        document.getElementById('cs-modal-churn').classList.add('show');
+    };
+    window.csFecharModalChurn = function () {
+        document.getElementById('cs-modal-churn').classList.remove('show');
+    };
+    (function () {
+        const busca = document.getElementById('cs-churn-busca');
+        const dropdown = document.getElementById('cs-churn-dropdown');
+        const hiddenId = document.getElementById('cs-churn-cliente-id');
+        const submitBtn = document.getElementById('cs-churn-submit');
+        if (!busca) return;
+        let timer = null;
+        busca.addEventListener('input', function () {
+            hiddenId.value = ''; submitBtn.disabled = true;
+            const q = this.value.trim();
+            if (q.length < 2) { dropdown.classList.remove('show'); return; }
+            clearTimeout(timer);
+            timer = setTimeout(async () => {
+                try {
+                    const r = await fetch(`/cs/api/clientes/?q=${encodeURIComponent(q)}`);
+                    const lista = await r.json();
+                    dropdown.innerHTML = '';
+                    if (!lista.length) {
+                        dropdown.innerHTML = '<div class="cs-modal__opt" style="cursor:default;color:rgb(var(--c-ink-faint))">Nenhum cliente</div>';
+                    } else {
+                        lista.forEach(c => {
+                            const o = document.createElement('div');
+                            o.className = 'cs-modal__opt';
+                            o.innerHTML = `<strong>${c.nome}</strong><br><span style="font-size:11px;color:rgb(var(--c-ink-faint))">${c.cnpj}</span>`;
+                            o.onclick = () => {
+                                busca.value = c.nome; hiddenId.value = c.id;
+                                submitBtn.disabled = false; dropdown.classList.remove('show');
+                            };
+                            dropdown.appendChild(o);
+                        });
+                    }
+                    dropdown.classList.add('show');
+                } catch (e) { dropdown.classList.remove('show'); }
+            }, 250);
+        });
+        document.getElementById('cs-modal-churn').addEventListener('click', function (e) {
+            if (e.target === this) csFecharModalChurn();
+        });
+    })();
+</script>
+
+<script>
+(function () {
+    const loadedPanels = new Set(['workspace']);
+
+    window.csOpenTab = function (tabId, btn) {
+        // Atualiza botões
+        document.querySelectorAll('.cs-tab-btn').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+
+        // Atualiza painéis
+        document.querySelectorAll('.cs-panel').forEach(p => p.classList.remove('active'));
+        const panel = document.getElementById('cs-panel-' + tabId);
+        panel.classList.add('active');
+
+        // Lazy-load: só injeta o conteúdo do template na primeira vez
+        if (!loadedPanels.has(tabId)) {
+            const tpl = document.getElementById('cs-tpl-' + tabId);
+            if (tpl) {
+                panel.innerHTML = tpl.innerHTML;
+            }
+            loadedPanels.add(tabId);
+        }
+    };
+
+    // Se vier de busca na base (?busca=...) ou ?todos=1, abre direto na aba Base
+    const qs = window.location.search;
+    if (qs.includes('busca=') || qs.includes('todos=1')) {
+        const btn = document.getElementById('cs-btn-base');
+        csOpenTab('base', btn);
+    }
+})();
+</script>
+
+{% endblock %}

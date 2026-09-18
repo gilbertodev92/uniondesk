@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório - Sistema {{ sistema }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body { background: white !important; color: black !important; }
+            .no-print { display: none !important; }
+            .print-border { border-bottom: 1px solid #e5e7eb !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased p-8">
+
+    <div class="max-w-[1000px] mx-auto bg-white shadow-xl rounded-xl p-8 border border-slate-200">
+        
+        <div class="flex justify-between items-center border-b-2 border-blue-600 pb-6 mb-8">
+            <div>
+                <h1 class="text-3xl font-black text-slate-800 uppercase tracking-tight">Relatório Comercial</h1>
+                <p class="text-sm font-bold text-blue-600 uppercase tracking-widest mt-1">Lógica Automação Comercial</p>
+            </div>
+            <div class="text-right">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Base Dominante: Sistema</p>
+                <h2 class="text-2xl font-black text-slate-800 bg-slate-100 px-4 py-2 rounded-lg inline-block border border-slate-200">{{ sistema }}</h2>
+            </div>
+        </div>
+
+        <div class="flex gap-6 mb-8">
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 flex-1">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total de Clientes (Ativos)</p>
+                <p class="text-2xl font-black text-slate-700 mt-1">{{ clientes|length }}</p>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 flex-1">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data de Extração</p>
+                <p class="text-sm font-bold text-slate-700 mt-1">{{ data_geracao|date:"d/m/Y - H:i" }}</p>
+            </div>
+        </div>
+
+        <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">Listagem de Operantes</h3>
+        <table class="w-full text-left text-sm border-collapse">
+            <thead>
+                <tr class="bg-slate-100 text-slate-600 text-[10px] uppercase font-black tracking-widest">
+                    <th class="p-3 rounded-tl-lg border-b-2 border-slate-200">Razão Social</th>
+                    <th class="p-3 border-b-2 border-slate-200">Cidade</th>
+                    <th class="p-3 border-b-2 border-slate-200">Telefone</th>
+                    <th class="p-3 rounded-tr-lg border-b-2 border-slate-200">Pacote de Softwares</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in clientes %}
+                <tr class="print-border hover:bg-slate-50 transition-colors border-b border-slate-100">
+                    <td class="p-3 font-bold text-slate-700">{{ cliente.razao_social }}
+                        <span class="block text-[9px] text-slate-400 font-mono mt-0.5">{{ cliente.cnpj|default:"CNPJ Não Cadastrado" }}</span>
+                    </td>
+                    <td class="p-3 text-slate-600 text-xs font-bold">{{ cliente.cidade|default:"-"|upper }}</td>
+                    <td class="p-3 text-slate-600 font-mono text-xs">{{ cliente.telefone|default:"-" }}</td>
+                    <td class="p-3 text-slate-500 text-xs italic">
+                        {% for sis in cliente.sistemas.all %}
+                            {{ sis.nome }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="p-8 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                        Nenhum cliente ativo encontrado com este sistema.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="mt-12 pt-4 border-t border-slate-200 text-center flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+            <span>Union.Desk Operacional</span>
+            <span>Uso Exclusivo / Interno</span>
+        </div>
+
+    </div>
+
+    <button onclick="window.print()" class="no-print fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-[0_4px_20px_rgba(37,99,235,0.5)] flex items-center justify-center transition-transform transform hover:scale-110 cursor-pointer" title="Imprimir PDF">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
+        </svg>
+    </button>
+
+</body>
+</html>

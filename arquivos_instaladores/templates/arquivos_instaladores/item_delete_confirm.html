@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Remover recurso | Hub de Instaladores{% endblock %}
+
+{% block content %}
+<div class="ai-root">
+  <div class="ai-confirm-wrap">
+
+    <div class="ai-confirm">
+      <div class="ai-confirm__icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <h1 class="ai-confirm__title">Remover “{{ obj.titulo }}”?</h1>
+      <p class="ai-confirm__sub">Escolha o que fazer com este recurso. As duas ações são diferentes.</p>
+
+      <div class="ai-confirm__file">
+        <i class="fa-solid {{ obj.icone }}"></i>
+        <div>
+          <span class="ai-confirm__fname">{{ obj.filename|default:"(link externo)" }}</span>
+          <span class="ai-confirm__fmeta">
+            {% if obj.tem_arquivo_local %}{{ obj.tamanho_legivel }} · {% endif %}{{ obj.downloads }} download{{ obj.downloads|pluralize }}
+          </span>
+        </div>
+      </div>
+
+      <div class="ai-confirm__options">
+        <!-- Arquivar -->
+        <form method="post" class="ai-opt">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="arquivar">
+          <div class="ai-opt__head"><i class="fa-solid fa-box-archive"></i> Arquivar</div>
+          <p class="ai-opt__desc">Some da lista, mas o arquivo continua no servidor. Dá para restaurar depois.</p>
+          <button type="submit" class="ai-opt__btn ai-opt__btn--warn">Arquivar recurso</button>
+        </form>
+
+        <!-- Excluir -->
+        <form method="post" class="ai-opt" onsubmit="return confirm('Excluir DEFINITIVAMENTE? O arquivo será apagado do servidor e não há como desfazer.');">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="excluir">
+          <div class="ai-opt__head ai-opt__head--danger"><i class="fa-solid fa-trash"></i> Excluir</div>
+          <p class="ai-opt__desc">Remove o registro <strong>e apaga o arquivo do servidor</strong>, liberando o disco. Não há como desfazer.</p>
+          <button type="submit" class="ai-opt__btn ai-opt__btn--danger">Excluir definitivamente</button>
+        </form>
+      </div>
+
+      <a href="{% url 'arquivos_instaladores:painel' %}" class="ai-confirm__cancel">Cancelar</a>
+    </div>
+  </div>
+</div>
+
+<style>
+.ai-root { padding: 20px 16px 40px; }
+.ai-confirm-wrap { max-width: 620px; margin: 40px auto 0; }
+.ai-confirm { background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:18px; padding:32px; text-align:center; }
+.ai-confirm__icon { width:64px; height:64px; margin:0 auto 18px; display:flex; align-items:center; justify-content:center; background:rgb(var(--c-danger) / .1); border:1px solid rgb(var(--c-danger) / .25); border-radius:16px; color:rgb(var(--c-danger)); font-size:26px; }
+.ai-confirm__title { font-size:19px; font-weight:800; color:rgb(var(--c-ink)); }
+.ai-confirm__sub { font-size:13px; color:rgb(var(--c-ink-soft)); margin-top:8px; }
+
+.ai-confirm__file { display:flex; align-items:center; gap:12px; text-align:left; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:12px; padding:14px 16px; margin:22px 0; }
+.ai-confirm__file > i { font-size:22px; color:rgb(var(--c-accent)); flex-shrink:0; }
+.ai-confirm__file > div { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.ai-confirm__fname { font-size:13px; font-weight:700; color:rgb(var(--c-ink)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ai-confirm__fmeta { font-size:11px; color:rgb(var(--c-ink-faint)); font-family:'JetBrains Mono', monospace; }
+
+.ai-confirm__options { display:grid; grid-template-columns:1fr 1fr; gap:12px; text-align:left; }
+.ai-opt { background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:12px; padding:16px; display:flex; flex-direction:column; }
+.ai-opt__head { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:rgb(var(--c-warn)); display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.ai-opt__head--danger { color:rgb(var(--c-danger)); }
+.ai-opt__desc { font-size:11.5px; color:rgb(var(--c-ink-soft)); line-height:1.55; flex:1; margin-bottom:14px; }
+.ai-opt__btn { width:100%; padding:11px; border-radius:9px; border:1px solid; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; cursor:pointer; transition:.15s; }
+.ai-opt__btn--warn { color:rgb(var(--c-warn)); background:rgb(var(--c-warn) / .1); border-color:rgb(var(--c-warn) / .3); }
+.ai-opt__btn--warn:hover { background:rgb(var(--c-warn)); color:#fff; }
+.ai-opt__btn--danger { color:rgb(var(--c-danger)); background:rgb(var(--c-danger) / .1); border-color:rgb(var(--c-danger) / .3); }
+.ai-opt__btn--danger:hover { background:rgb(var(--c-danger)); color:#fff; }
+
+.ai-confirm__cancel { display:inline-block; margin-top:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgb(var(--c-ink-faint)); text-decoration:none; }
+.ai-confirm__cancel:hover { color:rgb(var(--c-ink)); }
+
+@media (max-width: 540px) {
+    .ai-confirm { padding:22px; }
+    .ai-confirm__options { grid-template-columns:1fr; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,326 @@
+{% comment %}
+  Aba 4 — Relatório de Desempenho por Vendedor
+  Inclua no dashboard_gestor.html dentro do painel da Aba 4:
+  {% include 'crm_vendas/partials/_tab_relatorio_vendedores.html' %}
+{% endcomment %}
+
+<style>
+  /* ── CARD DE VENDEDOR ── */
+  .rv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
+    gap: 20px;
+    margin-top: 4px;
+  }
+
+  .rv-card {
+    background: #0f1829;
+    border: 1px solid rgba(99,140,210,0.14);
+    border-radius: 14px;
+    padding: 22px 24px 20px;
+    transition: border-color .15s;
+  }
+  .rv-card:hover { border-color: rgba(59,130,246,0.35); }
+
+  /* cabeçalho do card */
+  .rv-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    gap: 12px;
+  }
+  .rv-identity { display: flex; align-items: center; gap: 12px; }
+  .rv-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #1e3a6e, #2563eb);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; color: #93c5fd;
+    flex-shrink: 0;
+  }
+  .rv-name { font-size: 15px; font-weight: 700; color: #f0f4ff; }
+  .rv-period { font-size: 11px; color: #4d6a96; margin-top: 2px; }
+
+  /* badge de receita */
+  .rv-receita-badge {
+    text-align: right;
+  }
+  .rv-receita-val {
+    font-size: 18px; font-weight: 800; color: #34d399;
+    letter-spacing: -0.5px;
+  }
+  .rv-receita-label { font-size: 10px; color: #4d6a96; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* barra de meta */
+  .rv-meta-bar-wrap { margin-bottom: 18px; }
+  .rv-meta-labels {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: #4d6a96; margin-bottom: 5px;
+  }
+  .rv-meta-labels span:last-child { color: #8fa8d0; }
+  .rv-bar-bg {
+    height: 6px; background: rgba(99,140,210,0.1);
+    border-radius: 10px; overflow: hidden;
+  }
+  .rv-bar-fill {
+    height: 100%; border-radius: 10px;
+    transition: width .4s ease;
+  }
+  .rv-bar-fill.verde  { background: #10b981; }
+  .rv-bar-fill.amarelo{ background: #f59e0b; }
+  .rv-bar-fill.vermelho{ background: #ef4444; }
+
+  /* seções de métricas */
+  .rv-sections { display: flex; flex-direction: column; gap: 14px; }
+
+  .rv-section-title {
+    font-size: 9.5px; font-weight: 800; color: #4d6a96;
+    text-transform: uppercase; letter-spacing: .7px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .rv-section-title::after {
+    content: ''; flex: 1; height: 1px; background: rgba(99,140,210,0.1);
+  }
+
+  .rv-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 8px;
+  }
+  .rv-metric {
+    background: rgba(15,24,41,0.6);
+    border: 1px solid rgba(99,140,210,0.08);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .rv-metric-val {
+    font-size: 20px; font-weight: 800; color: #f0f4ff;
+    line-height: 1; margin-bottom: 4px;
+  }
+  .rv-metric-val.green  { color: #34d399; }
+  .rv-metric-val.red    { color: #f87171; }
+  .rv-metric-val.blue   { color: #60a5fa; }
+  .rv-metric-val.amber  { color: #fbbf24; }
+  .rv-metric-label {
+    font-size: 10px; color: #4d6a96; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .3px;
+  }
+
+  /* funil inline */
+  .rv-funnel {
+    display: flex; gap: 6px; align-items: stretch;
+  }
+  .rv-funnel-step {
+    flex: 1; background: rgba(15,24,41,0.6);
+    border: 1px solid rgba(99,140,210,0.08);
+    border-radius: 8px; padding: 8px 10px;
+    text-align: center;
+  }
+  .rv-funnel-step-val {
+    font-size: 18px; font-weight: 800; color: #f0f4ff;
+    display: block; line-height: 1;
+  }
+  .rv-funnel-step-label {
+    font-size: 9px; color: #4d6a96; text-transform: uppercase;
+    letter-spacing: .3px; margin-top: 4px; display: block;
+  }
+  .rv-funnel-arrow {
+    display: flex; align-items: center;
+    color: #1e3a6e; font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  /* chip de motivo */
+  .rv-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.18);
+    color: #fca5a5; max-width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .rv-chip.blue {
+    background: rgba(59,130,246,0.08);
+    border-color: rgba(59,130,246,0.18);
+    color: #93c5fd;
+  }
+
+  /* taxa pill */
+  .rv-taxa {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+  }
+  .rv-taxa.verde  { background: rgba(16,185,129,0.12); color: #34d399; }
+  .rv-taxa.amarelo{ background: rgba(245,158,11,0.12); color: #fbbf24; }
+  .rv-taxa.vermelho{ background: rgba(239,68,68,0.12); color: #f87171; }
+
+  /* estado vazio */
+  .rv-empty {
+    grid-column: 1 / -1;
+    text-align: center; padding: 64px 24px;
+  }
+  .rv-empty i { font-size: 2rem; color: #1e3a6e; display: block; margin-bottom: 12px; }
+  .rv-empty p { color: #4d6a96; font-size: 14px; }
+</style>
+
+{% if relatorio_vendedores %}
+<div class="rv-grid">
+  {% for v in relatorio_vendedores %}
+  <div class="rv-card">
+
+    {# ── CABEÇALHO ── #}
+    <div class="rv-head">
+      <div class="rv-identity">
+        <div class="rv-avatar">{{ v.iniciais }}</div>
+        <div>
+          <div class="rv-name">{{ v.nome }}</div>
+          <div class="rv-period">{{ titulo_filtro }}</div>
+        </div>
+      </div>
+      <div class="rv-receita-badge">
+        <div class="rv-receita-val">R$ {{ v.receita|floatformat:0 }}</div>
+        <div class="rv-receita-label">Receita gerada</div>
+      </div>
+    </div>
+
+    {# ── BARRA DE META ── #}
+    {% if v.meta > 0 %}
+    <div class="rv-meta-bar-wrap">
+      <div class="rv-meta-labels">
+        <span>Meta do mês</span>
+        <span>
+          {% if v.perc_meta >= 100 %}
+            <span class="rv-taxa verde">{{ v.perc_meta }}% ✓</span>
+          {% elif v.perc_meta >= 60 %}
+            <span class="rv-taxa amarelo">{{ v.perc_meta }}%</span>
+          {% else %}
+            <span class="rv-taxa vermelho">{{ v.perc_meta }}%</span>
+          {% endif %}
+          &nbsp;de R$ {{ v.meta|floatformat:0 }}
+        </span>
+      </div>
+      <div class="rv-bar-bg">
+        <div class="rv-bar-fill {% if v.perc_meta >= 100 %}verde{% elif v.perc_meta >= 60 %}amarelo{% else %}vermelho{% endif %}"
+             style="width: {% if v.perc_meta > 100 %}100{% else %}{{ v.perc_meta }}{% endif %}%">
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="rv-sections">
+
+      {# ── SEÇÃO 1: PROSPECÇÃO ── #}
+      <div>
+        <div class="rv-section-title"><i class="fa-solid fa-satellite-dish" style="color:#3b82f6;font-size:10px;"></i> Prospecção</div>
+        <div class="rv-metrics">
+          <div class="rv-metric">
+            <div class="rv-metric-val blue">{{ v.prosp_assumidas }}</div>
+            <div class="rv-metric-label">Assumidos</div>
+          </div>
+          <div class="rv-metric">
+            <div class="rv-metric-val">{{ v.interacoes }}</div>
+            <div class="rv-metric-label">Interações</div>
+          </div>
+          <div class="rv-metric">
+            <div class="rv-metric-val green">{{ v.prosp_qualificadas }}</div>
+            <div class="rv-metric-label">Qualificados</div>
+          </div>
+          <div class="rv-metric">
+            <div class="rv-metric-val red">{{ v.prosp_descartadas }}</div>
+            <div class="rv-metric-label">Descartados</div>
+          </div>
+          <div class="rv-metric" style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div class="rv-metric-label" style="margin-bottom:4px;">Taxa qualificação</div>
+              {% if v.taxa_qualificacao >= 50 %}
+                <span class="rv-taxa verde">{{ v.taxa_qualificacao }}%</span>
+              {% elif v.taxa_qualificacao >= 25 %}
+                <span class="rv-taxa amarelo">{{ v.taxa_qualificacao }}%</span>
+              {% else %}
+                <span class="rv-taxa vermelho">{{ v.taxa_qualificacao }}%</span>
+              {% endif %}
+            </div>
+            {% if v.motivo_descarte != '—' %}
+            <div style="text-align:right;">
+              <div class="rv-metric-label" style="margin-bottom:4px;">Descarte mais comum</div>
+              <span class="rv-chip blue" title="{{ v.motivo_descarte }}">
+                <i class="fa-solid fa-tag" style="font-size:9px;"></i>{{ v.motivo_descarte|truncatechars:22 }}
+              </span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {# ── SEÇÃO 2: FUNIL ── #}
+      <div>
+        <div class="rv-section-title"><i class="fa-solid fa-filter" style="color:#8b5cf6;font-size:10px;"></i> Funil em aberto</div>
+        <div class="rv-funnel">
+          <div class="rv-funnel-step">
+            <span class="rv-funnel-step-val" style="color:#60a5fa;">{{ v.em_diagnostico }}</span>
+            <span class="rv-funnel-step-label">Diagnóstico</span>
+          </div>
+          <div class="rv-funnel-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+          <div class="rv-funnel-step">
+            <span class="rv-funnel-step-val" style="color:#a78bfa;">{{ v.em_proposta }}</span>
+            <span class="rv-funnel-step-label">Proposta</span>
+          </div>
+          <div class="rv-funnel-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+          <div class="rv-funnel-step">
+            <span class="rv-funnel-step-val" style="color:#f59e0b;">{{ v.em_negociacao }}</span>
+            <span class="rv-funnel-step-label">Negociação</span>
+          </div>
+        </div>
+      </div>
+
+      {# ── SEÇÃO 3: RESULTADO ── #}
+      <div>
+        <div class="rv-section-title"><i class="fa-solid fa-trophy" style="color:#f59e0b;font-size:10px;"></i> Resultado do período</div>
+        <div class="rv-metrics">
+          <div class="rv-metric">
+            <div class="rv-metric-val green">{{ v.ganhos }}</div>
+            <div class="rv-metric-label">Vendas ganhas</div>
+          </div>
+          <div class="rv-metric">
+            <div class="rv-metric-val red">{{ v.perdidos }}</div>
+            <div class="rv-metric-label">Perdidas</div>
+          </div>
+          <div class="rv-metric" style="grid-column: span 2; display:flex; align-items:center; justify-content: space-between;">
+            <div>
+              <div class="rv-metric-label" style="margin-bottom:4px;">Taxa de conversão</div>
+              {% if v.taxa_conversao >= 50 %}
+                <span class="rv-taxa verde">{{ v.taxa_conversao }}%</span>
+              {% elif v.taxa_conversao >= 25 %}
+                <span class="rv-taxa amarelo">{{ v.taxa_conversao }}%</span>
+              {% else %}
+                <span class="rv-taxa vermelho">{{ v.taxa_conversao }}%</span>
+              {% endif %}
+            </div>
+            {% if v.motivo_perda_top != '—' %}
+            <div style="text-align:right;">
+              <div class="rv-metric-label" style="margin-bottom:4px;">Principal motivo de perda</div>
+              <span class="rv-chip" title="{{ v.motivo_perda_top }}">
+                <i class="fa-solid fa-circle-xmark" style="font-size:9px;"></i>{{ v.motivo_perda_top|truncatechars:22 }}
+              </span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>{# /rv-sections #}
+  </div>{# /rv-card #}
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="rv-grid">
+  <div class="rv-empty">
+    <i class="fa-solid fa-users-slash"></i>
+    <p>Nenhum vendedor com atividade no período selecionado.</p>
+  </div>
+</div>
+{% endif %}

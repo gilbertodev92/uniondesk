@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Vendas | Sales Monster</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --border: #334155;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+        /* BARRA SUPERIOR */
+        .navbar {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .btn-voltar {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+
+        .btn-voltar:hover { color: var(--accent); }
+
+        /* FILTROS */
+        .filter-group {
+            display: flex;
+            gap: 5px;
+            background: var(--bg);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .filter-link {
+            text-decoration: none;
+            color: var(--text-dim);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            transition: 0.2s;
+        }
+
+        .filter-link.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .user-badge {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+
+        /* GRID SUPERIOR */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            font-weight: 800;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* PROGRESSO */
+        .meta-valor { font-size: 2.2rem; font-weight: 800; margin-bottom: 5px; }
+        .meta-sub { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 25px; }
+
+        .progress-container {
+            height: 14px;
+            background: #0f172a;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+            transition: width 1s ease-in-out;
+            max-width: 100%;
+        }
+
+        .projection-box {
+            background: rgba(245, 158, 11, 0.05);
+            border: 1px dashed var(--warning);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* FORMULÁRIO */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; color: var(--text-dim); font-size: 0.75rem; margin-bottom: 5px; font-weight: 600; }
+        
+        .monster-input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .monster-input:focus { border-color: var(--accent); }
+
+        .btn-add {
+            width: 100%;
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-add:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+        /* ==========================================
+           ÁREA DOS GRÁFICOS NOVOS
+           ========================================== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
+
+        /* TABELA */
+        .history-card { overflow: hidden; padding: 0; margin-top: 30px; }
+        .history-header { padding: 25px 25px 15px 25px; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 15px 25px; color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 18px 25px; border-bottom: 1px solid rgba(51, 65, 85, 0.5); font-size: 0.9rem; }
+        tr:last-child td { border: none; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .bg-eq { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .bg-sv { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+        .btn-delete {
+            color: var(--danger);
+            background: none;
+            border: none;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: 0.2s;
+        }
+        .btn-delete:hover { opacity: 1; transform: scale(1.2); }
+
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="/comercial/" class="btn-voltar">
+            <i class="fa-solid fa-chevron-left"></i> Voltar ao Pipeline
+        </a>
+
+        <div class="filter-group">
+            <a href="?periodo=mes" class="filter-link {% if periodo == 'mes' or not periodo %}active{% endif %}">MÊS</a>
+            <a href="?periodo=3" class="filter-link {% if periodo == '3' %}active{% endif %}">3 MESES</a>
+            <a href="?periodo=6" class="filter-link {% if periodo == '6' %}active{% endif %}">6 MESES</a>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span class="user-badge">{{ request.user.username|upper }}</span>
+            <span style="font-size: 0.8rem; color: var(--text-dim);">{% now "F Y" %}</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <div class="dashboard-grid">
+            
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-chart-pie"></i> Desempenho Mensal</div>
+                
+                <div class="meta-valor">R$ {{ total_geral|floatformat:2 }}</div>
+                <div class="meta-sub">Vendido de R$ {{ valor_meta|floatformat:2 }} da meta</div>
+
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px;">
+                    <span style="color: var(--accent); font-weight: 700;">{{ porcentagem_meta }}%</span>
+                    <span style="color: var(--text-dim);">Falta R$ {{ falta_vender|floatformat:2 }}</span>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: {% if porcentagem_meta > 100 %}100{% else %}{{ porcentagem_meta|floatformat:0 }}{% endif %}%;"></div>
+                </div>
+
+                {% if falta_vender > 0 %}
+                <div class="projection-box">
+                    <i class="fa-solid fa-bolt-lightning" style="color: var(--warning); font-size: 1.5rem;"></i>
+                    <div>
+                        <div style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Meta Diária Sugerida</div>
+                        <div style="font-size: 1.1rem; font-weight: 700;">R$ {{ meta_diaria_necessaria|floatformat:2 }} <small>/ dia</small></div>
+                    </div>
+                </div>
+                {% elif valor_meta > 0 %}
+                <div class="projection-box" style="border-color: var(--success); background: rgba(16, 185, 129, 0.05);">
+                    <i class="fa-solid fa-trophy" style="color: var(--success); font-size: 1.5rem;"></i>
+                    <div style="color: var(--success); font-weight: 700;">META BATIDA! PARABÉNS!</div>
+                </div>
+                {% endif %}
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 25px 0;">
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="atualizar_meta" value="1">
+                    <label style="font-size: 0.7rem; color: var(--text-dim); display: block; margin-bottom: 5px;">AJUSTAR VALOR DA META (R$)</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" step="0.01" name="valor_meta" class="monster-input" value="{{ valor_meta|stringformat:'.2f' }}">
+                        <button type="submit" style="background: var(--accent); color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer;"><i class="fa-solid fa-save"></i></button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-cart-plus"></i> Novo Lançamento</div>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="adicionar_venda" value="1">
+                    
+                    <div class="form-group">
+                        <label>TIPO DE PRODUTO/SERVIÇO</label>
+                        <select name="tipo" class="monster-input">
+                            <option value="EQUIPAMENTO">Equipamento</option>
+                            <option value="SERVICO">Serviço</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>VALOR DA VENDA (R$)</label>
+                        <input type="number" step="0.01" name="valor" class="monster-input" placeholder="0,00" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>DESCRIÇÃO RÁPIDA</label>
+                        <input type="text" name="descricao" class="monster-input" placeholder="Ex: Cliente X - PC Gamer" required>
+                    </div>
+
+                    <button type="submit" class="btn-add">REGISTRAR VENDA</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-rocket text-purple-500"></i> Projeção e Evolução da Meta</div>
+                <div class="chart-wrapper">
+                    <canvas id="chartEvolucao"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-chart-column text-sky-500"></i> Volume Diário (Últimos 30 Dias)</div>
+                <div class="chart-wrapper">
+                    <canvas id="chartBarras"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header">
+                <div class="card-title" style="margin-bottom: 0;"><i class="fa-solid fa-clock-rotate-left"></i> Histórico de Registros</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Descrição</th>
+                        <th style="text-align: right;">Valor</th>
+                        <th style="text-align: center;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venda in vendas %}
+                    <tr>
+                        <td style="color: var(--text-dim);">{{ venda.data_venda|date:"d/m" }}</td>
+                        <td>
+                            <span class="badge {% if venda.tipo == 'EQUIPAMENTO' %}bg-eq{% else %}bg-sv{% endif %}">
+                                {{ venda.get_tipo_display|upper }}
+                            </span>
+                        </td>
+                        <td style="font-weight: 500;">{{ venda.descricao }}</td>
+                        <td style="text-align: right; font-weight: 700; color: var(--success);">R$ {{ venda.valor|floatformat:2 }}</td>
+                        <td style="text-align: center;">
+                            <a href="{% url 'crm_vendas:excluir_venda' venda.id %}" onclick="return confirm('Deseja realmente excluir este lançamento?')" class="btn-delete">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 40px;">Nenhuma venda registrada no período selecionado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        Chart.defaults.color = '#64748b';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        const gridColor = '#334155';
+
+        // ==============================================
+        // GRÁFICO 1: EVOLUÇÃO E PROJEÇÃO DA META (LINHAS)
+        // ==============================================
+        const labelsMes = JSON.parse('{{ labels_mes|safe }}');
+        const dadosRealizado = JSON.parse('{{ dados_realizado|safe }}');
+        const dadosMetaIdeal = JSON.parse('{{ dados_meta_ideal|safe }}');
+        const dadosProjecao = JSON.parse('{{ dados_projecao|safe }}');
+
+        const ctxEvolucao = document.getElementById('chartEvolucao').getContext('2d');
+        new Chart(ctxEvolucao, {
+            type: 'line',
+            data: {
+                labels: labelsMes,
+                datasets: [
+                    {
+                        label: 'Vendas Acumuladas',
+                        data: dadosRealizado,
+                        borderColor: '#10b981', // Verde
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#10b981',
+                        pointRadius: 4,
+                        fill: true,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Projeção (Ritmo Atual)',
+                        data: dadosProjecao,
+                        borderColor: '#f59e0b', // Laranja
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Caminho da Meta',
+                        data: dadosMetaIdeal,
+                        borderColor: '#475569', // Cinza
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 20 } },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#cbd5e1',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        callbacks: { label: function(context) { return context.dataset.label + ': R$ ' + context.parsed.y.toLocaleString('pt-BR'); } }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, border: { display: false } }
+                }
+            }
+        });
+
+        // ==============================================
+        // GRÁFICO 2: VENDAS DIÁRIAS (BARRAS)
+        // ==============================================
+        const labelsDiario = JSON.parse('{{ labels_grafico|safe }}');
+        const valoresDiario = JSON.parse('{{ valores_grafico|safe }}');
+
+        const ctxBarras = document.getElementById('chartBarras').getContext('2d');
+        new Chart(ctxBarras, {
+            type: 'bar',
+            data: {
+                labels: labelsDiario,
+                datasets: [{
+                    label: 'Vendido no Dia (R$)',
+                    data: valoresDiario,
+                    backgroundColor: '#3b82f6', // Azul
+                    hoverBackgroundColor: '#60a5fa',
+                    borderRadius: 4,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#cbd5e1',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        callbacks: { label: function(context) { return 'R$ ' + context.parsed.y.toLocaleString('pt-BR'); } }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, border: { display: false } }
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

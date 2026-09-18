@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 p-8">
+    <div class="max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Painel de Sistemas</h1>
+
+        <!-- Botão novo sistema -->
+        <div class="flex justify-between items-center mb-4">
+            <a href="{% url 'sistema_create' %}" 
+               class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
+               + Novo Sistema
+            </a>
+        </div>
+
+        <!-- Tabela de sistemas -->
+        <div class="overflow-x-auto">
+            <table class="table-auto w-full border-collapse border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-200 text-gray-800">
+                        <th class="px-4 py-2 border">Código</th>
+                        <th class="px-4 py-2 border">Nome</th>
+                        <th class="px-4 py-2 border">Fabricante</th>
+                        <th class="px-4 py-2 border text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sistema in sistemas %}
+                    <tr class="hover:bg-gray-100">
+                        <td class="px-4 py-2 border">{{ sistema.codigo }}</td>
+                        <td class="px-4 py-2 border">{{ sistema.nome }}</td>
+                        <td class="px-4 py-2 border">{{ sistema.fabricante }}</td>
+                        <td class="px-4 py-2 border text-center">
+                            <a href="{% url 'sistema_edit' sistema.codigo %}" class="text-blue-600 hover:underline">Editar</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-4 py-2 text-center">Nenhum sistema cadastrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Botão voltar -->
+        <div class="mt-6 text-center">
+            <a href="{% url 'painel_usuarios' %}" 
+               class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded transition">
+               Voltar para Administração
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

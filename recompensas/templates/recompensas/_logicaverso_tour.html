@@ -1,0 +1,376 @@
+{% comment %}
+  ══════════════════════════════════════════════════════════════════════
+  LOGICAVERSO — Onboarding (tour de boas-vindas em slides)
+  ══════════════════════════════════════════════════════════════════════
+  Instalação:
+    1) salve em recompensas/templates/recompensas/_logicaverso_tour.html
+    2) no dashboard.html, logo depois do <div class="rpg-wrap"> ... (ou
+       antes do {% endblock %}, tanto faz — é overlay fixo), inclua:
+         {% include "recompensas/_logicaverso_tour.html" %}
+    3) para abrir manualmente depois (botão "Como funciona?"), chame:
+         onclick="lvTourAbrir()"
+
+  Abre automaticamente no 1º acesso (guarda flag no localStorage).
+  Ilustrações são SVG desenhados aqui — sem imagem externa, sem dependência.
+  ══════════════════════════════════════════════════════════════════════
+{% endcomment %}
+
+<style>
+/* ═══════════════════ OVERLAY DO TOUR ═══════════════════ */
+#lv-tour{
+  position:fixed; inset:0; z-index:1200; display:none;
+  align-items:center; justify-content:center; padding:20px;
+  background:rgb(var(--c-bg) / .78); backdrop-filter:blur(8px);
+}
+#lv-tour.is-open{display:flex; animation:lvt-fade .3s ease;}
+@keyframes lvt-fade{from{opacity:0;} to{opacity:1;}}
+
+.lvt-box{
+  width:100%; max-width:600px;
+  background:
+     radial-gradient(ellipse at 50% 0%, rgb(var(--c-accent) / .12), transparent 60%),
+     rgb(var(--c-panel));
+  border:1px solid rgb(var(--c-line));
+  border-radius:22px; overflow:hidden;
+  box-shadow:0 30px 80px -24px rgba(0,0,0,.75), 0 0 0 1px rgb(var(--c-ink) / .04) inset;
+  display:flex; flex-direction:column;
+  animation:lvt-pop .35s cubic-bezier(.2,1.3,.35,1);
+}
+@keyframes lvt-pop{from{transform:translateY(18px) scale(.96); opacity:0;} to{transform:none; opacity:1;}}
+
+/* topo: passos + fechar */
+.lvt-top{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px 0;
+}
+.lvt-dots{display:flex; gap:7px;}
+.lvt-dot{
+  width:8px; height:8px; border-radius:50%;
+  background:rgb(var(--c-line)); transition:all .25s; cursor:pointer;
+}
+.lvt-dot.is-on{width:24px; border-radius:5px; background:rgb(var(--c-accent));}
+.lvt-x{
+  width:32px; height:32px; border-radius:9px; cursor:pointer;
+  border:1px solid rgb(var(--c-line)); background:transparent;
+  color:rgb(var(--c-ink-faint)); font-size:14px;
+  display:flex; align-items:center; justify-content:center; transition:all .15s;
+}
+.lvt-x:hover{background:rgb(var(--c-line)); color:rgb(var(--c-ink));}
+
+/* palco da ilustração */
+.lvt-stage{
+  height:210px; margin:8px 20px 0;
+  border-radius:16px; position:relative; overflow:hidden;
+  background:
+    radial-gradient(ellipse at 50% 120%, rgb(var(--c-accent) / .1), transparent 60%),
+    rgb(var(--c-bg));
+  border:1px solid rgb(var(--c-line));
+  display:flex; align-items:center; justify-content:center;
+}
+.lvt-stage svg{width:auto; height:150px; overflow:visible;}
+
+/* texto do slide */
+.lvt-body{padding:20px 26px 4px; text-align:center;}
+.lvt-kicker{
+  font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700;
+  letter-spacing:.22em; text-transform:uppercase; color:rgb(var(--c-accent-soft));
+  margin-bottom:8px;
+}
+.lvt-title{
+  font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700;
+  color:rgb(var(--c-ink)); letter-spacing:-.4px; margin-bottom:10px; line-height:1.2;
+}
+.lvt-text{font-size:14px; color:rgb(var(--c-ink-soft)); line-height:1.6; max-width:430px; margin:0 auto;}
+.lvt-text b{color:rgb(var(--c-ink)); font-weight:700;}
+.lvt-po{color:rgb(var(--c-special)); font-weight:700;}
+.lvt-lc{color:rgb(var(--c-warn)); font-weight:700;}
+.lvt-xp{color:rgb(var(--c-accent-soft)); font-weight:700;}
+
+/* rodapé: navegação */
+.lvt-foot{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; padding:18px 22px 22px;
+}
+.lvt-btn{
+  height:44px; padding:0 22px; border-radius:12px; cursor:pointer;
+  font-family:inherit; font-size:14px; font-weight:700;
+  display:inline-flex; align-items:center; gap:9px; transition:all .16s;
+  border:1px solid rgb(var(--c-line)); background:transparent; color:rgb(var(--c-ink-soft));
+}
+.lvt-btn:hover{background:rgb(var(--c-line)); color:rgb(var(--c-ink));}
+.lvt-btn--primary{
+  background:rgb(var(--c-accent)); border-color:rgb(var(--c-accent)); color:#fff; margin-left:auto;
+  box-shadow:0 8px 24px -8px rgb(var(--c-accent) / .6);
+}
+.lvt-btn--primary:hover{background:rgb(var(--c-accent-soft)); color:#fff;}
+.lvt-btn--ghost{opacity:.7;}
+.lvt-btn[disabled]{opacity:0; pointer-events:none;}
+
+/* cada slide */
+.lvt-slide{display:none;}
+.lvt-slide.is-on{display:block; animation:lvt-slidein .4s ease;}
+@keyframes lvt-slidein{from{opacity:0; transform:translateX(16px);} to{opacity:1; transform:none;}}
+
+/* ── animações das ilustrações ── */
+@keyframes lvt-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-9px);}}
+@keyframes lvt-spin{to{transform:rotate(360deg);}}
+@keyframes lvt-pulse{0%,100%{opacity:.5; transform:scale(1);}50%{opacity:1; transform:scale(1.08);}}
+@keyframes lvt-dash{to{stroke-dashoffset:0;}}
+@keyframes lvt-pop2{0%{transform:scale(0);}70%{transform:scale(1.15);}100%{transform:scale(1);}}
+.lvt-float{animation:lvt-float 2.6s ease-in-out infinite;}
+.lvt-float2{animation:lvt-float 2.6s ease-in-out infinite .5s;}
+.lvt-float3{animation:lvt-float 2.6s ease-in-out infinite 1s;}
+.lvt-spin{animation:lvt-spin 6s linear infinite; transform-origin:center;}
+.lvt-pulse{animation:lvt-pulse 2s ease-in-out infinite;}
+.lvt-draw{stroke-dasharray:200; stroke-dashoffset:200; animation:lvt-dash 1.4s ease forwards;}
+.lvt-pop2{animation:lvt-pop2 .5s cubic-bezier(.2,1.4,.4,1) forwards; transform-origin:center;}
+
+@media (max-width:560px){
+  .lvt-stage{height:170px;} .lvt-stage svg{height:120px;}
+  .lvt-title{font-size:19px;} .lvt-body{padding:16px 18px 4px;}
+  .lvt-btn{padding:0 16px; font-size:13px;}
+}
+@media (prefers-reduced-motion: reduce){
+  .lvt-float,.lvt-float2,.lvt-float3,.lvt-spin,.lvt-pulse,.lvt-draw,.lvt-pop2{animation:none !important; stroke-dashoffset:0 !important;}
+}
+</style>
+
+<div id="lv-tour" role="dialog" aria-modal="true" aria-label="Como funciona o Logicaverso">
+  <div class="lvt-box">
+
+    <div class="lvt-top">
+      <div class="lvt-dots" id="lvt-dots"></div>
+      <button class="lvt-x" onclick="lvTourFechar()" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- ═══════════ SLIDE 1 — BOAS-VINDAS ═══════════ -->
+    <div class="lvt-slide is-on">
+      <div class="lvt-stage">
+        <svg viewBox="0 0 220 160">
+          <circle cx="110" cy="80" r="52" fill="none" stroke="rgb(var(--c-accent))" stroke-width="2" opacity=".3" class="lvt-spin"/>
+          <circle cx="110" cy="80" r="38" fill="rgb(var(--c-accent) / .12)" class="lvt-pulse"/>
+          <text x="110" y="94" text-anchor="middle" font-size="38" class="lvt-float">🎮</text>
+          <text x="42" y="46" font-size="20" class="lvt-float2">✨</text>
+          <text x="170" y="120" font-size="18" class="lvt-float3">⭐</text>
+          <text x="176" y="44" font-size="15" class="lvt-float">💎</text>
+        </svg>
+      </div>
+      <div class="lvt-body">
+        <div class="lvt-kicker">Bem-vindo</div>
+        <h2 class="lvt-title">Este é o Logicaverso</h2>
+        <p class="lvt-text">Aqui o seu trabalho vira recompensa. Cada atendimento, cada meta batida
+        te dá pontos que você troca por prêmios de verdade. Em 6 telas rápidas, você entende tudo.</p>
+      </div>
+    </div>
+
+    <!-- ═══════════ SLIDE 2 — AS MOEDAS ═══════════ -->
+    <div class="lvt-slide">
+      <div class="lvt-stage">
+        <svg viewBox="0 0 260 160">
+          <!-- LC -->
+          <g class="lvt-float">
+            <circle cx="55" cy="80" r="30" fill="rgb(var(--c-warn) / .15)" stroke="rgb(var(--c-warn))" stroke-width="2"/>
+            <text x="55" y="90" text-anchor="middle" font-size="26">🪙</text>
+          </g>
+          <!-- XP -->
+          <g class="lvt-float2">
+            <circle cx="130" cy="80" r="30" fill="rgb(var(--c-accent) / .15)" stroke="rgb(var(--c-accent))" stroke-width="2"/>
+            <text x="130" y="90" text-anchor="middle" font-size="24">⭐</text>
+          </g>
+          <!-- PÓ -->
+          <g class="lvt-float3">
+            <circle cx="205" cy="80" r="30" fill="rgb(var(--c-special) / .15)" stroke="rgb(var(--c-special))" stroke-width="2"/>
+            <text x="205" y="90" text-anchor="middle" font-size="24">🔮</text>
+          </g>
+        </svg>
+      </div>
+      <div class="lvt-body">
+        <div class="lvt-kicker">Suas moedas</div>
+        <h2 class="lvt-title">Três recursos</h2>
+        <p class="lvt-text">
+          <span class="lvt-lc">Lógica Coins (LC)</span> é o dinheiro do jogo — você gasta na roleta e na loja.<br>
+          <span class="lvt-xp">XP</span> sobe o seu nível e mostra sua evolução.<br>
+          <span class="lvt-po">Pó Mágico</span> serve pra fabricar peças que faltam.</p>
+      </div>
+    </div>
+
+    <!-- ═══════════ SLIDE 3 — GANHAR (MISSÕES + CHECK-IN) ═══════════ -->
+    <div class="lvt-slide">
+      <div class="lvt-stage">
+        <svg viewBox="0 0 240 160">
+          <rect x="40" y="40" width="160" height="80" rx="10" fill="rgb(var(--c-panel))" stroke="rgb(var(--c-line))" stroke-width="2"/>
+          <path d="M55 70 L200 70" stroke="rgb(var(--c-line))" stroke-width="2"/>
+          <rect x="55" y="86" width="90" height="8" rx="4" fill="rgb(var(--c-line))"/>
+          <rect x="55" y="86" width="60" height="8" rx="4" fill="rgb(var(--c-accent))" class="lvt-draw" style="stroke:none"/>
+          <text x="62" y="60" font-size="14">📋</text>
+          <text x="150" y="61" font-size="11" fill="rgb(var(--c-warn))" font-weight="700">+40 LC</text>
+          <g class="lvt-float"><text x="200" y="42" font-size="22">✅</text></g>
+        </svg>
+      </div>
+      <div class="lvt-body">
+        <div class="lvt-kicker">Como ganhar</div>
+        <h2 class="lvt-title">Missões e check-in diário</h2>
+        <p class="lvt-text">Cumpra <b>missões</b> diárias, semanais e mensais atendendo bem os clientes.
+        E não esqueça o <b>check-in de cada dia</b>: quanto mais dias seguidos, maior o bônus —
+        de <span class="lvt-lc">20 LC</span> no 1º dia até <span class="lvt-lc">120 LC</span> na sequência.</p>
+      </div>
+    </div>
+
+    <!-- ═══════════ SLIDE 4 — ROLETA E PEÇAS ═══════════ -->
+    <div class="lvt-slide">
+      <div class="lvt-stage">
+        <svg viewBox="0 0 240 160">
+          <circle cx="90" cy="80" r="44" fill="none" stroke="rgb(var(--c-accent))" stroke-width="3" stroke-dasharray="8 6" class="lvt-spin"/>
+          <circle cx="90" cy="80" r="30" fill="rgb(var(--c-accent) / .12)"/>
+          <text x="90" y="92" text-anchor="middle" font-size="28">🎰</text>
+          <!-- seta -->
+          <path d="M160 80 L185 80 M178 73 L185 80 L178 87" stroke="rgb(var(--c-ink-faint))" stroke-width="2.5" fill="none"/>
+          <!-- peça -->
+          <g class="lvt-float2"><text x="205" y="90" text-anchor="middle" font-size="30">🧩</text></g>
+        </svg>
+      </div>
+      <div class="lvt-body">
+        <div class="lvt-kicker">A roleta</div>
+        <h2 class="lvt-title">Gire e colecione peças</h2>
+        <p class="lvt-text">Cada giro custa <span class="lvt-lc">120 LC</span> e te dá uma <b>peça</b> de
+        um item colecionável. Junte todas as peças de um item pra montá-lo. As peças têm raridades —
+        <b>comum, raro, épico</b> e <b>lendário</b>.</p>
+      </div>
+    </div>
+
+    <!-- ═══════════ SLIDE 5 — CRAFT (MONTAR / DESENCANTAR) ═══════════ -->
+    <div class="lvt-slide">
+      <div class="lvt-stage">
+        <svg viewBox="0 0 260 160">
+          <!-- 3 peças -->
+          <g class="lvt-float"><text x="40" y="70" font-size="24">🧩</text></g>
+          <g class="lvt-float2"><text x="40" y="110" font-size="24">🧩</text></g>
+          <g class="lvt-float3"><text x="80" y="90" font-size="24">🧩</text></g>
+          <!-- seta -->
+          <path d="M120 88 L150 88 M143 81 L150 88 L143 95" stroke="rgb(var(--c-ink-faint))" stroke-width="2.5" fill="none"/>
+          <!-- item montado -->
+          <g class="lvt-pulse">
+            <rect x="165" y="55" width="66" height="66" rx="12" fill="rgb(var(--c-success) / .15)" stroke="rgb(var(--c-success))" stroke-width="2"/>
+            <text x="198" y="98" text-anchor="middle" font-size="30">🎁</text>
+          </g>
+        </svg>
+      </div>
+      <div class="lvt-body">
+        <div class="lvt-kicker">A forja</div>
+        <h2 class="lvt-title">Montar, desencantar e craftar</h2>
+        <p class="lvt-text">Tem as peças todas? <b>Monte o item</b> e resgate o prêmio.
+        Peça repetida ou que não quer? <b>Desencante</b> e vire <span class="lvt-po">Pó Mágico</span>.
+        Falta uma peça específica? Use o pó pra <b>craftar</b> exatamente ela.</p>
+      </div>
+    </div>
+
+    <!-- ═══════════ SLIDE 6 — PASSE + MERCADO + LOJA ═══════════ -->
+    <div class="lvt-slide">
+      <div class="lvt-stage">
+        <svg viewBox="0 0 260 160">
+          <g class="lvt-float"><text x="45" y="78" text-anchor="middle" font-size="30">🏪</text>
+            <text x="45" y="104" text-anchor="middle" font-size="9" fill="rgb(var(--c-ink-faint))">LOJA</text></g>
+          <g class="lvt-float2"><text x="130" y="78" text-anchor="middle" font-size="30">🤝</text>
+            <text x="130" y="104" text-anchor="middle" font-size="9" fill="rgb(var(--c-ink-faint))">MERCADO</text></g>
+          <g class="lvt-float3"><text x="215" y="78" text-anchor="middle" font-size="30">🏆</text>
+            <text x="215" y="104" text-anchor="middle" font-size="9" fill="rgb(var(--c-ink-faint))">PASSE</text></g>
+        </svg>
+      </div>
+      <div class="lvt-body">
+        <div class="lvt-kicker">E ainda tem mais</div>
+        <h2 class="lvt-title">Loja, mercado e passe</h2>
+        <p class="lvt-text">Troque <span class="lvt-lc">LC</span> por prêmios oficiais na <b>Loja</b>.
+        Venda ou compre peças com os colegas no <b>Mercado</b>. E torçam juntos pelo <b>Passe da Equipe</b>:
+        uma meta coletiva que, batida, premia <b>todo mundo</b>.</p>
+      </div>
+    </div>
+
+    <div class="lvt-foot">
+      <button class="lvt-btn lvt-btn--ghost" id="lvt-voltar" onclick="lvTourVoltar()" disabled>
+        <i class="fa-solid fa-arrow-left"></i> Voltar
+      </button>
+      <button class="lvt-btn lvt-btn--primary" id="lvt-avancar" onclick="lvTourAvancar()">
+        Avançar <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  const overlay = document.getElementById('lv-tour');
+  if (!overlay) return;
+  const slides = overlay.querySelectorAll('.lvt-slide');
+  const dotsBox = document.getElementById('lvt-dots');
+  const btnVoltar = document.getElementById('lvt-voltar');
+  const btnAvancar = document.getElementById('lvt-avancar');
+  const total = slides.length;
+  let atual = 0;
+  const CHAVE = 'lv_tour_visto_v1';
+
+  // monta os pontinhos
+  for (let i = 0; i < total; i++){
+    const d = document.createElement('div');
+    d.className = 'lvt-dot' + (i === 0 ? ' is-on' : '');
+    d.onclick = () => irPara(i);
+    dotsBox.appendChild(d);
+  }
+  const dots = dotsBox.querySelectorAll('.lvt-dot');
+
+  function reanimar(slide){
+    // re-dispara as animações de "desenho/pop" ao entrar no slide
+    slide.querySelectorAll('.lvt-draw, .lvt-pop2').forEach(el => {
+      el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+    });
+  }
+
+  function irPara(i){
+    atual = Math.max(0, Math.min(total - 1, i));
+    slides.forEach((s, idx) => s.classList.toggle('is-on', idx === atual));
+    dots.forEach((d, idx) => d.classList.toggle('is-on', idx === atual));
+    reanimar(slides[atual]);
+
+    btnVoltar.disabled = (atual === 0);
+    if (atual === total - 1){
+      btnAvancar.innerHTML = 'Começar a jogar <i class="fa-solid fa-check"></i>';
+    } else {
+      btnAvancar.innerHTML = 'Avançar <i class="fa-solid fa-arrow-right"></i>';
+    }
+  }
+
+  window.lvTourAvancar = function(){
+    if (atual === total - 1){ lvTourFechar(); return; }
+    irPara(atual + 1);
+  };
+  window.lvTourVoltar = function(){ irPara(atual - 1); };
+
+  window.lvTourAbrir = function(){
+    atual = 0; irPara(0);
+    overlay.classList.add('is-open');
+  };
+  window.lvTourFechar = function(){
+    overlay.classList.remove('is-open');
+    try { localStorage.setItem(CHAVE, '1'); } catch(e){}
+  };
+
+  // teclado: setas navegam, Esc fecha
+  document.addEventListener('keydown', function(e){
+    if (!overlay.classList.contains('is-open')) return;
+    if (e.key === 'ArrowRight') lvTourAvancar();
+    else if (e.key === 'ArrowLeft') lvTourVoltar();
+    else if (e.key === 'Escape') lvTourFechar();
+  });
+  // clicar no fundo fecha
+  overlay.addEventListener('mousedown', function(e){ if (e.target === overlay) lvTourFechar(); });
+
+  // abre sozinho no primeiro acesso
+  let visto = false;
+  try { visto = localStorage.getItem(CHAVE) === '1'; } catch(e){}
+  if (!visto){
+    if (document.readyState === 'loading')
+      document.addEventListener('DOMContentLoaded', () => setTimeout(lvTourAbrir, 400));
+    else setTimeout(lvTourAbrir, 400);
+  }
+})();
+</script>

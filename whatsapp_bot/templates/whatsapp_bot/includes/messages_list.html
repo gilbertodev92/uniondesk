@@ -1,0 +1,956 @@
+<style>
+    /* ═══════════════════════════════════════════════════════
+       BALÕES DE MENSAGEM (nomes de classe mantidos – usados pelo parser de autor)
+       ═══════════════════════════════════════════════════════ */
+    /* Balão do técnico: accent sólido e legível nos 3 temas */
+    .balao-tecnico {
+        background: rgb(var(--c-accent) / 0.16);
+        border: 1px solid rgb(var(--c-accent) / 0.45);
+        border-radius: 18px 18px 5px 18px;
+        box-shadow: 0 2px 8px rgb(var(--c-deep) / 0.5);
+        position: relative;
+    }
+    /* Balão do cliente: BEGE da paleta no tema claro (token --c-bubble-in do base.html).
+       No dark/gray o token equivale ao panel, então nada muda no escuro. */
+    .balao-cliente {
+        background: rgb(var(--c-bubble-in, var(--c-panel)));
+        border: 1px solid rgb(var(--c-line));
+        border-radius: 18px 18px 18px 5px;
+        box-shadow: 0 2px 8px rgb(var(--c-deep) / 0.5);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       AGRUPAMENTO DE MENSAGENS CONSECUTIVAS (estilo WhatsApp)
+       A marcação vem do Django: a mensagem que segue outra do MESMO
+       autor recebe a classe .colada (topo achatado + menos espaço).
+       Assim NÃO depende de irmãos adjacentes (SISTEMA/INTERNO no meio
+       não quebram o efeito) e sobrevive ao refresh via innerHTML.
+       ═══════════════════════════════════════════════════════ */
+    #historia-mensagens > .msg-linha.colada { margin-top: 2px !important; }
+
+    /* quem é colada achata o canto do topo do lado do "biquinho" */
+    #historia-mensagens > .msg-linha.colada .balao-cliente { border-top-left-radius: 6px; }
+    #historia-mensagens > .msg-linha.colada .balao-tecnico { border-top-right-radius: 6px; }
+
+    /* quem tem uma colada logo depois perde o biquinho de baixo (vira bloco) */
+    #historia-mensagens > .msg-linha.tem-colada .balao-cliente { border-bottom-left-radius: 18px; }
+    #historia-mensagens > .msg-linha.tem-colada .balao-tecnico { border-bottom-right-radius: 18px; }
+
+    /* ═══════════════════════════════════════════════════════
+       CABEÇALHO DO CHAT — reestilizado
+       ═══════════════════════════════════════════════════════ */
+    .chat-header {
+        background:
+            linear-gradient(180deg, rgb(var(--c-accent) / 0.05) 0%, transparent 60%),
+            rgb(var(--c-deep));
+        border-bottom: 1px solid rgb(var(--c-line));
+        box-shadow: 0 6px 22px -14px rgb(var(--c-bg));
+    }
+    .chat-header .header-avatar {
+        width: 46px; height: 46px;
+        border-radius: 16px;
+        border: 1px solid rgb(var(--c-line));
+        background: rgb(var(--c-panel));
+        overflow: hidden;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        position: relative;
+        transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+        flex-shrink: 0;
+    }
+    .chat-header .header-avatar:hover {
+        transform: scale(1.04);
+        border-color: rgb(var(--c-accent) / 0.6);
+        box-shadow: 0 0 0 3px rgb(var(--c-accent) / 0.12);
+    }
+    /* pastilha do número de whatsapp */
+    .header-fone {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: rgb(var(--c-panel));
+        border: 1px solid rgb(var(--c-line));
+        line-height: 1;
+    }
+    /* grupo de ações do cabeçalho: uma "pílula" única segmentada */
+    .header-actions {
+        display: flex; align-items: center;
+        background: rgb(var(--c-panel) / 0.7);
+        border: 1px solid rgb(var(--c-line));
+        border-radius: 14px;
+        padding: 3px;
+        gap: 2px;
+        backdrop-filter: blur(8px);
+    }
+    .header-actions .head-btn {
+        width: 34px; height: 34px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 10px;
+        border: none;
+        background: transparent;
+        color: rgb(var(--c-ink-soft));
+        transition: all .15s ease;
+    }
+    .header-actions .head-btn:hover {
+        background: rgb(var(--c-accent) / 0.14);
+        color: rgb(var(--c-ink));
+        transform: none;
+        box-shadow: none;
+    }
+    .header-actions .head-btn--danger { color: rgb(var(--c-danger)); }
+    .header-actions .head-btn--danger:hover {
+        background: rgb(var(--c-danger));
+        color: rgb(var(--c-panel));
+    }
+
+    /* linha de chips rolável sem scrollbar (não quebra o cabeçalho em telas menores) */
+    .chips-row {
+        display: flex; align-items: center; gap: 6px;
+        overflow-x: auto;
+        -ms-overflow-style: none; scrollbar-width: none;
+        padding-bottom: 1px;
+    }
+    .chips-row::-webkit-scrollbar { display: none; }
+
+    /* Overlay de arrastar arquivo pra conversa */
+    #drop-zone-{{ session.id }}.drop-ativo::after {
+        content: '\f574  Solte o arquivo para enviar';
+        font-family: 'Font Awesome 6 Free', 'Inter', sans-serif; font-weight: 800;
+        position: absolute; inset: 12px; z-index: 150; border-radius: 20px;
+        border: 2.5px dashed rgb(var(--c-accent)); background: rgb(var(--c-accent) / 0.10);
+        backdrop-filter: blur(3px);
+        display: flex; align-items: center; justify-content: center;
+        color: rgb(var(--c-accent)); font-size: 17px; letter-spacing: .02em;
+        pointer-events: none;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 10px; border:1px solid rgb(var(--c-bg)); }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-accent)); }
+
+    .custom-link-style a { color: rgb(var(--c-accent)); text-decoration: underline; text-underline-offset: 3px; font-weight: 500; }
+    .font-display { font-family:'Sora',sans-serif; }
+
+    .chip {
+        display:inline-flex; align-items:center; gap:5px;
+        padding:3px 9px; border-radius:999px;
+        font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+        border:1px solid; line-height:1; white-space:nowrap;
+        flex-shrink: 0;
+    }
+    .head-btn{ transition:all .15s ease; }
+    .msg-action{ transition:all .15s ease; }
+    .composer-btn{ transition:all .15s ease; }
+    .composer-btn:hover{ transform:translateY(-1px); }
+
+    /* AVATAR COM ANEL SUTIL (mantido p/ compatibilidade) */
+    .avatar-ring { position: relative; }
+    .avatar-ring::after {
+        content:'';
+        position:absolute; inset:-3px;
+        border-radius: inherit;
+        border: 1px solid rgb(var(--c-accent) / 0.35);
+        opacity: 0;
+        transition: opacity .2s ease;
+    }
+    .avatar-ring:hover::after { opacity: 1; }
+
+    /* MÍDIA (imagem/vídeo/arquivo) - moldura padronizada */
+    .media-frame {
+        border-radius: 14px;
+        border: 1px solid rgb(var(--c-accent) / 0.14);
+        background: rgb(var(--c-bg) / 0.35);
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+
+    /* Skeleton de carregamento para imagens */
+    .img-skel {
+        background: linear-gradient(100deg, rgb(var(--c-line) / 0.5) 30%, rgb(var(--c-accent) / 0.25) 50%, rgb(var(--c-line) / 0.5) 70%);
+        background-size: 200% 100%;
+        animation: skel-shine 1.4s ease-in-out infinite;
+    }
+    @keyframes skel-shine { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+    .media-loaded { animation: fade-in-media .35s ease; }
+    @keyframes fade-in-media { from { opacity:0; transform: scale(.98); } to { opacity:1; transform: scale(1); } }
+
+    /* ═══════════════════════════════════════════════════════
+       PLAYER DE ÁUDIO — pílula arredondada, ícone em disco accent
+       ═══════════════════════════════════════════════════════ */
+    .audio-pill {
+        background: rgb(var(--c-deep));
+        border: 1px solid rgb(var(--c-line));
+        border-radius: 999px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 3px 10px rgb(var(--c-bg) / 0.4);
+    }
+    .audio-disc {
+        width: 34px; height: 34px;
+        border-radius: 999px;
+        background: rgb(var(--c-accent) / 0.14);
+        border: 1px solid rgb(var(--c-accent) / 0.30);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .audio-wave { display:flex; align-items:center; gap:2px; height:14px; }
+    .audio-wave span {
+        width:2px; border-radius:2px; background: rgb(var(--c-accent) / 0.75);
+        animation: wave-bounce 1.1s ease-in-out infinite;
+    }
+    .audio-wave span:nth-child(1){ height:5px; animation-delay:0s; }
+    .audio-wave span:nth-child(2){ height:10px; animation-delay:.1s; }
+    .audio-wave span:nth-child(3){ height:14px; animation-delay:.2s; }
+    .audio-wave span:nth-child(4){ height:8px; animation-delay:.3s; }
+    .audio-wave span:nth-child(5){ height:12px; animation-delay:.4s; }
+    @keyframes wave-bounce { 0%,100% { transform: scaleY(.5); opacity:.6; } 50% { transform: scaleY(1); opacity:1; } }
+
+    .audio-btn {
+        height: 26px;
+        padding: 0 9px;
+        border-radius: 999px;
+        border: 1px solid rgb(var(--c-line));
+        background: rgb(var(--c-panel));
+        color: rgb(var(--c-ink-soft));
+        font-size: 9px; font-weight: 800;
+        display: inline-flex; align-items: center; justify-content: center;
+        transition: all .15s ease;
+        flex-shrink: 0;
+    }
+    .audio-btn:hover { color: rgb(var(--c-ink)); border-color: rgb(var(--c-accent) / 0.5); }
+    .audio-btn--ia {
+        background: rgb(var(--c-accent) / 0.12);
+        border-color: rgb(var(--c-accent) / 0.35);
+        color: rgb(var(--c-accent));
+    }
+    .audio-btn--ia:hover { background: rgb(var(--c-accent)); color: rgb(var(--c-panel)); }
+
+    audio { border-radius: 999px; }
+    audio::-webkit-media-controls-panel { background: transparent; }
+
+    /* ═══════════════════════════════════════════════════════
+       TEMA CLARO — fundo do chat mais QUENTE (bege pergaminho),
+       menos lavado. Só afeta o tema light; dark/gray intactos.
+       ═══════════════════════════════════════════════════════ */
+    html[data-theme="light"] #drop-zone-{{ session.id }} { background-color: #ece5d7 !important; }
+    html[data-theme="light"] #historia-mensagens {
+        background-color: #ece5d7 !important;
+        background-image: radial-gradient(rgba(120, 95, 40, 0.06) 1px, transparent 1px) !important;
+        background-size: 22px 22px !important;
+    }
+    /* balão do cliente um tom acima do fundo pra destacar, ainda bege */
+    html[data-theme="light"] .balao-cliente { background: #f4efe4; border-color: #dcd3c1; }
+</style>
+
+<style>
+    /* Bandeja de Emojis (mantida) */
+    emoji-picker {
+        --background: rgb(var(--c-deep));
+        --border-color: transparent;
+        --input-border-color: rgb(var(--c-line));
+        --input-border-radius: 99px;
+        --button-hover-background: rgb(var(--c-panel));
+        --indicator-color: rgb(var(--c-accent));
+        --indicator-height: 2px;
+        --num-columns: 8;
+        --emoji-size: 1.3rem;
+        --category-emoji-size: 1.1rem;
+        width: 320px;
+        height: 360px;
+        border-radius: 14px;
+    }
+</style>
+
+<div id="drop-zone-{{ session.id }}" class="flex flex-col w-full h-full bg-[rgb(var(--c-bg))] relative antialiased transition-all duration-300 overflow-hidden" style="font-family: 'Inter', sans-serif;">
+
+    <!-- Fundo técnico limpo -->
+    <div class="absolute inset-0 pointer-events-none z-0" style="background-image:radial-gradient(900px circle at 85% -10%,rgb(var(--c-accent) / 0.07),transparent 55%),radial-gradient(700px circle at -5% 110%,rgb(var(--c-accent-soft) / 0.05),transparent 50%);"></div>
+
+   <!-- ===================== CABEÇALHO ===================== -->
+   <div class="chat-header min-h-[64px] px-4 py-2.5 flex items-center justify-between shrink-0 gap-3 relative z-10">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
+
+            <!-- Avatar -->
+            <div class="header-avatar avatar-ring"
+                 onclick="document.getElementById('modalInfoClienteLocal').classList.remove('hidden')">
+                {% if session.profile_pic %}
+                    <img src="{{ session.profile_pic }}" class="w-full h-full object-cover"
+                         onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');"
+                         onclick="event.stopPropagation(); window.abrirZoom(this.src);" title="Ampliar foto">
+                    <span class="text-ink text-[13px] font-bold hidden">{{ session.cliente.razao_social|slice:":1"|default:"?" }}</span>
+                {% else %}
+                    <span class="text-ink text-[13px] font-bold">{{ session.cliente.razao_social|slice:":1"|default:"?" }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Nome + número + chips -->
+            <div class="min-w-0 flex flex-col justify-center gap-1.5 flex-1">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <h3 class="font-display text-ink font-bold text-[15px] leading-tight truncate tracking-tight shrink min-w-0">
+                        {% if '@g.us' in session.whatsapp_number and session.cliente %}
+                            <i class="fa-solid fa-users text-accent mr-1 text-[11px]"></i> {{ session.cliente.razao_social }}
+                        {% else %}
+                            {{ session.cliente.razao_social|default:session.push_name|default:session.whatsapp_number|cut:"@s.whatsapp.net"|cut:"@lid"|cut:"@g.us" }}
+                        {% endif %}
+                    </h3>
+
+                    {% if '@g.us' not in session.whatsapp_number %}
+                    <div class="header-fone shrink-0">
+                        <i class="fa-brands fa-whatsapp text-success text-[11px]"></i>
+                        <span class="text-[10.5px] font-mono text-ink-soft tracking-tighter">{{ session.whatsapp_number|cut:"@s.whatsapp.net"|cut:"@lid" }}</span>
+                        <button onclick="let temp = document.createElement('textarea'); temp.value = '{{ session.whatsapp_number|cut:'@s.whatsapp.net'|cut:'@lid' }}'; document.body.appendChild(temp); temp.select(); document.execCommand('copy'); document.body.removeChild(temp); this.innerHTML='<i class=\'fa-solid fa-check text-success\'></i>'; setTimeout(() => this.innerHTML='<i class=\'fa-regular fa-copy\'></i>', 2000);" class="text-ink-faint hover:text-ink transition-colors cursor-pointer text-[10px]" title="Copiar">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="chips-row">
+                    <span class="chip
+                        {% if session.setor_atual == 'SUPORTE' %} bg-accent/10 text-accent border-accent/25
+                        {% elif session.setor_atual == 'ASSISTENCIA' %} bg-warn/10 text-warn border-warn/25
+                        {% elif session.setor_atual == 'COMERCIAL' %} bg-success/10 text-success border-success/25
+                        {% elif session.setor_atual == 'FINANCEIRO' %} bg-special/10 text-special border-special/25
+                        {% else %} bg-accent/10 text-accent border-accent/25 {% endif %}">
+                        <i class="fa-solid fa-headset opacity-70"></i> {{ session.get_setor_atual_display|default:session.setor_atual|default:"TRIAGEM" }}
+                    </span>
+
+                    {% if session.cliente %}
+                        <span class="chip transition-all
+                            {% if session.cliente.contrato_software %} bg-success/10 text-success border-success/25 {% else %} bg-danger/15 text-danger border-danger/50 animate-pulse font-black {% endif %}">
+                            <i class="fa-solid fa-file-signature opacity-70"></i> {% if session.cliente.contrato_software %}C/ Contrato{% else %}S/ Contrato{% endif %}
+                        </span>
+
+                        <span class="chip transition-all
+                            {% if session.cliente.status_financeiro == 'EM_DIA' %} bg-success/10 text-success border-success/25 {% else %} bg-danger/15 text-danger border-danger/50 animate-pulse font-black {% endif %}">
+                            <i class="fa-solid fa-sack-dollar opacity-70"></i> {{ session.cliente.status_financeiro|default:"---" }}
+                        </span>
+
+                        {% if session.cliente.sistemas_vinculados.all %}
+                            {% for sys in session.cliente.sistemas_vinculados.all %}
+                                <span class="chip bg-signal/10 text-signal border-signal/25" title="{{ sys }}">
+                                    <i class="fa-solid fa-desktop opacity-70"></i> <span class="truncate max-w-[100px]">{{ sys.nome|default:sys }}</span>
+                                </span>
+                            {% endfor %}
+                        {% elif session.cliente.sistemas.all %}
+                            {% for sys in session.cliente.sistemas.all %}
+                                <span class="chip bg-signal/10 text-signal border-signal/25" title="{{ sys }}">
+                                    <i class="fa-solid fa-desktop opacity-70"></i> <span class="truncate max-w-[100px]">{{ sys.nome|default:sys }}</span>
+                                </span>
+                            {% endfor %}
+                        {% elif session.cliente.sistema_atual or session.cliente.sistema %}
+                            <span class="chip bg-signal/10 text-signal border-signal/25">
+                                <i class="fa-solid fa-desktop opacity-70"></i> <span class="truncate max-w-[100px]">{{ session.cliente.sistema_atual|default:session.cliente.sistema }}</span>
+                            </span>
+                        {% endif %}
+
+                    {% else %}
+                        {% if '@g.us' in session.whatsapp_number %}
+                             <span class="chip bg-warn/10 text-warn border-warn/25">
+                                 <i class="fa-solid fa-users opacity-70"></i> Grupo (Sem Cliente)
+                             </span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Ações agrupadas numa pílula -->
+        <div class="header-actions shrink-0">
+            <button onclick="window.abrirHistorico({{ session.id }})" class="head-btn" title="Histórico Completo da Conversa"><i class="fa-solid fa-clock-rotate-left text-xs"></i></button>
+            {% if session.cliente %}
+            <button onclick="document.getElementById('modalInfoClienteLocal').classList.remove('hidden')" class="head-btn" title="Ficha Cadastral"><i class="fa-solid fa-address-card text-xs"></i></button>
+            {% endif %}
+            <button onclick="window.abrirModalVincular({{ session.id }})" class="head-btn" title="Vincular Cliente"><i class="fa-solid fa-link text-xs"></i></button>
+            <button onclick="window.abrirModalTransferir({{ session.id }}, '{{ session.setor_atual }}')" class="head-btn" title="Transferir Fila"><i class="fa-solid fa-right-left text-xs"></i></button>
+            <button onclick="window.abrirModalEncerrar({{ session.id }})" class="head-btn head-btn--danger" title="Finalizar"><i class="fa-solid fa-power-off text-xs"></i></button>
+        </div>
+    </div>
+
+    <!-- ===================== MENSAGENS ===================== -->
+    <div id="historia-mensagens" class="flex-1 overflow-y-auto p-4 md:p-5 space-y-2 flex flex-col custom-scrollbar relative z-10"
+         style="background-color: transparent; background-image: radial-gradient(rgb(var(--c-accent-soft) / 0.08) 1px, transparent 1px); background-size: 22px 22px;"
+         data-total="{{ total_mensagens }}">
+        {% if total_mensagens > 30 %}
+        <div class="self-center bg-[rgb(var(--c-deep))] border border-[rgb(var(--c-line))] text-ink-soft text-[10px] py-2 px-4 rounded-full font-medium flex items-center gap-2 mb-2 cursor-pointer hover:bg-[rgb(var(--c-panel))] transition-all shadow-sm" onclick="window.abrirHistorico({{ session.id }})">
+            <i class="fa-solid fa-bolt text-warn"></i>
+            <span>Exibindo 30 de {{ total_mensagens }} mensagens. <strong class="text-ink">Ver histórico completo.</strong></span>
+        </div>
+        {% endif %}
+
+        {% for msg in chat_messages %}
+
+            {% if msg.is_deleted %}
+                <div class="{% if msg.sender_type == 'CLIENTE' %}self-start bg-[rgb(var(--c-panel))] rounded-tl-sm{% else %}self-end bg-[rgb(var(--c-panel))] rounded-tr-sm{% endif %} max-w-[80%] p-3 rounded-2xl border border-[rgb(var(--c-line))] shadow-sm flex items-center gap-2 text-ink/50 text-xs italic">
+                    <i class="fa-solid fa-ban"></i> Mensagem apagada
+                </div>
+            {% else %}
+
+                {% if msg.sender_type == 'INTERNO' %}
+                    <div class="self-center bg-warn/10 border border-warn/25 text-warn text-[11px] px-4 py-2 rounded-2xl font-medium flex items-center gap-2 shadow-sm my-1 max-w-[85%] text-center">
+                        <i class="fa-solid fa-lock text-[10px]"></i>
+                        <span class="leading-tight"><strong>{{ msg.tecnico.first_name|default:msg.tecnico.username|default:"Técnico" }}:</strong> {{ msg.text }}</span>
+                    </div>
+                {% elif msg.sender_type == 'SISTEMA' %}
+                    <div class="self-center bg-success/10 border border-success/25 text-success text-[10px] px-4 py-2 rounded-full font-bold uppercase tracking-wide flex items-center justify-center gap-2 shadow-sm my-1 max-w-[85%] text-center">
+                        <i class="fa-solid fa-robot text-[11px]"></i> <span class="leading-tight">{{ msg.text }}</span>
+                    </div>
+                {% else %}
+                    <div class="msg-linha group relative flex items-end gap-2 {% if msg.sender_type != 'CLIENTE' %}fila-tecnico flex-row-reverse self-end{% else %}fila-cliente self-start{% endif %} max-w-[85%]"
+                         data-lado="{% if msg.sender_type == 'CLIENTE' %}cliente{% else %}equipe{% endif %}">
+
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1 shrink-0 mb-1">
+                            <button onclick="window.prepararResposta('{{ msg.message_id }}', '{{ msg.text|truncatechars:60|escapejs }}')" class="msg-action w-7 h-7 rounded-full bg-[rgb(var(--c-panel))] hover:bg-[rgb(var(--c-panel))] text-ink-soft hover:text-ink flex items-center justify-center text-[10px] shadow-md border border-[rgb(var(--c-line))]" title="Responder">
+                                <i class="fa-solid fa-reply"></i>
+                            </button>
+                            {% if msg.sender_type == 'TECNICO' and msg.message_id %}
+                            <button onclick="window.prepararEdicao('{{ msg.message_id }}', '{{ msg.text|escapejs }}')" class="msg-action w-7 h-7 rounded-full bg-[rgb(var(--c-panel))] hover:bg-amber-600 text-ink-soft hover:text-ink flex items-center justify-center text-[10px] shadow-md border border-[rgb(var(--c-line))]" title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="window.deletarMensagem('{{ msg.message_id }}')" class="msg-action w-7 h-7 rounded-full bg-[rgb(var(--c-panel))] hover:bg-red-600 text-ink-soft hover:text-ink flex items-center justify-center text-[10px] shadow-md border border-[rgb(var(--c-line))]" title="Apagar">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+
+                        <div class="{% if msg.sender_type == 'CLIENTE' %}balao-cliente{% else %}balao-tecnico{% endif %} p-2.5 shadow-lg flex flex-col text-ink w-fit max-w-full relative min-w-[90px]">
+
+                            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" style="display:none;" onload="
+                                var p = this.parentElement;
+                                if(p.dataset.cleaned) return;
+                                p.dataset.cleaned = 'true';
+                                var html = p.innerHTML;
+                                var regex = /(?:👤|&rgb(var(--c-success));)\s*_(.*?)_:\s*(?:<br\s*\/?>)?\s*/;
+                                var match = html.match(regex);
+                                if(match) {
+                                    var autor = match[1];
+                                    var isCli = p.classList.contains('balao-cliente');
+                                    var col;
+                                    if(isCli){
+                                        var cores = ['text-purple-400 border-purple-500/30', 'text-pink-400 border-pink-500/30', 'text-sky-400 border-sky-500/30', 'text-amber-400 border-amber-500/30', 'text-rose-400 border-rose-500/30', 'text-indigo-400 border-indigo-500/30', 'text-teal-400 border-teal-500/30'];
+                                        var hash = 0;
+                                        for(var i=0; i<autor.length; i++) hash = autor.charCodeAt(i) + ((hash << 5) - hash);
+                                        col = cores[Math.abs(hash) % cores.length];
+                                    } else {
+                                        col = 'text-emerald-400 border-emerald-500/30';
+                                    }
+                                    var badge = '<div class=\'text-[10px] font-black uppercase tracking-widest mb-1.5 flex items-center gap-1.5 border-b pb-1.5 w-full ' + col + '\'><i class=\'fa-solid fa-user-astronaut opacity-80 text-[11px]\'></i><span class=\'truncate max-w-[200px]\'>' + autor + '</span></div>';
+                                    p.innerHTML = badge + html.replace(match[0], '');
+                                }
+                            ">
+
+                            {% if msg.quoted_text %}
+                            <div class="bg-core-bg/25 rounded-lg p-2 mb-1.5 border border-[rgb(var(--c-line))] border-l-2 border-l-accent text-[10px] whitespace-pre-wrap leading-tight shadow-inner relative overflow-hidden flex flex-col space-y-0.5 w-full">
+                                <span class="font-bold text-accent flex items-center gap-1.5"><i class="fa-solid fa-reply fa-flip-horizontal"></i> Resposta a:</span>
+                                <span class="text-ink/70 italic" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">{{ msg.quoted_text }}</span>
+                            </div>
+                            {% endif %}
+
+                            {% if msg.media_url %}
+                                {% if '📷' in msg.text or 'Imagem' in msg.text or 'Foto' in msg.text %}
+                                    <div class="media-frame relative overflow-hidden mb-1.5 p-1 flex flex-col max-w-[260px]">
+                                        <div class="relative">
+                                            <div class="img-skel absolute inset-0 rounded-lg"></div>
+                                            <img src="{{ msg.media_url }}" loading="lazy" class="relative w-full max-h-60 object-contain rounded-lg cursor-zoom-in transition-transform hover:scale-[1.02] media-loaded" onclick="window.abrirZoom(this.src);" onload="this.previousElementSibling.style.display='none';">
+                                        </div>
+                                    </div>
+                                    {% if msg.text|cut:"[Image Message]"|cut:"📷 Imagem Enviada"|cut:"📷 Foto"|length > 2 %}
+                                        <span class="text-[12px] whitespace-pre-wrap leading-relaxed px-1 mb-0.5">{{ msg.text|cut:"[Image Message]"|cut:"📷 Imagem Enviada"|cut:"📷 Foto" }}</span>
+                                    {% endif %}
+                                {% elif '🎥' in msg.text or 'Video' in msg.text or 'Vídeo' in msg.text %}
+                                    <div class="media-frame relative overflow-hidden mb-1.5 p-1 flex flex-col max-w-[260px]">
+                                        <video src="{{ msg.media_url }}" controls class="w-full max-h-60 object-contain rounded-lg"></video>
+                                    </div>
+                                    {% if msg.text|cut:"[Video Message]"|cut:"🎥 Vídeo Enviado"|cut:"🎥 Vídeo"|length > 2 %}
+                                        <span class="text-[12px] whitespace-pre-wrap leading-relaxed px-1 mb-0.5">{{ msg.text|cut:"[Video Message]"|cut:"🎥 Vídeo Enviado"|cut:"🎥 Vídeo" }}</span>
+                                    {% endif %}
+                                {% elif '🎤' in msg.text or 'Audio' in msg.text or 'Áudio' in msg.text %}
+                                    <div class="audio-pill flex items-center gap-2 pl-1.5 pr-2 py-1.5 w-fit min-w-[280px] mb-1">
+                                        <div class="audio-disc">
+                                            <div class="audio-wave"><span></span><span></span><span></span><span></span><span></span></div>
+                                        </div>
+                                        <audio src="{{ msg.media_url }}" controls class="h-8 flex-1 outline-none"></audio>
+                                        <button type="button" onclick="window.alterarVelocidadeAudio(this)" class="audio-btn" title="Acelerar Áudio">1x</button>
+
+                                        <button type="button" onclick="
+                                            let btn = this;
+                                            let originalIcon = btn.innerHTML;
+                                            btn.innerHTML = '<i class=\'fa-solid fa-spinner fa-spin\'></i>';
+                                            let fd = new FormData();
+                                            fd.append('session_id', '{{ session.id }}');
+                                            fd.append('texto', '[CMD_TRANSCREVER]|{{ msg.id }}');
+                                            fd.append('is_interno', 'true');
+                                            let csrf = '';
+                                            document.cookie.split(';').forEach(c => { if(c.trim().startsWith('csrftoken=')) csrf = c.trim().substring(10); });
+
+                                            fetch('/whatsapp-bot/enviar/', { method: 'POST', headers: {'X-CSRFToken': csrf}, body: fd })
+                                            .then(res => {
+                                                if(res.ok) {
+                                                    setTimeout(() => {
+                                                        /* Bate na sua própria rota de chat pra pegar as mensagens atualizadas sem piscar a tela */
+                                                        fetch('/whatsapp-bot/chat/{{ session.id }}/')
+                                                        .then(r => r.text())
+                                                        .then(html => {
+                                                            let temp = document.createElement('div');
+                                                            temp.innerHTML = html;
+                                                            let novoChat = temp.querySelector('#historia-mensagens');
+                                                            if(novoChat) {
+                                                                let painelAtual = document.getElementById('historia-mensagens');
+                                                                painelAtual.innerHTML = novoChat.innerHTML;
+                                                                painelAtual.scrollTop = painelAtual.scrollHeight;
+                                                            }
+                                                            btn.innerHTML = originalIcon;
+                                                        });
+                                                    }, 3000);
+                                                } else {
+                                                    btn.innerHTML = originalIcon;
+                                                    alert('Erro ao processar áudio.');
+                                                }
+                                            });
+                                        " class="audio-btn audio-btn--ia" title="Transcrever com IA">✨</button>
+                                    </div>
+                                {% else %}
+                                    <a href="{{ msg.media_url }}" download="{{ msg.text|cut:'📎 Arquivo: '|default:'documento' }}" class="media-frame text-accent text-xs hover:bg-core-panel flex items-center gap-2.5 font-bold px-3 py-2.5 mb-1 transition-colors w-max">
+                                        <div class="w-8 h-8 rounded-lg bg-[rgb(var(--c-deep))] flex items-center justify-center shrink-0 border border-[rgb(var(--c-line))]"><i class="fa-solid fa-file-lines text-accent text-sm"></i></div>
+                                        <span class="truncate">{{ msg.text|cut:"📎 Arquivo: " }}</span> <i class="fa-solid fa-file-arrow-down text-base ml-1 shrink-0"></i>
+                                    </a>
+                                {% endif %}
+                            {% else %}
+
+                                <div class="text-[13px] whitespace-pre-wrap leading-relaxed custom-link-style flex flex-col space-y-1.5">
+                                    {% if "📍 MAPA|" in msg.text %}
+                                        <div class="flex items-center justify-between gap-1.5 p-1.5 rounded-lg media-frame w-[260px] mb-1">
+                                            <div class="flex items-center gap-1.5 overflow-hidden">
+                                                <div class="w-8 h-8 rounded-lg bg-[rgb(var(--c-deep))] flex items-center justify-center shrink-0 border border-[rgb(var(--c-line))]">
+                                                    <i class="fa-solid fa-location-dot text-accent"></i>
+                                                </div>
+                                                <div class="flex flex-col truncate space-y-[1px]">
+                                                    <span class="text-[9px] text-accent font-bold uppercase tracking-wider leading-none mb-0.5">Localização</span>
+                                                    <span class="text-xs text-ink font-medium truncate leading-tight">Mapa Compartilhado</span>
+                                                </div>
+                                            </div>
+                                            <a href="https://www.google.com/maps?q={{ msg.text|cut:'📍 MAPA|' }}" target="_blank" rel="noopener noreferrer"
+                                               class="w-8 h-8 flex items-center justify-center rounded-lg bg-[rgb(var(--c-deep))] border border-[rgb(var(--c-line))] text-ink-soft hover:text-accent hover:bg-[rgb(var(--c-panel))] transition-all shadow-sm shrink-0" style="text-decoration: none !important;">
+                                                <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                                            </a>
+                                        </div>
+
+                                    {% elif "👤 CONTATO||" in msg.text %}
+                                        <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl media-frame w-fit min-w-[240px] max-w-[280px] mb-1">
+                                            <div class="w-10 h-10 rounded-full bg-[rgb(var(--c-deep))] flex items-center justify-center shrink-0 border border-[rgb(var(--c-line))]">
+                                                <i class="fa-solid fa-address-book text-accent text-lg"></i>
+                                            </div>
+                                            <div class="flex flex-col flex-1 overflow-hidden">
+                                                <span class="text-[9px] text-accent/80 font-bold uppercase tracking-wider mb-[2px]">Contato</span>
+                                                <div class="text-[12px] text-ink font-medium leading-snug break-all truncate">
+                                                    {{ msg.text|cut:"👤 CONTATO||"|linebreaksbr }}
+                                                </div>
+                                            </div>
+                                            <button onclick="var txt = '{{ msg.text|escapejs }}'; var num = txt.replace(/\D/g, ''); if(num.length > 14) { num = num.slice(-13); } if(num && num.length >= 10) { window.abrirModalNovoChatComNumero(num); } else { alert('Número inválido: ' + txt); }"
+                                               class="w-9 h-9 flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-500 text-ink transition-all transform hover:scale-[1.05] shadow-sm shrink-0" title="Iniciar Conversa">
+                                                <i class="fa-brands fa-whatsapp text-base"></i>
+                                            </button>
+                                        </div>
+                                    {% else %}
+                                        <p class="link-container mb-0.5">{{ msg.text|urlize }}</p>
+                                    {% endif %}
+                                </div>
+
+                            {% endif %}
+
+                            <span class="text-[9px] font-medium opacity-60 flex justify-end items-center gap-1 mt-1 pr-0.5">
+                                {% if msg.is_edited %}<span class="italic mr-1 text-warn/80">(Editado)</span>{% endif %}
+
+                                {{ msg.timestamp|date:"H:i" }}
+
+                                {% if msg.sender_type == 'TECNICO' %}
+                                    <span class="flex items-center ml-1">
+                                        {% if msg.ack == 2 %}
+                                            <i class="fa-solid fa-check-double text-ink-soft"></i>
+                                        {% elif msg.ack >= 3 %}
+                                            <i class="fa-solid fa-check-double text-accent"></i>
+                                        {% elif msg.ack == 1 %}
+                                            <i class="fa-solid fa-check text-ink-soft"></i>
+                                        {% else %}
+                                            <i class="fa-regular fa-clock text-ink-faint text-[8px]"></i>
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </div>
+
+   <!-- ===================== RODAPÉ / COMPOSER ===================== -->
+   {% if not session.tecnico_responsavel and '@g.us' not in session.whatsapp_number %}
+        <div class="p-4 bg-[rgb(var(--c-deep))] backdrop-blur-xl border-t border-[rgb(var(--c-panel))] shrink-0 flex items-center justify-center shadow-lg z-10">
+            <button onclick="window.assumirAtendimento({{ session.id }})" class="bg-emerald-600 hover:bg-emerald-500 text-ink w-full max-w-sm py-3.5 rounded-2xl font-bold uppercase tracking-wide text-[12px] shadow-[0_0_25px_-6px_rgba(16,185,129,.6)] transition-all transform hover:scale-[1.02]">
+                <i class="fa-solid fa-hand-sparkles mr-2"></i> Assumir Atendimento
+            </button>
+        </div>
+    {% elif session.tecnico_responsavel_id != request.user.id and '@g.us' not in session.whatsapp_number %}
+        <div class="p-4 bg-[rgb(var(--c-deep))] backdrop-blur-xl border-t border-[rgb(var(--c-panel))] shrink-0 flex items-center justify-center z-10">
+            <p class="text-xs text-ink-soft font-bold uppercase tracking-wide border border-[rgb(var(--c-line))] px-5 py-3 rounded-xl bg-[rgb(var(--c-deep))]"><i class="fa-solid fa-lock mr-2 text-ink-faint"></i> Em atendimento por: {{ session.tecnico_responsavel.first_name|default:session.tecnico_responsavel.username|upper }}</p>
+        </div>
+    {% else %}
+
+        <div class="p-3 bg-[rgb(var(--c-deep))] backdrop-blur-xl border-t border-[rgb(var(--c-panel))] shrink-0 flex flex-col gap-2 relative z-10">
+
+            <div id="reply-preview" class="hidden bg-[rgb(var(--c-panel))] rounded-lg border border-[rgb(var(--c-line))] border-l-2 border-l-accent p-1.5 mb-1 flex items-center justify-between gap-2.5 text-[10px] text-ink-soft shadow-md">
+                <div class="flex items-center gap-2 overflow-hidden flex-1">
+                    <div class="w-8 h-8 rounded-lg bg-[rgb(var(--c-deep))] flex items-center justify-center shrink-0 border border-[rgb(var(--c-line))]">
+                        <i class="fa-solid fa-reply fa-flip-horizontal text-accent"></i>
+                    </div>
+                    <div class="flex flex-col truncate space-y-[1px]">
+                        <span class="font-bold text-accent tracking-wider mb-0.5">Respondendo a:</span>
+                        <span id="reply-text-preview" class="text-ink font-medium truncate leading-tight"></span>
+                    </div>
+                </div>
+                <button onclick="window.cancelarResposta()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[rgb(var(--c-deep))] border border-[rgb(var(--c-line))] text-ink-soft hover:text-red-400 transition-all shadow-sm shrink-0" title="Cancelar"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+
+            <div id="edit-preview" class="hidden bg-amber-900/20 rounded-lg border border-amber-700/30 border-l-2 border-l-amber-500 p-1.5 mb-1 flex items-center justify-between gap-2.5 text-[10px] text-amber-200 shadow-md">
+                <div class="flex items-center gap-2 overflow-hidden flex-1">
+                    <div class="w-8 h-8 rounded-lg bg-[rgb(var(--c-deep))] flex items-center justify-center shrink-0 border border-amber-700/50">
+                        <i class="fa-solid fa-pen text-amber-400"></i>
+                    </div>
+                    <div class="flex flex-col truncate space-y-[1px]">
+                        <span class="font-bold text-amber-400 tracking-wider mb-0.5">Editando mensagem:</span>
+                        <span id="edit-text-preview" class="text-ink font-medium truncate leading-tight"></span>
+                    </div>
+                </div>
+                <button onclick="window.cancelarEdicao()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[rgb(var(--c-deep))] border border-[rgb(var(--c-line))] text-amber-500 hover:text-red-400 transition-all shadow-sm shrink-0" title="Cancelar"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+
+            <div id="audio-preview-container" class="hidden w-full flex items-center justify-between gap-3 bg-[rgb(var(--c-deep))] border border-[rgb(var(--c-line))] rounded-full p-2 shadow-inner">
+                <div class="flex items-center gap-3 w-full">
+                    <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center shrink-0 animate-pulse border border-red-500/30">
+                        <i class="fa-solid fa-microphone text-red-500 text-xs"></i>
+                    </div>
+                    <audio id="audio-preview-element" controls class="h-8 flex-1 outline-none"></audio>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                    <button type="button" onclick="window.cancelarAudio()" class="w-9 h-9 flex items-center justify-center rounded-full border border-[rgb(var(--c-line))] bg-[rgb(var(--c-panel))] text-ink-soft hover:bg-[rgb(var(--c-panel))] hover:text-red-400 transition-all shadow-sm" title="Cancelar Gravação">
+                        <i class="fa-solid fa-trash text-sm"></i>
+                    </button>
+                    <button type="button" onclick="window.enviarAudioGravado()" class="w-9 h-9 flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-500 text-ink transition-all shadow-md" title="Enviar Áudio">
+                        <i class="fa-solid fa-paper-plane text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="quick-reply-popup" class="hidden absolute bottom-[100%] left-0 w-full max-w-md mb-2 bg-[rgb(var(--c-deep))] border border-[rgb(var(--c-line))] rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto custom-scrollbar"></div>
+
+            <input type="hidden" id="reply_to_id">
+            <input type="hidden" id="quoted_text">
+            <input type="hidden" id="edit_message_id">
+
+            <div id="container-inputs-texto" class="flex gap-2 relative items-end w-full">
+
+                <input type="file" id="arquivo-midia" class="hidden" onchange="window.enviarMidiaInput(event, {{ session.id }})">
+                <button type="button" onclick="document.getElementById('arquivo-midia').click()" class="composer-btn w-11 h-11 mb-0.5 flex items-center justify-center bg-[rgb(var(--c-panel))] border border-[rgb(var(--c-line))] hover:bg-[rgb(var(--c-panel))] text-ink-soft rounded-xl shadow-sm shrink-0" title="Anexar Arquivo">
+                    <i class="fa-solid fa-paperclip"></i>
+                </button>
+
+                <button type="button" id="btn-gravar-audio" onclick="window.toggleGravacao(event)" class="composer-btn w-11 h-11 mb-0.5 flex items-center justify-center bg-[rgb(var(--c-panel))] border border-[rgb(var(--c-line))] hover:bg-[rgb(var(--c-panel))] text-ink-soft hover:text-red-400 rounded-xl shadow-sm shrink-0 cursor-pointer" title="Gravar Áudio">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
+
+                <div id="emoji-popup-{{ session.id }}" class="hidden absolute bottom-[58px] right-2 z-50 shadow-2xl rounded-2xl overflow-hidden border border-[rgb(var(--c-line))] bg-[rgb(var(--c-deep))]">
+                    <emoji-picker class="dark"></emoji-picker>
+                </div>
+
+                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" style="display:none;" onload="
+                    if(!window.emojiEngineRodando){
+                        window.emojiEngineRodando=true;
+                        let s=document.createElement('script');
+                        s.type='module';
+                        s.src='https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js';
+                        document.head.appendChild(s);
+
+                        window.autoConverterEmojis=function(t){
+                            let v=t.value, o=v.length;
+                            v=v.replace(/:\)/g,'🙂').replace(/:D/g,'😃').replace(/:\(/g,'🙁').replace(/;\)/g,'😉').replace(/<3/g,'❤️').replace(/:P/gi,'😛').replace(/:'\(/g,'😢').replace(/:-\*/g,'😘');
+                            if(t.value!==v){
+                                let c=t.selectionStart-(o-v.length);
+                                t.value=v;
+                                t.setSelectionRange(c,c);
+                            }
+                        };
+
+                        document.addEventListener('emoji-click', e=>{
+                            let i=document.getElementById('input-mensagem');
+                            if(!i)return;
+                            let p=i.selectionStart;
+                            i.value=i.value.substring(0,p)+e.detail.unicode+i.value.substring(p);
+                            i.setSelectionRange(p+e.detail.unicode.length, p+e.detail.unicode.length);
+                            i.focus();
+                            document.querySelectorAll('[id^=emoji-popup-]').forEach(el=>el.classList.add('hidden'));
+                        });
+                    }
+                ">
+
+                <textarea id="input-mensagem" rows="1" placeholder="Digite uma mensagem..."
+                          class="flex-1 bg-[rgb(var(--c-deep))] border border-[rgb(var(--c-line))] rounded-xl px-4 py-3 text-[13px] text-ink focus:outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/10 transition-all placeholder:text-ink-faint resize-none overflow-hidden max-h-32 shadow-inner"
+                          oninput="window.salvarRascunho(); window.detectarAtalhoRapido(event); if(window.autoConverterEmojis) window.autoConverterEmojis(this);"
+                          onkeydown="window.checarEnter(event, {{ session.id }})"></textarea>
+
+                <button type="button" onclick="
+                    let btn = this;
+                    let originalIcon = btn.innerHTML;
+                    btn.innerHTML = '<i class=\'fa-solid fa-spinner fa-spin\'></i>';
+                    let fd = new FormData();
+                    fd.append('session_id', '{{ session.id }}');
+
+                    let csrf = '';
+                    document.cookie.split(';').forEach(c => { if(c.trim().startsWith('csrftoken=')) csrf = c.trim().substring(10); });
+
+                    fetch('/whatsapp-bot/sugerir-resposta/', { method: 'POST', headers: {'X-CSRFToken': csrf}, body: fd })
+                    .then(res => res.json())
+                    .then(data => {
+                        btn.innerHTML = originalIcon;
+                        if(data.status === 'success') {
+                            let input = document.getElementById('input-mensagem');
+                            /* Adiciona a sugestão ou concatena se o técnico já digitou algo */
+                            input.value = input.value ? input.value + ' ' + data.sugestao : data.sugestao;
+                            input.focus();
+                            /* Ajusta a altura da caixa de texto automaticamente */
+                            input.style.height = 'auto';
+                            input.style.height = (input.scrollHeight) + 'px';
+                        } else {
+                            alert('Erro: ' + data.msg);
+                        }
+                    }).catch(() => {
+                        btn.innerHTML = originalIcon;
+                        alert('Falha na comunicação com a IA.');
+                    });
+                " class="composer-btn w-11 h-11 mb-0.5 flex items-center justify-center bg-gradient-to-br from-indigo-900/80 to-indigo-800/60 border border-indigo-600/50 hover:from-indigo-600 hover:to-indigo-500 text-indigo-300 hover:text-ink rounded-xl shadow-sm shrink-0" title="Sugerir Resposta com IA">
+                    <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+                </button>
+
+                <button type="button" onclick="document.getElementById('emoji-popup-{{ session.id }}').classList.toggle('hidden')" class="composer-btn w-11 h-11 mb-0.5 flex items-center justify-center bg-[rgb(var(--c-panel))] border border-[rgb(var(--c-line))] hover:bg-[rgb(var(--c-panel))] text-ink-soft hover:text-amber-400 rounded-xl shadow-sm shrink-0" title="Emojis">
+                    <i class="fa-regular fa-face-smile text-sm"></i>
+                </button>
+
+                <button type="button" onclick="window.enviarMensagem(event, {{ session.id }})" class="composer-btn bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-ink w-11 h-11 mb-0.5 rounded-xl flex items-center justify-center shadow-[0_0_16px_-4px_rgba(16,185,129,.7)] shrink-0">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2 mt-1 pl-[52px] w-full flex-wrap">
+
+                <label class="inline-flex items-center cursor-pointer group bg-[rgb(var(--c-panel))] px-2.5 py-1.5 rounded-lg border border-[rgb(var(--c-line))] hover:border-amber-500/50 transition-all shrink-0 shadow-sm">
+                    <input type="checkbox" id="check-interno" class="sr-only peer">
+                    <div class="relative w-7 h-3.5 bg-core-line rounded-full peer peer-checked:bg-amber-500 after:content-[''] after:absolute after:top-[1.5px] after:left-[1.5px] after:bg-core-panel after:rounded-full after:h-[11px] after:w-[11px] after:transition-all peer-checked:after:translate-x-3.5"></div>
+                    <span class="ml-2 text-[9px] text-ink-soft font-bold uppercase tracking-wider group-hover:text-amber-400 peer-checked:text-amber-400 transition-colors">Nota Interna</span>
+                </label>
+
+                <button type="button" onclick="
+                    let btn = this;
+                    let originalIcon = btn.innerHTML;
+                    btn.innerHTML = '<i class=\'fa-solid fa-spinner fa-spin\'></i> Gerando...';
+                    let fd = new FormData();
+                    fd.append('session_id', '{{ session.id }}');
+                    let csrf = '';
+                    document.cookie.split(';').forEach(c => { if(c.trim().startsWith('csrftoken=')) csrf = c.trim().substring(10); });
+
+                    fetch('/whatsapp-bot/resumir-chat/', { method: 'POST', headers: {'X-CSRFToken': csrf}, body: fd })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.status === 'success') {
+                            fetch('/whatsapp-bot/chat/{{ session.id }}/')
+                            .then(r => r.text())
+                            .then(html => {
+                                let temp = document.createElement('div');
+                                temp.innerHTML = html;
+                                let novoChat = temp.querySelector('#historia-mensagens');
+                                if(novoChat) {
+                                    let painelAtual = document.getElementById('historia-mensagens');
+                                    painelAtual.innerHTML = novoChat.innerHTML;
+                                    painelAtual.scrollTop = painelAtual.scrollHeight;
+                                }
+                                btn.innerHTML = originalIcon;
+                            });
+                        } else {
+                            btn.innerHTML = originalIcon;
+                            alert('Erro: ' + data.msg);
+                        }
+                    }).catch(() => { btn.innerHTML = originalIcon; });
+                " class="text-[9px] font-bold uppercase tracking-wider text-ink-soft bg-[rgb(var(--c-panel))] border border-[rgb(var(--c-line))] hover:bg-accent/10 hover:border-accent/50 hover:text-accent px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shrink-0 shadow-sm" title="Criar nota resumindo as mensagens de hoje">
+                    <i class="fa-solid fa-file-lines text-xs"></i> Resumir Atendimento
+                </button>
+
+                <button type="button" onclick="
+                    let btn = this;
+                    let input = document.getElementById('input-mensagem');
+                    if(!input.value.trim()) { alert('Digite o seu texto bruto na caixa de mensagens primeiro!'); return; }
+
+                    let originalIcon = btn.innerHTML;
+                    btn.innerHTML = '<i class=\'fa-solid fa-spinner fa-spin\'></i> Polindo...';
+                    let fd = new FormData();
+                    fd.append('texto', input.value);
+                    let csrf = '';
+                    document.cookie.split(';').forEach(c => { if(c.trim().startsWith('csrftoken=')) csrf = c.trim().substring(10); });
+
+                    fetch('/whatsapp-bot/otimizar-texto/', { method: 'POST', headers: {'X-CSRFToken': csrf}, body: fd })
+                    .then(res => res.json())
+                    .then(data => {
+                        btn.innerHTML = originalIcon;
+                        if(data.status === 'success') {
+                            input.value = data.texto_otimizado;
+                            input.focus();
+                            input.style.height = 'auto';
+                            input.style.height = (input.scrollHeight) + 'px';
+                        } else {
+                            alert('Erro: ' + data.msg);
+                        }
+                    }).catch(() => { btn.innerHTML = originalIcon; });
+                " class="text-[9px] font-bold uppercase tracking-wider text-ink-soft bg-[rgb(var(--c-panel))] border border-[rgb(var(--c-line))] hover:bg-accent/10 hover:border-accent/50 hover:text-accent px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shrink-0 shadow-sm" title="Polir e profissionalizar texto digitado">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xs"></i> Otimizar Texto
+                </button>
+
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- ===================== MODAL FICHA CLIENTE ===================== -->
+    <div id="modalInfoClienteLocal" class="hidden absolute inset-0 z-[100] bg-[rgb(var(--c-bg))] backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-[rgb(var(--c-deep))] border border-[rgb(var(--c-line))] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col transform transition-all">
+            <div class="bg-[rgb(var(--c-panel))] p-4 border-b border-[rgb(var(--c-line))] flex justify-between items-center">
+                <h3 class="font-display text-ink font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-address-card text-accent"></i> Ficha do Cliente
+                </h3>
+                <button onclick="document.getElementById('modalInfoClienteLocal').classList.add('hidden')" class="text-ink-soft hover:text-ink bg-[rgb(var(--c-deep))] hover:bg-[rgb(var(--c-panel))] border border-[rgb(var(--c-line))] w-8 h-8 rounded-lg flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto max-h-[70vh] custom-scrollbar bg-[rgb(var(--c-bg))]">
+                {% if session.cliente %}
+                    <div class="flex flex-col gap-3">
+
+                        <div class="bg-[rgb(var(--c-deep))] p-3.5 rounded-2xl border border-[rgb(var(--c-line))] shadow-inner">
+                            <span class="text-[9px] text-ink-faint font-bold uppercase tracking-widest block mb-1">Razão Social / Nome</span>
+                            <span class="text-ink font-bold text-sm">{{ session.cliente.razao_social|default:"Não informado" }}</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-[rgb(var(--c-deep))] p-3.5 rounded-2xl border border-[rgb(var(--c-line))] shadow-inner">
+                                <span class="text-[9px] text-ink-faint font-bold uppercase tracking-widest block mb-1">CNPJ / CPF</span>
+                                <span class="text-accent text-xs font-mono font-bold">{{ session.cliente.cnpj_cpf|default:session.cliente.cnpj|default:"---" }}</span>
+                            </div>
+                            <div class="bg-[rgb(var(--c-deep))] p-3.5 rounded-2xl border border-[rgb(var(--c-line))] shadow-inner">
+                                <span class="text-[9px] text-ink-faint font-bold uppercase tracking-widest block mb-1">Cidade</span>
+                                <span class="text-ink-soft text-xs font-medium">{{ session.cliente.cidade|default:"Não informado" }}</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-[rgb(var(--c-deep))] p-3.5 rounded-2xl border border-[rgb(var(--c-line))] shadow-inner">
+                            <span class="text-[9px] text-ink-faint font-bold uppercase tracking-widest block mb-1">E-mail de Contato</span>
+                            <span class="text-ink-soft text-xs font-medium">{{ session.cliente.email|default:"Sem e-mail" }}</span>
+                        </div>
+
+                        <div class="bg-[rgb(var(--c-deep))] p-3.5 rounded-2xl border border-[rgb(var(--c-line))] shadow-inner">
+                            <span class="text-[9px] text-ink-faint font-bold uppercase tracking-widest block mb-2">Status Operacional</span>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-2 py-1 rounded-lg text-[10px] font-bold uppercase border transition-all
+                                    {% if session.cliente.status_financeiro == 'EM_DIA' %} bg-success/10 text-success border-success/20 {% else %} bg-danger/15 text-danger border-danger/50 animate-pulse {% endif %}">
+                                    {{ session.cliente.status_financeiro|default:"BLOQUEADO" }}
+                                </span>
+                                {% if session.cliente.contrato_software %}
+                                    <span class="bg-accent/10 text-accent border border-accent/20 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Mensalista</span>
+                                {% else %}
+                                    <span class="px-2 py-1 rounded-lg text-[10px] font-bold uppercase border transition-all bg-danger/15 text-danger border-danger/50 animate-pulse">S/ Contrato</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if session.cliente.observacoes %}
+                        <div class="bg-warn/5 p-3.5 rounded-2xl border border-warn/20 shadow-inner">
+                            <span class="text-[9px] text-warn font-bold uppercase tracking-widest block mb-1.5">Observações Internas</span>
+                            <p class="text-ink-soft text-[11px] leading-relaxed font-medium">{{ session.cliente.observacoes|linebreaksbr }}</p>
+                        </div>
+                        {% endif %}
+
+                        <button onclick="if(confirm('Tem certeza?')){ var fd = new FormData(); fd.append('session_id', '{{ session.id }}'); fetch('/whatsapp-bot/desvincular_cliente/', {method:'POST', body: fd}).then(r=>location.reload()); }"
+                                class="w-full mt-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-ink border border-red-500/30 font-bold text-[10px] uppercase tracking-wide py-3 rounded-xl transition-all">
+                            Desvincular Cadastro
+                        </button>
+
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <p class="text-ink-faint text-[10px] uppercase font-bold mb-4 tracking-wide">Cliente não vinculado</p>
+                        <button onclick="window.abrirModalVincular({{ session.id }});" class="bg-emerald-600 text-ink text-[10px] uppercase font-bold px-6 py-2.5 rounded-xl tracking-wide">Vincular</button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL DE ZOOM DE IMAGEM ═══ -->
+<div id="modalZoom" class="hidden fixed inset-0 z-[200] bg-core-bg/85 backdrop-blur-md flex items-center justify-center p-4"
+     onclick="this.classList.add('hidden')">
+    <button onclick="document.getElementById('modalZoom').classList.add('hidden')"
+            class="absolute top-4 right-4 w-11 h-11 rounded-full bg-core-panel border border-core-line text-ink hover:bg-danger hover:text-ink flex items-center justify-center transition-all shadow-lg z-10">
+        <i class="fa-solid fa-xmark text-lg"></i>
+    </button>
+    <a id="zoomAbrirGuia" href="#" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"
+       class="absolute top-4 right-20 h-11 px-4 rounded-full bg-core-panel border border-core-line text-ink hover:bg-accent hover:text-ink flex items-center gap-2 transition-all shadow-lg z-10 text-xs font-bold">
+        <i class="fa-solid fa-up-right-from-square"></i> Abrir em nova guia
+    </a>
+    <img id="zoomImage" src="" alt="Imagem ampliada" onclick="event.stopPropagation()"
+         class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
+</div>
+
+<script>
+    // Abre o modal de zoom e prepara o link "abrir em nova guia"
+    // (obs: quando este partial é injetado via innerHTML este script não roda —
+    //  a função também está definida no chat_dashboard/chat_mobile, como você já fez)
+    window.abrirZoom = function(src) {
+        document.getElementById('zoomImage').src = src;
+        document.getElementById('zoomAbrirGuia').href = src;
+        document.getElementById('modalZoom').classList.remove('hidden');
+    };
+    const chatContainer = document.getElementById('drop-zone-{{ session.id }}');
+    if(chatContainer) {
+        chatContainer.addEventListener('dragover', (e) => { e.preventDefault(); chatContainer.classList.add('drop-ativo'); });
+        chatContainer.addEventListener('dragleave', (e) => { e.preventDefault(); if(e.target === chatContainer) chatContainer.classList.remove('drop-ativo'); });
+        chatContainer.addEventListener('drop', (e) => {
+            e.preventDefault(); chatContainer.classList.remove('drop-ativo');
+            if(e.dataTransfer.files.length > 0 && sessaoAtivaId) {
+                const file = e.dataTransfer.files[0];
+                if(confirm(`Deseja enviar o arquivo ${file.name}?`)) {
+                    window.enviarArquivoGenerico(file, sessaoAtivaId, "Enviando anexo...");
+                }
+            }
+        });
+    }
+
+    document.querySelectorAll('.link-container a').forEach(function(link) {
+        link.setAttribute('target', '_blank');
+        link.setAttribute('rel', 'noopener noreferrer');
+    });
+
+    // ═══ AGRUPAMENTO DE MENSAGENS CONSECUTIVAS (cliente E técnico) ═══
+    // Marca .colada na mensagem que segue outra do MESMO lado e .tem-colada
+    // na de cima. Ignora SISTEMA/INTERNO/apagadas (que não têm data-lado).
+    // Definida no window pra o desktop poder rechamar após cada refresh.
+    window.agruparMensagens = function() {
+        const cont = document.getElementById('historia-mensagens');
+        if (!cont) return;
+        const linhas = cont.querySelectorAll('.msg-linha[data-lado]');
+        let anterior = null;
+        linhas.forEach(linha => {
+            linha.classList.remove('colada', 'tem-colada');
+            if (anterior && anterior.dataset.lado === linha.dataset.lado) {
+                linha.classList.add('colada');
+                anterior.classList.add('tem-colada');
+            }
+            anterior = linha;
+        });
+    };
+    window.agruparMensagens();
+</script>

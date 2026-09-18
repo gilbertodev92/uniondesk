@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Início | UnionDESK{% endblock %}
+{% block content %}
+
+<style>
+    /* ═══════════════════════════════════════════════════════════
+       SETUP / BOAS-VINDAS — lê os tokens do base.html (dark/gray/light)
+       ═══════════════════════════════════════════════════════════ */
+    .hb-bg {
+        background-color: rgb(var(--c-bg));
+        background-image:
+            linear-gradient(rgb(var(--c-accent) / 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgb(var(--c-accent) / 0.04) 1px, transparent 1px),
+            radial-gradient(circle at 100% 0%, rgb(var(--c-accent) / 0.10) 0%, transparent 45%),
+            radial-gradient(circle at 0% 100%, rgb(var(--c-signal) / 0.05) 0%, transparent 55%);
+        background-size: 42px 42px, 42px 42px, 100% 100%, 100% 100%;
+        position: relative;
+    }
+
+    .hb-panel {
+        background: rgb(var(--c-panel));
+        border: 1px solid rgb(var(--c-line));
+        transition: border-color .2s, transform .2s, background-color .25s;
+    }
+    .hb-panel:hover { border-color: rgb(var(--c-accent) / 0.35); }
+
+    /* KPIs sobem levemente ao passar o mouse */
+    .hb-kpi:hover { transform: translateY(-3px); border-color: rgb(var(--c-accent) / 0.45); }
+
+    /* ── Entrada da tela: cada bloco sobe e aparece em sequência ── */
+    @keyframes hbRise {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .hb-rise { opacity: 0; animation: hbRise .6s cubic-bezier(.22,.61,.36,1) forwards; }
+    .hb-d1 { animation-delay: .05s; }
+    .hb-d2 { animation-delay: .13s; }
+    .hb-d3 { animation-delay: .21s; }
+    .hb-d4 { animation-delay: .29s; }
+    .hb-d5 { animation-delay: .37s; }
+
+    /* a barra de XP "enche" na entrada */
+    @keyframes hbFill { from { width: 0; } }
+    .hb-xp-fill { animation: hbFill 1.1s .5s cubic-bezier(.22,.61,.36,1) both; }
+
+    /* brilho sutil que cruza o cabeçalho uma vez ao carregar */
+    @keyframes hbSheen { from { transform: translateX(-120%); } to { transform: translateX(220%); } }
+    .hb-sheen::after {
+        content: ""; position: absolute; top: 0; left: 0; height: 100%; width: 40%;
+        background: linear-gradient(100deg, transparent, rgb(var(--c-ink) / 0.06), transparent);
+        transform: translateX(-120%); animation: hbSheen 1.6s .3s ease-out 1;
+        pointer-events: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .hb-rise, .hb-xp-fill, .hb-sheen::after { animation: none; opacity: 1; }
+        .hb-rise { transform: none; }
+    }
+
+    .hb-scroll { scrollbar-width: thin; scrollbar-color: rgb(var(--c-line)) transparent; }
+    .hb-scroll::-webkit-scrollbar { width: 6px; }
+    .hb-scroll::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 10px; }
+</style>
+
+<div class="hb-bg min-h-full w-full rounded-tl-3xl border-l border-t border-core-line overflow-y-auto hb-scroll">
+
+    <!-- ═══ CABEÇALHO ═══ -->
+    <div class="hb-sheen relative w-full bg-core-panel rounded-tl-3xl overflow-hidden border-b border-core-line">
+        <div class="absolute inset-0 bg-gradient-to-r from-core-bg via-core-bg/80 to-transparent"></div>
+        <div class="absolute -right-8 -top-10 w-64 h-64 rounded-full opacity-[0.07] pointer-events-none"
+             style="background: radial-gradient(circle, rgb(var(--c-accent)) 0%, transparent 70%);"></div>
+
+        <div class="relative p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 z-10">
+            <div class="hb-rise hb-d1">
+                <p class="font-mono text-accent-soft text-[10px] uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-signal animate-pulse"></span>
+                    <span id="hb-saudacao">Painel Operacional</span>
+                </p>
+                <h1 class="font-display text-3xl md:text-4xl font-bold text-ink tracking-tight leading-none">
+                    Olá, {{ nome_usuario|title|default:"Bem-vindo" }}
+                </h1>
+                <p class="text-ink-faint text-sm mt-3 max-w-md">Aqui está o resumo do seu dia no UnionDESK.</p>
+            </div>
+
+            <!-- Nível / XP -->
+            <div class="w-full md:w-auto hb-rise hb-d2">
+                <div class="hb-panel rounded-2xl p-4 flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-accent/10 border border-accent/25 text-accent-soft flex items-center justify-center text-lg shrink-0">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                    <div class="flex-1 md:w-56">
+                        <div class="flex items-center justify-between mb-1.5 gap-3">
+                            <span class="font-display text-ink font-semibold text-lg leading-none">Nível {{ nivel_atual|default:"1" }}</span>
+                            <span class="font-mono text-signal text-[10px] font-medium tracking-widest uppercase">{{ patente|default:"Suporte" }}</span>
+                        </div>
+                        <div class="w-full h-2 bg-core-bg rounded-full overflow-hidden border border-core-line">
+                            <div class="hb-xp-fill h-full bg-accent rounded-full" style="width: {{ porcentagem_xp|default:0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ CORPO ═══ -->
+    <div class="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
+
+        <!-- Coluna de KPIs -->
+        <div class="lg:col-span-1 grid grid-cols-2 lg:grid-cols-1 gap-5">
+
+            <div class="hb-panel hb-kpi rounded-2xl p-6 group hb-rise hb-d3">
+                <div class="flex items-start justify-between mb-4">
+                    <h3 class="font-mono text-accent-soft text-[10px] uppercase tracking-widest">Meus Zaps</h3>
+                    <i class="fa-brands fa-whatsapp text-ink-faint group-hover:text-success transition-colors"></i>
+                </div>
+                <div class="font-display text-4xl lg:text-5xl font-bold text-ink mb-2 tabular-nums">{{ meus_chats|default:0 }}</div>
+                <div class="font-mono text-signal text-[11px] uppercase tracking-wide">{{ fila_setor|default:0 }} na fila do setor</div>
+            </div>
+
+            <div class="hb-panel hb-kpi rounded-2xl p-6 group hb-rise hb-d4">
+                <div class="flex items-start justify-between mb-4">
+                    <h3 class="font-mono text-accent-soft text-[10px] uppercase tracking-widest">Minhas O.S.</h3>
+                    <i class="fa-solid fa-screwdriver-wrench text-ink-faint group-hover:text-accent transition-colors"></i>
+                </div>
+                <div class="font-display text-4xl lg:text-5xl font-bold text-ink mb-2 tabular-nums">{{ minhas_os|default:0 }}</div>
+                <div class="font-mono text-signal text-[11px] uppercase tracking-wide">{{ os_fila_setor|default:0 }} aguardando</div>
+            </div>
+        </div>
+
+        <!-- Mural de avisos -->
+        <div class="lg:col-span-2 hb-rise hb-d5">
+            <div class="hb-panel rounded-2xl p-6 md:p-8 h-full">
+                <h2 class="font-display text-ink font-semibold text-base uppercase tracking-wide mb-6 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center">
+                        <i class="fa-solid fa-bullhorn text-accent-soft text-xs"></i>
+                    </span>
+                    Mural de Avisos
+                </h2>
+                <div class="space-y-3">
+                    {% for aviso in avisos %}
+                    <div class="bg-core-bg/50 p-5 rounded-xl border border-core-line hover:border-accent/30 transition-colors">
+                        <h4 class="text-ink font-semibold text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-circle text-accent text-[6px]"></i> {{ aviso.titulo }}
+                        </h4>
+                        <p class="text-ink-soft text-sm mt-2 leading-relaxed">{{ aviso.texto }}</p>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12">
+                        <i class="fa-regular fa-bell-slash text-ink-faint text-3xl mb-3"></i>
+                        <p class="font-mono text-[11px] text-ink-faint uppercase tracking-wide">Nenhum aviso no momento</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Saudação por horário — dá o toque de "a tela reconhece o momento"
+    (function () {
+        const el = document.getElementById("hb-saudacao");
+        if (!el) return;
+        const h = new Date().getHours();
+        let txt = "Painel Operacional";
+        if (h >= 5 && h < 12) txt = "Bom dia";
+        else if (h >= 12 && h < 18) txt = "Boa tarde";
+        else txt = "Boa noite";
+        el.textContent = txt;
+    })();
+</script>
+
+{% endblock %}

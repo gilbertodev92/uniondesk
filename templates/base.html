@@ -1,0 +1,665 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <title>{% block title %}Atendimento Lógica - UnionDESK{% endblock %}</title>
+
+  <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}" />
+  <link rel="shortcut icon" href="{% static 'favicon.ico' %}" />
+
+  <!-- ═══════════════════════════════════════════════════════
+       TEMA: aplicado ANTES do primeiro paint (evita flash).
+       Ordem de decisão: localStorage → preferência do SO → dark.
+       ═══════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      var saved = localStorage.getItem('union_theme');
+      var valid = ['dark','gray','light'];
+      var theme = (valid.indexOf(saved) >= 0) ? saved : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+      if (localStorage.getItem('union_sidebar') !== 'open') {
+        document.documentElement.classList.add('sidebar-closed');
+      }
+    })();
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    /* ═══════════════════════════════════════════════════════
+       DESIGN SYSTEM — tokens semânticos apontando p/ CSS vars.
+       Trocar de tema = trocar [data-theme] no <html>.
+       Formato rgb(var / <alpha-value>) preserva bg-accent/10 etc.
+       ═══════════════════════════════════════════════════════ */
+    tailwind.config = {
+      darkMode: ['class', '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          colors: {
+            core: {
+              bg:    'rgb(var(--c-bg) / <alpha-value>)',      /* fundo base */
+              deep:  'rgb(var(--c-deep) / <alpha-value>)',    /* camada intermediária */
+              panel: 'rgb(var(--c-panel) / <alpha-value>)',   /* sidebar / superfícies */
+              line:  'rgb(var(--c-line) / <alpha-value>)',    /* bordas */
+            },
+            ink: {
+              DEFAULT: 'rgb(var(--c-ink) / <alpha-value>)',   /* texto principal */
+              soft:    'rgb(var(--c-ink-soft) / <alpha-value>)',
+              faint:   'rgb(var(--c-ink-faint) / <alpha-value>)',
+            },
+            accent: {
+              DEFAULT: 'rgb(var(--c-accent) / <alpha-value>)',      /* cobalto (dark) / dourado (light) */
+              soft:    'rgb(var(--c-accent-soft) / <alpha-value>)',
+              deep:    'rgb(var(--c-accent-deep) / <alpha-value>)',
+            },
+            signal: {
+              DEFAULT: 'rgb(var(--c-signal) / <alpha-value>)',
+            },
+            success: { DEFAULT: 'rgb(var(--c-success) / <alpha-value>)' },
+            warn:    { DEFAULT: 'rgb(var(--c-warn) / <alpha-value>)' },
+            danger:  { DEFAULT: 'rgb(var(--c-danger) / <alpha-value>)' },
+            special: { DEFAULT: 'rgb(var(--c-special) / <alpha-value>)' }
+          },
+          fontFamily: {
+            display: ['"Space Grotesk"', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       TOKENS DE TEMA (RGB puro p/ compor com alpha no Tailwind)
+       ═══════════════════════════════════════════════════════ */
+    :root, html[data-theme="dark"] {
+      --c-bg:          5 7 12;        /* #05070c */
+      --c-deep:        10 14 23;      /* #0a0e17 */
+      --c-panel:       13 18 32;      /* #0d1220 */
+      --c-line:        27 35 51;      /* #1b2333 */
+      --c-bubble-in:   13 18 32;      /* balão do cliente (= panel no escuro) */
+      --c-ink:         226 232 240;   /* slate-200 */
+      --c-ink-soft:    148 163 184;   /* slate-400 */
+      --c-ink-faint:   100 116 139;   /* slate-500 */
+      --c-accent:      61 90 254;     /* cobalto */
+      --c-accent-soft: 124 155 255;
+      --c-accent-deep: 26 42 128;
+      --c-signal:      0 217 163;     /* teal */
+
+      /* status compartilhados (todas as páginas devem usar estes) */
+      --c-success:     47 212 142;    /* #2fd48e */
+      --c-warn:        245 184 61;    /* #f5b83d */
+      --c-danger:      240 98 93;     /* #f0625d */
+      --c-special:     181 140 255;   /* #b58cff — fds/plantão/tags */
+
+      --sh-grid:       rgba(61, 90, 254, 0.035);
+      --sh-halo:       rgba(61, 90, 254, 0.08);
+      --sh-glass-top:  rgba(255,255,255,0.025);
+      --sh-glass-bg:   rgba(10, 14, 23, 0.92);
+      --sh-toast-blur: rgba(13, 18, 32, 0.85);
+      color-scheme: dark;
+    }
+
+    /* ── MODO GRAY: grafite intermediário, contraste suave ── */
+    html[data-theme="gray"] {
+      --c-bg:          33 37 44;      /* #21252c */
+      --c-deep:        39 44 52;      /* #272c34 */
+      --c-panel:       44 49 58;      /* #2c313a */
+      --c-line:        62 68 79;      /* #3e444f */
+      --c-bubble-in:   44 49 58;      /* balão do cliente (= panel no gray) */
+      --c-ink:         230 232 236;   /* #e6e8ec */
+      --c-ink-soft:    165 172 183;   /* #a5acb7 */
+      --c-ink-faint:   122 130 142;   /* #7a828e */
+      --c-accent:      106 134 255;   /* cobalto suavizado */
+      --c-accent-soft: 148 168 255;
+      --c-accent-deep: 55 74 160;
+      --c-signal:      44 200 158;
+
+      --c-success:     56 199 140;
+      --c-warn:        235 181 76;
+      --c-danger:      233 108 103;
+      --c-special:     176 143 245;
+
+      --sh-grid:       rgba(255, 255, 255, 0.028);
+      --sh-halo:       rgba(106, 134, 255, 0.07);
+      --sh-glass-top:  rgba(255,255,255,0.03);
+      --sh-glass-bg:   rgba(44, 49, 58, 0.94);
+      --sh-toast-blur: rgba(44, 49, 58, 0.88);
+      color-scheme: dark;
+    }
+
+    /* ── MODO LIGHT: cinzas claros + grafite + dourado ────── */
+    html[data-theme="light"] {
+      /* Off-white quente — sem branco puro em lugar nenhum.
+         Papel/pergaminho: descansa a vista e casa com o dourado. */
+      --c-bg:          230 226 218;   /* #e6e2da — base (mais fechada que os cards) */
+      --c-deep:        240 236 228;   /* #f0ece4 — camada intermediária */
+      --c-panel:       248 245 239;   /* #f8f5ef — cards/sidebar (era #ffffff) */
+      --c-line:        216 210 198;   /* #d8d2c6 — bordas quentes */
+      --c-bubble-in:   227 220 205;   /* #e3dccd — balão do cliente em BEGE (não branco) */
+      --c-ink:         33 31 27;      /* #211f1b — grafite quente (não preto puro) */
+      --c-ink-soft:    82 78 70;      /* #524e46 */
+      --c-ink-faint:   130 124 112;   /* #827c70 */
+      --c-accent:      166 122 22;    /* #a67a16 — dourado sóbrio (contraste AA) */
+      --c-accent-soft: 197 152 46;    /* #c5982e — hover */
+      --c-accent-deep: 122 88 12;     /* #7a580c */
+      --c-signal:      12 138 106;    /* teal escurecido p/ fundo claro */
+
+      --c-success:     13 128 84;     /* #0d8054 */
+      --c-warn:        180 83 9;      /* #b45309 — âmbar queimado (não briga c/ dourado) */
+      --c-danger:      185 28 28;     /* #b91c1c */
+      --c-special:     109 40 217;    /* #6d28d9 */
+
+      --sh-grid:       rgba(33, 31, 27, 0.04);
+      --sh-halo:       rgba(166, 122, 22, 0.07);
+      --sh-glass-top:  rgba(255, 253, 248, 0.5);
+      --sh-glass-bg:   rgba(248, 245, 239, 0.94);
+      --sh-toast-blur: rgba(248, 245, 239, 0.9);
+      color-scheme: light;
+    }
+
+    body { font-family: 'Inter', sans-serif; }
+
+    /* Transição suave de tema (só cores — barata p/ o compositor) */
+    body, .glass-panel, .nav-link-glass, .bottom-nav {
+      transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-accent)); }
+    .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-accent-soft)); }
+
+    /* ═══════════════════════════════════════════════════════
+       FUNDO DO SISTEMA — grid de painel de operações (tematizado)
+       ═══════════════════════════════════════════════════════ */
+    .bg-system-core {
+      background-color: rgb(var(--c-bg));
+      background-image:
+        linear-gradient(var(--sh-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--sh-grid) 1px, transparent 1px),
+        radial-gradient(circle at 0% 0%, var(--sh-halo) 0%, transparent 45%);
+      background-size: 42px 42px, 42px 42px, 100% 100%;
+    }
+
+    .glass-panel {
+      background: linear-gradient(180deg, var(--sh-glass-top) 0%, transparent 100%), var(--sh-glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-right: 1px solid rgb(var(--c-line));
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       NAVEGAÇÃO
+       ═══════════════════════════════════════════════════════ */
+    .nav-link-glass {
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      border-left: 2px solid transparent;
+      color: rgb(var(--c-ink-soft));
+    }
+    .nav-link-glass:hover {
+      background: rgb(var(--c-accent) / 0.08);
+      border-left-color: rgb(var(--c-accent-soft));
+      color: rgb(var(--c-ink));
+    }
+    .nav-link-active {
+      background: linear-gradient(90deg, rgb(var(--c-accent) / 0.16) 0%, transparent 100%);
+      border-left-color: rgb(var(--c-accent-soft));
+      color: rgb(var(--c-ink));
+    }
+
+    /* PULSO DE STATUS NO LOGO */
+    .status-pulse { position: relative; }
+    .status-pulse::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      border: 1px solid rgb(var(--c-signal));
+      opacity: 0;
+      animation: statusPulse 2.6s ease-out infinite;
+    }
+    @keyframes statusPulse {
+      0%   { opacity: 0.5; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.3); }
+    }
+
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ═══════════════════════════════════════════════════════
+       SIDEBAR — DESKTOP (≥1024px): colapsável por largura
+       ═══════════════════════════════════════════════════════ */
+    #main-sidebar { transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    @media (min-width: 1024px) {
+      html.sidebar-closed #main-sidebar { width: 4.5rem; }
+      html.sidebar-closed .nav-text { display: none; }
+      html.sidebar-closed .nav-icon { margin: 0 auto; }
+      html.sidebar-closed .sidebar-header { padding: 0; justify-content: center; }
+      html.sidebar-closed .logo-link { display: none; }
+      html.sidebar-closed .toggle-btn { margin: 0; }
+      html.sidebar-closed .nav-link-glass {
+        padding-left: 0; padding-right: 0;
+        margin-left: 0.5rem; margin-right: 0.5rem;
+        justify-content: center;
+        border-radius: 0.5rem;
+      }
+      html.sidebar-closed .util-row { flex-direction: column; }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       SIDEBAR — MOBILE (<1024px): drawer sobreposto via transform
+       (translateX = GPU; nada de reflow de largura no mobile)
+       ═══════════════════════════════════════════════════════ */
+    @media (max-width: 1023.98px) {
+      #main-sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: min(85vw, 19rem) !important;
+        transform: translateX(-105%);
+        transition: transform 0.28s cubic-bezier(0.32, 0.72, 0.24, 1);
+        will-change: transform;
+        z-index: 70;
+        box-shadow: 12px 0 40px -18px rgba(0,0,0,0.55);
+      }
+      html.drawer-open #main-sidebar { transform: translateX(0); }
+      html.drawer-open { overflow: hidden; }
+
+      /* no drawer os textos sempre aparecem, mesmo com sidebar-closed do desktop */
+      html.sidebar-closed .nav-text { display: inline; }
+      html.sidebar-closed .logo-link { display: flex; }
+
+      #drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(3, 5, 9, 0.55);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+        z-index: 60;
+      }
+      html.drawer-open #drawer-backdrop { opacity: 1; pointer-events: auto; }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       BOTTOM NAV — MOBILE: zona do polegar + safe-area (iOS)
+       ═══════════════════════════════════════════════════════ */
+    .bottom-nav {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 50;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      background: var(--sh-glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-top: 1px solid rgb(var(--c-line));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .bottom-nav a, .bottom-nav button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 9px 4px 8px;
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: rgb(var(--c-ink-faint));
+      background: none; border: none;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .bottom-nav i { font-size: 17px; }
+    .bottom-nav .bn-active { color: rgb(var(--c-accent-soft)); }
+    .bottom-nav .bn-active i { color: rgb(var(--c-accent)); }
+
+    /* topbar mobile */
+    .mobile-topbar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      padding-top: calc(10px + env(safe-area-inset-top, 0px));
+      background: var(--sh-glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgb(var(--c-line));
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    @media (max-width: 1023.98px) {
+      .mobile-topbar { display: flex; }
+      #main-content { padding-bottom: 64px; }  /* espaço p/ bottom nav */
+      .bottom-nav { display: grid; }
+    }
+    @media (min-width: 1024px) {
+      .bottom-nav { display: none; }
+    }
+
+    /* botões de utilidade (tema, raio-x, logout) */
+    .util-btn {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      color: rgb(var(--c-ink-faint));
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .util-btn:hover { background: rgb(var(--c-deep)); color: rgb(var(--c-ink)); border-color: rgb(var(--c-line)); }
+    .util-btn--danger:hover { color: #f87171; background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.25); }
+    html[data-theme="light"] .util-btn--danger:hover { color: #b91c1c; }
+
+    /* ícone de tema: mostra o PRÓXIMO tema do ciclo dark → gray → light */
+    .theme-icon-moon, .theme-icon-dim, .theme-icon-sun { display: none; }
+    html[data-theme="dark"]  .theme-icon-dim  { display: inline-block; } /* próximo: gray */
+    html[data-theme="gray"]  .theme-icon-sun  { display: inline-block; } /* próximo: light */
+    html[data-theme="light"] .theme-icon-moon { display: inline-block; } /* próximo: dark */
+
+    :focus-visible { outline: 2px solid rgb(var(--c-accent)); outline-offset: 2px; }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="h-screen bg-system-core text-ink antialiased flex overflow-hidden">
+
+  {% if not request.GET.isolado %}
+
+  <!-- backdrop do drawer (só age no mobile) -->
+  <div id="drawer-backdrop" onclick="closeDrawer()" aria-hidden="true"></div>
+
+  <aside id="main-sidebar" class="w-64 glass-panel flex flex-col z-50 h-full relative"
+         role="navigation" aria-label="Menu principal">
+
+    <div class="sidebar-header h-[72px] flex items-center justify-between px-4 border-b border-core-line/60 bg-core-panel/60 shrink-0 overflow-hidden relative transition-all">
+
+      {# NOTA: hardcoded para "/setup/" — sob subpath isso precisa virar {% url %}. #}
+      <a href="/setup/" class="logo-link flex items-center group w-full" title="Ir para Home">
+        <div class="status-pulse relative flex items-center justify-center w-9 h-9 shrink-0 nav-icon rounded-lg bg-core-deep border border-accent/25 group-hover:border-accent-soft/50 transition-all">
+            <i class="fa-solid fa-layer-group text-accent-soft text-sm"></i>
+        </div>
+
+        <div class="flex flex-col items-start flex-1 nav-text ml-3 justify-center">
+            <span class="font-display font-semibold text-[14px] tracking-wide text-ink whitespace-nowrap truncate group-hover:text-accent-soft transition-colors">
+                LÓGICA<span class="text-ink-faint font-normal">.DESK</span>
+            </span>
+            <span class="font-mono text-[9px] tracking-[0.15em] text-ink-faint uppercase whitespace-nowrap flex items-center gap-1.5 mt-0.5">
+                <span class="w-1 h-1 rounded-full bg-signal inline-block"></span>UnionDESK
+            </span>
+        </div>
+      </a>
+
+      <!-- desktop: colapsa a sidebar | mobile: fecha o drawer -->
+      <button onclick="handleSidebarBtn()" class="toggle-btn text-ink-faint hover:text-accent-soft p-1.5 rounded-lg transition-all shrink-0 ml-1 hover:bg-core-deep" aria-label="Alternar menu">
+          <i class="fa-solid fa-bars-staggered text-sm lg:inline hidden"></i>
+          <i class="fa-solid fa-xmark text-base lg:hidden"></i>
+      </button>
+    </div>
+
+    <nav class="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+
+      <div class="flex items-center gap-2 px-3 mt-1 mb-2">
+          <p class="nav-text font-mono text-[9px] font-medium text-ink-faint uppercase tracking-[0.18em] whitespace-nowrap">Core Modules</p>
+          <div class="flex-1 h-[1px] bg-core-line ml-2 nav-text"></div>
+      </div>
+
+      {% url 'home' as url_home %}
+      <a href="{% url 'whatsapp_bot:chat_dashboard' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass" title="Whatsapp Bot">
+        <i class="fa-brands fa-whatsapp w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Whatsapp Bot e Grupos</span>
+      </a>
+
+      <a href="{% url 'atendimentos_chamados:listar' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass" title="Atendimentos">
+        <i class="fa-solid fa-ticket-simple w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Atendimento &amp; Implantação</span>
+      </a>
+
+      <a href="{% url 'painel_clientes' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass" title="Clientes">
+        <i class="fa-solid fa-building-shield w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Cad. Clientes</span>
+      </a>
+
+      <a href="{% url 'cs_satisfacao:painel_cs' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass" title="CS - Satisfação">
+        <i class="fa-solid fa-heart-pulse w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">CS / Satisfação</span>
+      </a>
+
+      <a href="{{ url_home }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass {% if request.path == url_home %}nav-link-active{% endif %}" title="Dashboard">
+        <i class="fa-solid fa-chart-line w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Dashboard Digital</span>
+      </a>
+
+      <div class="flex items-center gap-2 px-3 mt-6 mb-2">
+          <p class="nav-text font-mono text-[9px] font-medium text-ink-faint uppercase tracking-[0.18em] whitespace-nowrap">Ferramentas</p>
+          <div class="flex-1 h-[1px] bg-core-line ml-2 nav-text"></div>
+      </div>
+
+      <a href="{% url 'arquivos_instaladores:painel' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass" title="Arquivos">
+        <i class="fa-solid fa-folder-tree w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Arquivos / EXE</span>
+      </a>
+
+      <a href="{% url 'base_conhecimento:rom' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass" title="Base Conhecimento">
+        <i class="fa-solid fa-book-journal-whills w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Wiki &amp; Manuais</span>
+      </a>
+
+      <a href="{% url 'cofre_senhas:index' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass" title="Cofre Senhas">
+        <i class="fa-solid fa-vault w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Cofre de Credenciais</span>
+      </a>
+
+      <a href="{% url 'calendario_agenda:calendar' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass" title="Calendário">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Agenda de Visitas</span>
+      </a>
+
+      <a href="{% url 'controle_horas:painel' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass" title="Controle de Horas">
+        <i class="fa-solid fa-stopwatch w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Controle Horas</span>
+      </a>
+
+      {% if request.user.is_superuser or perms.recompensas %}
+          <div class="mt-6 mb-2 px-3">
+              <div class="h-[1px] w-full bg-core-line mb-3"></div>
+              <a href="{% url 'recompensas:dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded border border-accent/25 bg-accent/5 hover:border-accent-soft hover:bg-accent/10 transition-all group relative overflow-hidden" title="Recompensas">
+                <div class="absolute left-0 top-0 w-0.5 h-full bg-accent"></div>
+                <i class="fa-solid fa-microchip w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+                <span class="nav-text text-[10px] font-semibold uppercase tracking-[0.15em] text-ink whitespace-nowrap">Suporte Competition</span>
+              </a>
+          </div>
+          <div class="mb-4 px-3">
+            <a href="{% url 'crm_vendas:kanban' %}" class="flex items-center gap-3 px-3 py-2.5 rounded border border-signal/25 bg-signal/5 hover:border-signal hover:bg-signal/10 transition-all group relative overflow-hidden" title="CRM Vendas">
+                <div class="absolute left-0 top-0 w-0.5 h-full bg-signal"></div>
+                <i class="fa-solid fa-network-wired w-5 text-center text-sm shrink-0 nav-icon text-signal"></i>
+                <span class="nav-text text-[10px] font-semibold uppercase tracking-[0.15em] text-ink whitespace-nowrap">Módulo CRM Vendas</span>
+            </a>
+          </div>
+      {% else %}
+          {% for grupo in request.user.groups.all %}
+              {% if grupo.name == 'Suporte Software' %}
+                  <div class="mt-6 mb-2 px-3">
+                      <div class="h-[1px] w-full bg-core-line mb-3"></div>
+                      <a href="{% url 'recompensas:dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded border border-accent/25 bg-accent/5 hover:border-accent-soft hover:bg-accent/10 transition-all group relative overflow-hidden" title="Recompensas">
+                        <div class="absolute left-0 top-0 w-0.5 h-full bg-accent"></div>
+                        <i class="fa-solid fa-microchip w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+                        <span class="nav-text text-[10px] font-semibold uppercase tracking-[0.15em] text-ink whitespace-nowrap">Recompensas</span>
+                      </a>
+                  </div>
+                  <div class="mb-4 px-3">
+                      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded border border-signal/25 bg-signal/5 hover:border-signal hover:bg-signal/10 transition-all group relative overflow-hidden" title="CRM Vendas">
+                        <div class="absolute left-0 top-0 w-0.5 h-full bg-signal"></div>
+                        <i class="fa-solid fa-network-wired w-5 text-center text-sm shrink-0 nav-icon text-signal"></i>
+                        <span class="nav-text text-[10px] font-semibold uppercase tracking-[0.15em] text-ink whitespace-nowrap">Módulo CRM</span>
+                      </a>
+                  </div>
+              {% endif %}
+          {% endfor %}
+      {% endif %}
+
+    </nav>
+
+    <!-- ── RODAPÉ: linha de utilidades (tema · raio-x · sair) ── -->
+    <div class="p-3 border-t border-core-line/60 bg-core-panel/60 shrink-0">
+      <div class="util-row flex items-center justify-center gap-2">
+
+        <button type="button" onclick="toggleTheme()" class="util-btn" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro">
+          <i class="fa-solid fa-circle-half-stroke theme-icon-dim" aria-hidden="true"></i>
+          <i class="fa-solid fa-sun theme-icon-sun" aria-hidden="true"></i>
+          <i class="fa-solid fa-moon theme-icon-moon" aria-hidden="true"></i>
+        </button>
+
+        {# Raio-X: acesso restrito — apenas ícone, sem texto #}
+        <a href="{% url 'raio_x:auth' %}" class="util-btn" title="Raio-X (acesso restrito)" aria-label="Raio-X — acesso restrito">
+          <i class="fa-solid fa-x-ray" aria-hidden="true"></i>
+        </a>
+
+        <a href="{% url 'user_logout' %}" class="util-btn util-btn--danger" title="Encerrar sessão" aria-label="Encerrar sessão">
+          <i class="fa-solid fa-power-off" aria-hidden="true"></i>
+        </a>
+
+      </div>
+    </div>
+
+  </aside>
+  {% endif %}
+
+  <main class="flex-1 flex flex-col h-full w-full relative overflow-y-auto z-10" id="main-content">
+
+    {% if not request.GET.isolado %}
+    <!-- ── TOPBAR MOBILE ── -->
+    <header class="mobile-topbar">
+      <button type="button" onclick="openDrawer()" class="util-btn" aria-label="Abrir menu" aria-controls="main-sidebar">
+        <i class="fa-solid fa-bars" aria-hidden="true"></i>
+      </button>
+
+      <a href="/setup/" class="flex items-center gap-2" title="Ir para Home">
+        <span class="font-display font-semibold text-[13px] tracking-wide text-ink">
+          LÓGICA<span class="text-ink-faint font-normal">.DESK</span>
+        </span>
+      </a>
+
+      <button type="button" onclick="toggleTheme()" class="util-btn" title="Alternar tema" aria-label="Alternar tema claro/escuro">
+        <i class="fa-solid fa-circle-half-stroke theme-icon-dim" aria-hidden="true"></i>
+        <i class="fa-solid fa-sun theme-icon-sun" aria-hidden="true"></i>
+        <i class="fa-solid fa-moon theme-icon-moon" aria-hidden="true"></i>
+      </button>
+    </header>
+    {% endif %}
+
+    {% if messages %}
+      <div class="absolute top-4 right-4 z-50 space-y-3">
+        {% for message in messages %}
+          <div class="flex items-center gap-3 rounded-lg border px-5 py-3 text-xs font-mono uppercase tracking-wide shadow-lg"
+               style="backdrop-filter: blur(10px); background: var(--sh-toast-blur);"
+               data-tags="{{ message.tags }}">
+            <i class="{% if message.tags == 'success' %}fa-solid fa-check-circle text-signal{% elif message.tags == 'error' %}fa-solid fa-triangle-exclamation text-red-500{% else %}fa-solid fa-circle-info text-accent-soft{% endif %}"></i>
+            <span class="text-ink">{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  {% if not request.GET.isolado %}
+  <!-- ── BOTTOM NAVIGATION (mobile) — ações de maior frequência ── -->
+  <nav class="bottom-nav" role="navigation" aria-label="Navegação rápida">
+    {% url 'atendimentos_chamados:listar' as url_atend %}
+    {% url 'painel_clientes' as url_cli %}
+    {% url 'controle_horas:painel' as url_ponto %}
+    {% url 'calendario_agenda:calendar' as url_agenda %}
+
+    <a href="{{ url_atend }}" class="{% if request.path == url_atend %}bn-active{% endif %}">
+      <i class="fa-solid fa-ticket-simple" aria-hidden="true"></i> Chamados
+    </a>
+    <a href="{{ url_cli }}" class="{% if request.path == url_cli %}bn-active{% endif %}">
+      <i class="fa-solid fa-building-shield" aria-hidden="true"></i> Clientes
+    </a>
+    <a href="{{ url_ponto }}" class="{% if request.path == url_ponto %}bn-active{% endif %}">
+      <i class="fa-solid fa-stopwatch" aria-hidden="true"></i> Ponto
+    </a>
+    <a href="{{ url_agenda }}" class="{% if request.path == url_agenda %}bn-active{% endif %}">
+      <i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Agenda
+    </a>
+    <button type="button" onclick="openDrawer()" aria-label="Abrir menu completo">
+      <i class="fa-solid fa-grip" aria-hidden="true"></i> Menu
+    </button>
+  </nav>
+  {% endif %}
+
+  <script>
+    // 1. (REMOVIDO) O bloqueio do botão direito do mouse foi retirado.
+    //    Agora o menu de contexto do navegador funciona normalmente em toda a tela.
+
+    // 2. Bloqueia atalhos de teclado de desenvolvedor
+    document.addEventListener('keydown', function (event) {
+        if (event.keyCode === 123) { event.preventDefault(); return false; }
+        if (event.ctrlKey && event.shiftKey && (event.keyCode === 73 || event.keyCode === 74)) { event.preventDefault(); return false; }
+        if (event.ctrlKey && event.keyCode === 85) { event.preventDefault(); return false; }
+        if (event.ctrlKey && event.keyCode === 83) { event.preventDefault(); return false; }
+    });
+
+    // 3. SIDEBAR / DRAWER
+    var MQ_DESKTOP = window.matchMedia('(min-width: 1024px)');
+
+    function toggleSidebar() {
+        const html = document.documentElement;
+        html.classList.toggle('sidebar-closed');
+        localStorage.setItem('union_sidebar', html.classList.contains('sidebar-closed') ? 'closed' : 'open');
+    }
+    function openDrawer()  { document.documentElement.classList.add('drawer-open'); }
+    function closeDrawer() { document.documentElement.classList.remove('drawer-open'); }
+    // no desktop o botão da sidebar colapsa; no mobile ele fecha o drawer
+    function handleSidebarBtn() { MQ_DESKTOP.matches ? toggleSidebar() : closeDrawer(); }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeDrawer();
+    });
+    // evita drawer preso aberto ao rotacionar/redimensionar p/ desktop
+    MQ_DESKTOP.addEventListener('change', function (e) { if (e.matches) closeDrawer(); });
+
+    // 4. TEMA DARK / LIGHT
+    var THEME_CYCLE = ['dark', 'gray', 'light'];
+    function toggleTheme() {
+        const html = document.documentElement;
+        const cur = html.getAttribute('data-theme') || 'dark';
+        const next = THEME_CYCLE[(THEME_CYCLE.indexOf(cur) + 1) % THEME_CYCLE.length];
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('union_theme', next);
+    }
+  </script>
+
+  
+
+{% include "assistente_ia/_widget.html" %} 
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Fechamento - Detalhe{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Cabeçalho -->
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+    <div>
+      <h2 class="fw-bold mb-1 text-primary">
+        Fechamento – {{ usuario.get_full_name|default:usuario.username }}
+      </h2>
+      <small class="text-muted">Competência: {{ mes|stringformat:"02d" }}/{{ ano }}</small>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'controle_horas:fechamentos' %}" class="ud-btn-outline">← Voltar aos fechamentos</a>
+      <!-- Botões de ação (placeholder, ativaremos quando persistirmos o “fechado”) -->
+      {% if tem_aprovado %}
+        <span class="ud-badge bg-warning">Possui lançamentos aprovados</span>
+      {% else %}
+        <span class="ud-badge bg-secondary">Sem aprovados</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Totais -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-6">
+      <div class="ud-card-plain">
+        <div>
+          <div class="ud-kicker">Total aprovado (h)</div>
+          <div class="ud-metric">{{ total_h_str }}</div>
+        </div>
+        <div class="ud-dot ud-dot-blue"></div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <div class="ud-card-plain">
+        <div>
+          <div class="ud-kicker">Extra aprovado (h)</div>
+          <div class="ud-metric ud-green">{{ extra_h_str }}</div>
+        </div>
+        <div class="ud-dot ud-dot-green"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista por dia -->
+  <div class="ud-card-table">
+    {% if dias %}
+      {% for dia, itens in dias %}
+        <div class="mb-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="mb-2">{{ dia|date:"d/m/Y (D)" }}</h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th style="min-width:260px;">Períodos</th>
+                  <th>Horas</th>
+                  <th>Extra</th>
+                  <th>Status</th>
+                  <th>Descrição</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in itens %}
+                <tr>
+                  <td>{{ a.get_tipo_display }}</td>
+                  <td class="small">
+                    {% if a.tipo == 'normal' %}
+                      {% if a.manha_inicio and a.manha_fim %}
+                        <div>Manhã:
+                          <span class="ud-badge">{{ a.manha_inicio|time:"H:i" }} — {{ a.manha_fim|time:"H:i" }}</span>
+                        </div>
+                      {% endif %}
+                      {% if a.tarde_inicio and a.tarde_fim %}
+                        <div>Tarde:
+                          <span class="ud-badge">{{ a.tarde_inicio|time:"H:i" }} — {{ a.tarde_fim|time:"H:i" }}</span>
+                        </div>
+                      {% endif %}
+                    {% else %}
+                      {% if a.especial_inicio and a.especial_fim %}
+                        <div>Período:
+                          <span class="ud-badge">{{ a.especial_inicio|time:"H:i" }} — {{ a.especial_fim|time:"H:i" }}</span>
+                        </div>
+                      {% endif %}
+                    {% endif %}
+                  </td>
+                  <td><strong>{{ a.horas_total|floatformat:2 }}</strong></td>
+                  <td>
+                    <strong class="{% if a.horas_extra and a.horas_extra|floatformat:2 != '0.00' %}text-success{% endif %}">
+                      {{ a.horas_extra|floatformat:2 }}
+                    </strong>
+                  </td>
+                  <td>
+                    {% if a.status == 'aprovado' %}
+                      <span class="ud-status ud-status-ok">Aprovado</span>
+                    {% elif a.status == 'pendente' %}
+                      <span class="ud-status ud-status-warn">Pendente</span>
+                    {% elif a.status == 'reprovado' %}
+                      <span class="ud-status ud-status-no">Reprovado</span>
+                    {% else %}
+                      <span class="ud-status ud-status-neutral">Rascunho</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-muted">{{ a.descricao }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center text-muted py-4">Sem lançamentos nesta competência para este usuário.</div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .ud-btn-outline{
+    display:inline-block; padding:.5rem .8rem; border:2px solid #dee2e6; border-radius:10px;
+    text-decoration:none; font-weight:600; color:#0d6efd; background:#fff; transition:all .2s ease;
+  }
+  .ud-btn-outline:hover{ background:#0d6efd; color:#fff; }
+
+  .ud-card-plain{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1.5px solid #e9ecef; background:#fff; border-radius:14px;
+    padding:16px 18px; box-shadow:0 2px 10px rgba(0,0,0,.04);
+  }
+  .ud-kicker{ font-size:.8rem; color:#6c757d; letter-spacing:.02em; }
+  .ud-metric{ font-size:1.6rem; font-weight:800; color:#212529; margin-top:2px; }
+  .ud-green{ color:#198754; }
+  .ud-dot{ width:14px; height:14px; border-radius:50%; }
+  .ud-dot-blue{ background:#0d6efd; }
+  .ud-dot-green{ background:#198754; }
+
+  .ud-card-table{
+    border:1.5px solid #e9ecef; background:#fff; border-radius:14px;
+    padding:10px 12px; box-shadow:0 4px 14px rgba(0,0,0,.06);
+  }
+  .ud-badge{
+    display:inline-block; border:1px solid #dee2e6; border-radius:8px; padding:.1rem .35rem; font-weight:600;
+    background:#f8f9fa;
+  }
+  .ud-status{ display:inline-block; padding:.2rem .45rem; border-radius:999px; font-size:.8rem; font-weight:700; }
+  .ud-status-ok{ background:#d1e7dd; color:#0f5132; border:1px solid #badbcc; }
+  .ud-status-warn{ background:#fff3cd; color:#664d03; border:1px solid #ffe69c; }
+  .ud-status-no{ background:#f8d7da; color:#842029; border:1px solid #f5c2c7; }
+  .ud-status-neutral{ background:#e2e3e5; color:#41464b; border:1px solid #d3d6d8; }
+</style>
+{% endblock %}

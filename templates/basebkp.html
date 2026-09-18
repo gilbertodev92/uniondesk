@@ -1,0 +1,341 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>{% block title %}Atendimento Lógica - UnionDESK{% endblock %}</title>
+
+  <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}" />
+  <link rel="shortcut icon" href="{% static 'favicon.ico' %}" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            core: {
+              bg: '#05070c',      /* Fundo base */
+              deep: '#0a0e17',    /* Camada intermediária / painéis */
+              panel: '#0d1220',   /* Sidebar */
+              line: '#1b2333',    /* Bordas sutis */
+            },
+            accent: {
+              DEFAULT: '#3d5afe', /* Cobalto principal */
+              soft: '#7c9bff',    /* Hover / secundário */
+              deep: '#1a2a80',    /* Fundo de destaque sutil */
+            },
+            signal: {
+              DEFAULT: '#00d9a3', /* Verde-teal — status / monitoramento ativo */
+            }
+          },
+          fontFamily: {
+            display: ['"Space Grotesk"', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    /* SCROLLBAR CUSTOMIZADA */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #1b2333; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3d5afe; }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #1b2333; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #7c9bff; }
+
+    /* COMPORTAMENTO DE FECHAMENTO DA SIDEBAR */
+    #main-sidebar { transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+    html.sidebar-closed #main-sidebar { width: 4.5rem; }
+    html.sidebar-closed .nav-text { display: none; }
+    html.sidebar-closed .nav-icon { margin: 0 auto; }
+    html.sidebar-closed .sidebar-header { padding: 0; justify-content: center; }
+    html.sidebar-closed .logo-link { display: none; }
+    html.sidebar-closed .toggle-btn { margin: 0; }
+
+    html.sidebar-closed .nav-link-glass {
+        padding-left: 0; padding-right: 0;
+        margin-left: 0.5rem; margin-right: 0.5rem;
+        justify-content: center;
+        border-radius: 0.5rem;
+    }
+    html.sidebar-closed .nav-icon { margin: 0; }
+    html.sidebar-closed nav > div.px-3 { padding-left: 0; padding-right: 0; }
+    html.sidebar-closed nav > div.px-3 > a {
+        padding-left: 0; padding-right: 0;
+        margin-left: 0.5rem; margin-right: 0.5rem;
+        justify-content: center;
+    }
+
+    /* FUNDO DO SISTEMA — grid discreto de "painel de operações" */
+    .bg-system-core {
+        background-color: #05070c;
+        background-image:
+            linear-gradient(rgba(61, 90, 254, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(61, 90, 254, 0.035) 1px, transparent 1px),
+            radial-gradient(circle at 0% 0%, rgba(61, 90, 254, 0.08) 0%, transparent 45%);
+        background-size: 42px 42px, 42px 42px, 100% 100%;
+    }
+
+    /* PAINÉIS — vidro discreto, sem exagero de blur/glow */
+    .glass-panel {
+        background: linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.005) 100%), rgba(10, 14, 23, 0.92);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-right: 1px solid #1b2333;
+    }
+
+    /* LINKS DE NAVEGAÇÃO */
+    .nav-link-glass {
+        transition: all 0.15s ease;
+        border-left: 2px solid transparent;
+        position: relative;
+    }
+    .nav-link-glass:hover {
+        background: rgba(61, 90, 254, 0.08);
+        border-left-color: #7c9bff;
+        color: #ffffff;
+    }
+    .nav-link-active {
+        background: linear-gradient(90deg, rgba(61, 90, 254, 0.16) 0%, transparent 100%);
+        border-left-color: #7c9bff;
+        color: #fff;
+    }
+
+    /* PULSO DE STATUS NO LOGO — assinatura visual: monitoramento ativo */
+    .status-pulse { position: relative; }
+    .status-pulse::before {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        border: 1px solid #00d9a3;
+        opacity: 0;
+        animation: statusPulse 2.6s ease-out infinite;
+    }
+    @keyframes statusPulse {
+        0%   { opacity: 0.5; transform: scale(1); }
+        100% { opacity: 0; transform: scale(1.3); }
+    }
+
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+
+  <script>
+    if (localStorage.getItem('union_sidebar') !== 'open') {
+        document.documentElement.classList.add('sidebar-closed');
+    }
+  </script>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="h-screen bg-system-core text-slate-200 antialiased flex overflow-hidden">
+
+  {% if not request.GET.isolado %}
+  <aside id="main-sidebar" class="w-64 glass-panel flex flex-col z-50 h-full relative">
+
+    <div class="sidebar-header h-[72px] flex items-center justify-between px-4 border-b border-core-line/60 bg-core-panel/60 shrink-0 overflow-hidden relative transition-all">
+
+      {# NOTA: hardcoded para "/setup/" — sob subpath (ex: /union/logica/) isso precisa virar {% url 'nome_da_rota_setup' %} para não quebrar. Ajustar antes da migração. #}
+      <a href="/setup/" class="logo-link flex items-center group w-full" title="Ir para Home">
+        <div class="status-pulse relative flex items-center justify-center w-9 h-9 shrink-0 nav-icon rounded-lg bg-core-deep border border-accent/25 group-hover:border-accent-soft/50 transition-all">
+            <i class="fa-solid fa-layer-group text-accent-soft text-sm"></i>
+        </div>
+
+        <div class="flex flex-col items-start flex-1 nav-text ml-3 justify-center">
+            <span class="font-display font-semibold text-[14px] tracking-wide text-slate-100 whitespace-nowrap truncate group-hover:text-accent-soft transition-colors">
+                LÓGICA<span class="text-slate-500 font-normal">.DESK</span>
+            </span>
+            <span class="font-mono text-[9px] tracking-[0.15em] text-slate-500 uppercase whitespace-nowrap flex items-center gap-1.5 mt-0.5">
+                <span class="w-1 h-1 rounded-full bg-signal inline-block"></span>UnionDESK
+            </span>
+        </div>
+      </a>
+
+      <button onclick="toggleSidebar()" class="toggle-btn text-slate-500 hover:text-accent-soft p-1.5 rounded-lg transition-all shrink-0 ml-1 hover:bg-core-deep">
+          <i class="fa-solid fa-bars-staggered text-sm"></i>
+      </button>
+    </div>
+
+    <nav class="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+
+      <div class="flex items-center gap-2 px-3 mt-1 mb-2">
+          <p class="nav-text font-mono text-[9px] font-medium text-slate-500 uppercase tracking-[0.18em] whitespace-nowrap">Core Modules</p>
+          <div class="flex-1 h-[1px] bg-core-line ml-2 nav-text"></div>
+      </div>
+
+      {% url 'home' as url_home %}
+      <a href="{% url 'whatsapp_bot:chat_dashboard' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass text-slate-300" title="Whatsapp Bot">
+        <i class="fa-brands fa-whatsapp w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Whatsapp Bot e Grupos</span>
+      </a>
+
+      <a href="{% url 'atendimentos_chamados:listar' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass text-slate-300" title="Atendimentos">
+        <i class="fa-solid fa-ticket-simple w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Atendimento &amp; Implantação</span>
+      </a>
+
+      <a href="{% url 'painel_clientes' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass text-slate-300" title="Clientes">
+        <i class="fa-solid fa-building-shield w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Cad. Clientes</span>
+      </a>
+
+      <a href="{% url 'cs_satisfacao:painel_cs' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass text-slate-300" title="CS - Satisfação">
+        <i class="fa-solid fa-heart-pulse w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">CS / Satisfação</span>
+      </a>
+
+      <a href="{{ url_home }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass {% if request.path == url_home %}nav-link-active{% else %}text-slate-300{% endif %}" title="Dashboard">
+        <i class="fa-solid fa-chart-line w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Dashboard Digital</span>
+      </a>
+
+      <div class="flex items-center gap-2 px-3 mt-6 mb-2">
+          <p class="nav-text font-mono text-[9px] font-medium text-slate-500 uppercase tracking-[0.18em] whitespace-nowrap">Ferramentas</p>
+          <div class="flex-1 h-[1px] bg-core-line ml-2 nav-text"></div>
+      </div>
+
+      <a href="{% url 'arquivos_instaladores:painel' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass text-slate-300" title="Arquivos">
+        <i class="fa-solid fa-folder-tree w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Arquivos / EXE</span>
+      </a>
+
+      <a href="{% url 'base_conhecimento:rom' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass text-slate-300" title="Base Conhecimento">
+        <i class="fa-solid fa-book-journal-whills w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Wiki &amp; Manuais</span>
+      </a>
+
+      <a href="{% url 'cofre_senhas:index' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass text-slate-300" title="Cofre Senhas">
+        <i class="fa-solid fa-vault w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Cofre de Credenciais</span>
+      </a>
+
+      <a href="{% url 'calendario_agenda:calendar' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass text-slate-300" title="Calendário">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Agenda de Visitas</span>
+      </a>
+
+      <a href="{% url 'controle_horas:painel' %}" class="group flex items-center gap-3 px-3 py-2.5 rounded-r-lg nav-link-glass text-slate-300" title="Controle de Horas">
+        <i class="fa-solid fa-stopwatch w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+        <span class="nav-text text-xs font-medium whitespace-nowrap tracking-wide">Controle Horas</span>
+      </a>
+
+      <a href="{% url 'raio_x:auth' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-core-deep transition-colors mt-4 border border-transparent hover:border-core-line group">
+        <i class="fa-solid fa-lock text-rose-500 w-5 text-center group-hover:text-rose-400 transition-all"></i>
+        <span class="text-[11px] font-semibold uppercase tracking-widest">Raio-X User</span>
+      </a>
+
+      {% if request.user.is_superuser or perms.recompensas %}
+          <div class="mt-6 mb-2 px-3">
+              <div class="h-[1px] w-full bg-core-line mb-3"></div>
+              <a href="{% url 'recompensas:dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded border border-accent/25 bg-accent/5 hover:border-accent-soft hover:bg-accent/10 transition-all group relative overflow-hidden" title="Recompensas">
+                <div class="absolute left-0 top-0 w-0.5 h-full bg-accent"></div>
+                <i class="fa-solid fa-microchip w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+                <span class="nav-text text-[10px] font-semibold uppercase tracking-[0.15em] text-sky-100 whitespace-nowrap">Suporte Competition</span>
+              </a>
+          </div>
+          <div class="mb-4 px-3">
+            <a href="{% url 'crm_vendas:kanban' %}" class="flex items-center gap-3 px-3 py-2.5 rounded border border-signal/25 bg-signal/5 hover:border-signal hover:bg-signal/10 transition-all group relative overflow-hidden" title="CRM Vendas">
+                <div class="absolute left-0 top-0 w-0.5 h-full bg-signal"></div>
+                <i class="fa-solid fa-network-wired w-5 text-center text-sm shrink-0 nav-icon text-signal"></i>
+                <span class="nav-text text-[10px] font-semibold uppercase tracking-[0.15em] text-sky-100 whitespace-nowrap">Módulo CRM Vendas</span>
+            </a>
+          </div>
+      {% else %}
+          {% for grupo in request.user.groups.all %}
+              {% if grupo.name == 'Suporte Software' %}
+                  <div class="mt-6 mb-2 px-3">
+                      <div class="h-[1px] w-full bg-core-line mb-3"></div>
+                      <a href="{% url 'recompensas:dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded border border-accent/25 bg-accent/5 hover:border-accent-soft hover:bg-accent/10 transition-all group relative overflow-hidden" title="Recompensas">
+                        <div class="absolute left-0 top-0 w-0.5 h-full bg-accent"></div>
+                        <i class="fa-solid fa-microchip w-5 text-center text-sm shrink-0 nav-icon text-accent-soft"></i>
+                        <span class="nav-text text-[10px] font-semibold uppercase tracking-[0.15em] text-sky-100 whitespace-nowrap">Recompensas</span>
+                      </a>
+                  </div>
+                  <div class="mb-4 px-3">
+                      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded border border-signal/25 bg-signal/5 hover:border-signal hover:bg-signal/10 transition-all group relative overflow-hidden" title="CRM Vendas">
+                        <div class="absolute left-0 top-0 w-0.5 h-full bg-signal"></div>
+                        <i class="fa-solid fa-network-wired w-5 text-center text-sm shrink-0 nav-icon text-signal"></i>
+                        <span class="nav-text text-[10px] font-semibold uppercase tracking-[0.15em] text-sky-100 whitespace-nowrap">Módulo CRM</span>
+                      </a>
+                  </div>
+              {% endif %}
+          {% endfor %}
+      {% endif %}
+
+    </nav>
+
+    <div class="p-3 border-t border-core-line/60 bg-core-panel/60 shrink-0 relative">
+      <a href="{% url 'user_logout' %}" class="group flex items-center gap-3 px-3 py-2 rounded border border-transparent hover:border-red-900/50 hover:bg-red-950/20 text-slate-500 hover:text-red-400 transition-all" title="Sair do Sistema">
+        <i class="fa-solid fa-power-off shrink-0 nav-icon"></i>
+        <span class="nav-text text-[10px] font-semibold uppercase tracking-[0.15em] whitespace-nowrap">Encerrar Sessão</span>
+      </a>
+    </div>
+
+  </aside>
+  {% endif %}
+
+  <main class="flex-1 flex flex-col h-full w-full relative overflow-y-auto z-10" id="main-content">
+
+    {% if messages %}
+      <div class="absolute top-4 right-4 z-50 space-y-3">
+        {% for message in messages %}
+          <div class="flex items-center gap-3 rounded-lg border px-5 py-3 text-xs font-mono uppercase tracking-wide animate-in fade-in slide-in-from-top-4 duration-300 shadow-lg backdrop-blur-md
+            {% if message.tags == 'success' %} bg-accent/10 text-accent-soft border-accent/40
+            {% elif message.tags == 'error' %} bg-red-950/70 text-red-400 border-red-500/40
+            {% else %} bg-core-panel text-slate-200 border-core-line {% endif %}">
+            <i class="{% if message.tags == 'success' %}fa-solid fa-check-circle text-signal{% elif message.tags == 'error' %}fa-solid fa-triangle-exclamation text-red-500{% else %}fa-solid fa-circle-info{% endif %}"></i>
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    // 1. Desativa o botão direito do mouse, EXCETO em campos de texto
+    document.addEventListener('contextmenu', function(event) {
+        if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+            return;
+        }
+        event.preventDefault();
+    });
+
+    // 2. Bloqueia atalhos de teclado de desenvolvedor
+    document.addEventListener('keydown', function (event) {
+        if (event.keyCode === 123) { event.preventDefault(); return false; }
+        if (event.ctrlKey && event.shiftKey && (event.keyCode === 73 || event.keyCode === 74)) { event.preventDefault(); return false; }
+        if (event.ctrlKey && event.keyCode === 85) { event.preventDefault(); return false; }
+        if (event.ctrlKey && event.keyCode === 83) { event.preventDefault(); return false; }
+    });
+
+    // 3. Toggle Sidebar
+    function toggleSidebar() {
+        const html = document.documentElement;
+        html.classList.toggle('sidebar-closed');
+        localStorage.setItem('union_sidebar', html.classList.contains('sidebar-closed') ? 'closed' : 'open');
+    }
+  </script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

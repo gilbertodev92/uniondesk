@@ -1,0 +1,636 @@
+
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UnionCRM · Lógica</title>
+
+<!-- tema aplicado antes do primeiro paint (evita flash) -->
+<script>
+  (function(){
+    var v = ['dark','gray','light'];
+    var s = localStorage.getItem('union_theme');
+    document.documentElement.setAttribute('data-theme', v.indexOf(s) >= 0 ? s : 'dark');
+    if (localStorage.getItem('crm_sidebar') === 'closed') {
+      document.documentElement.classList.add('crm-sidebar-closed');
+    }
+  })();
+</script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   UNIONCRM — DESIGN SYSTEM
+   Mesmos tokens do UnionDESK: trocar [data-theme] no <html> troca tudo.
+   Nada de cor cravada em componente — só variável.
+   ═══════════════════════════════════════════════════════════════════ */
+:root, html[data-theme="dark"]{
+  --c-bg:5 7 12; --c-deep:10 14 23; --c-panel:13 18 32; --c-line:27 35 51;
+  --c-ink:226 232 240; --c-ink-soft:148 163 184; --c-ink-faint:100 116 139;
+  --c-accent:61 90 254; --c-accent-soft:124 155 255; --c-accent-deep:26 42 128;
+  --c-signal:0 217 163;
+  --c-success:47 212 142; --c-warn:245 184 61; --c-danger:240 98 93; --c-special:181 140 255;
+  --sh-card: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  color-scheme: dark;
+}
+html[data-theme="gray"]{
+  --c-bg:33 37 44; --c-deep:39 44 52; --c-panel:44 49 58; --c-line:62 68 79;
+  --c-ink:230 232 236; --c-ink-soft:165 172 183; --c-ink-faint:122 130 142;
+  --c-accent:106 134 255; --c-accent-soft:148 168 255; --c-accent-deep:55 74 160;
+  --c-signal:44 200 158;
+  --c-success:56 199 140; --c-warn:235 181 76; --c-danger:233 108 103; --c-special:176 143 245;
+  --sh-card: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -14px rgba(0,0,0,.5);
+  color-scheme: dark;
+}
+html[data-theme="light"]{
+  --c-bg:230 226 218; --c-deep:240 236 228; --c-panel:248 245 239; --c-line:216 210 198;
+  --c-ink:33 31 27; --c-ink-soft:82 78 70; --c-ink-faint:130 124 112;
+  --c-accent:166 122 22; --c-accent-soft:197 152 46; --c-accent-deep:122 88 12;
+  --c-signal:12 138 106;
+  --c-success:13 128 84; --c-warn:180 83 9; --c-danger:185 28 28; --c-special:109 40 217;
+  --sh-card: 0 1px 2px rgba(120,100,60,.06), 0 6px 20px -12px rgba(120,100,60,.18);
+  color-scheme: light;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background: rgb(var(--c-bg));
+  color: rgb(var(--c-ink-soft));
+  font-family:'Inter',sans-serif;
+  font-size:14px; line-height:1.55;
+  display:flex; overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit; text-decoration:none;}
+.font-display{font-family:'Space Grotesk',sans-serif;}
+.font-mono{font-family:'JetBrains Mono',monospace;}
+
+/* scrollbars discretas */
+::-webkit-scrollbar{width:8px; height:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgb(var(--c-line)); border-radius:10px;}
+::-webkit-scrollbar-thumb:hover{background:rgb(var(--c-ink-faint));}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SIDEBAR DO CRM — navegação própria do módulo
+   ═══════════════════════════════════════════════════════════════════ */
+.crm-sidebar{
+  width:236px; flex-shrink:0;
+  background: rgb(var(--c-deep));
+  border-right:1px solid rgb(var(--c-line));
+  display:flex; flex-direction:column;
+  transition: width .22s cubic-bezier(.4,0,.2,1);
+  z-index:40;
+}
+html.crm-sidebar-closed .crm-sidebar{width:66px;}
+html.crm-sidebar-closed .crm-nav-text,
+html.crm-sidebar-closed .crm-brand-text,
+html.crm-sidebar-closed .crm-group-label,
+html.crm-sidebar-closed .crm-nav-badge{display:none;}
+html.crm-sidebar-closed .crm-nav-item{justify-content:center; padding-left:0; padding-right:0;}
+html.crm-sidebar-closed .crm-brand{justify-content:center; padding-left:0; padding-right:0;}
+
+/* marca */
+.crm-brand{
+  height:64px; flex-shrink:0;
+  display:flex; align-items:center; gap:11px;
+  padding:0 16px;
+  border-bottom:1px solid rgb(var(--c-line));
+}
+.crm-logo{
+  width:34px; height:34px; border-radius:9px; flex-shrink:0;
+  object-fit:cover; background:rgb(var(--c-panel));
+  border:1px solid rgb(var(--c-line));
+}
+.crm-brand-text{min-width:0;}
+.crm-brand-name{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:14px; font-weight:700; color:rgb(var(--c-ink));
+  letter-spacing:-.2px; white-space:nowrap; line-height:1.1;
+}
+.crm-brand-sub{
+  font-size:9px; font-weight:600; color:rgb(var(--c-ink-faint));
+  text-transform:uppercase; letter-spacing:.16em; white-space:nowrap;
+}
+
+/* navegação */
+.crm-nav{flex:1; overflow-y:auto; overflow-x:hidden; padding:14px 10px;}
+.crm-group-label{
+  font-size:9px; font-weight:700; color:rgb(var(--c-ink-faint));
+  text-transform:uppercase; letter-spacing:.16em;
+  padding:0 8px; margin:16px 0 7px;
+}
+.crm-group-label:first-child{margin-top:0;}
+
+.crm-nav-item{
+  display:flex; align-items:center; gap:11px;
+  padding:9px 11px; margin-bottom:2px;
+  border-radius:9px;
+  color:rgb(var(--c-ink-soft));
+  font-size:13px; font-weight:500;
+  white-space:nowrap;
+  transition: background .14s, color .14s;
+  position:relative;
+}
+.crm-nav-item:hover{background:rgb(var(--c-panel)); color:rgb(var(--c-ink));}
+.crm-nav-item i{width:17px; text-align:center; font-size:14px; flex-shrink:0;}
+.crm-nav-item.is-active{
+  background: rgb(var(--c-accent) / .13);
+  color: rgb(var(--c-ink));
+  font-weight:600;
+}
+.crm-nav-item.is-active::before{
+  content:''; position:absolute; left:0; top:22%; bottom:22%;
+  width:3px; border-radius:0 3px 3px 0; background:rgb(var(--c-accent));
+}
+.crm-nav-badge{
+  margin-left:auto;
+  background:rgb(var(--c-line)); color:rgb(var(--c-ink-soft));
+  font-size:10px; font-weight:700;
+  padding:1px 7px; border-radius:20px;
+}
+
+/* rodapé da sidebar */
+.crm-side-foot{
+  flex-shrink:0; padding:10px;
+  border-top:1px solid rgb(var(--c-line));
+  display:flex; gap:6px;
+}
+html.crm-sidebar-closed .crm-side-foot{flex-direction:column;}
+.crm-icon-btn{
+  flex:1; height:34px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:8px; border:1px solid transparent;
+  background:transparent; color:rgb(var(--c-ink-faint));
+  cursor:pointer; font-size:13px;
+  transition: all .14s;
+}
+.crm-icon-btn:hover{background:rgb(var(--c-panel)); color:rgb(var(--c-ink)); border-color:rgb(var(--c-line));}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ÁREA PRINCIPAL
+   ═══════════════════════════════════════════════════════════════════ */
+.crm-main{flex:1; display:flex; flex-direction:column; min-width:0; height:100vh;}
+
+.crm-topbar{
+  height:64px; flex-shrink:0;
+  display:flex; align-items:center; gap:16px;
+  padding:0 22px;
+  background:rgb(var(--c-deep));
+  border-bottom:1px solid rgb(var(--c-line));
+}
+.crm-page-title{min-width:0;}
+.crm-page-title h1{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:17px; font-weight:600; color:rgb(var(--c-ink));
+  letter-spacing:-.3px; line-height:1.2;
+}
+.crm-page-title p{font-size:11.5px; color:rgb(var(--c-ink-faint)); margin-top:1px;}
+.crm-topbar-spacer{flex:1;}
+.crm-acoes{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+
+.crm-content{flex:1; overflow:auto; padding:22px;}
+.crm-content--flush{padding:0; overflow:hidden;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMPONENTES
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* --- busca --- */
+.crm-search{position:relative; width:290px; max-width:38vw;}
+.crm-search i{
+  position:absolute; left:12px; top:50%; transform:translateY(-50%);
+  color:rgb(var(--c-ink-faint)); font-size:12px; pointer-events:none;
+}
+.crm-search input{
+  width:100%; height:36px;
+  background:rgb(var(--c-bg)); color:rgb(var(--c-ink));
+  border:1px solid rgb(var(--c-line)); border-radius:9px;
+  padding:0 12px 0 34px; font-size:13px; font-family:inherit;
+  outline:none; transition:border-color .14s, box-shadow .14s;
+}
+.crm-search input::placeholder{color:rgb(var(--c-ink-faint));}
+.crm-search input:focus{
+  border-color:rgb(var(--c-accent) / .6);
+  box-shadow:0 0 0 3px rgb(var(--c-accent) / .1);
+}
+
+/* --- select --- */
+.crm-select{
+  height:36px;
+  background:rgb(var(--c-bg)); color:rgb(var(--c-ink-soft));
+  border:1px solid rgb(var(--c-line)); border-radius:9px;
+  padding:0 30px 0 12px; font-size:12.5px; font-weight:500; font-family:inherit;
+  outline:none; cursor:pointer;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23808a99' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 11px center;
+  transition:border-color .14s;
+}
+.crm-select:hover, .crm-select:focus{border-color:rgb(var(--c-accent) / .5);}
+.crm-select option{background:rgb(var(--c-deep)); color:rgb(var(--c-ink));}
+
+/* --- botões --- */
+.crm-btn{
+  display:inline-flex; align-items:center; gap:7px;
+  height:36px; padding:0 15px;
+  border-radius:9px; border:1px solid rgb(var(--c-line));
+  background:rgb(var(--c-panel)); color:rgb(var(--c-ink-soft));
+  font-size:12.5px; font-weight:600; font-family:inherit;
+  cursor:pointer; white-space:nowrap;
+  transition: all .15s;
+}
+.crm-btn:hover{background:rgb(var(--c-line)); color:rgb(var(--c-ink));}
+.crm-btn--primary{
+  background:rgb(var(--c-accent)); border-color:rgb(var(--c-accent));
+  color:#fff;
+}
+.crm-btn--primary:hover{background:rgb(var(--c-accent-soft)); border-color:rgb(var(--c-accent-soft)); color:#fff;}
+.crm-btn--ghost{background:transparent;}
+.crm-btn--danger{color:rgb(var(--c-danger)); border-color:rgb(var(--c-danger) / .3);}
+.crm-btn--danger:hover{background:rgb(var(--c-danger)); color:#fff; border-color:rgb(var(--c-danger));}
+.crm-btn--sm{height:30px; padding:0 11px; font-size:11.5px;}
+
+/* --- indicador de resumo (topbar) --- */
+.crm-stat{
+  display:flex; align-items:center; gap:9px;
+  height:36px; padding:0 14px;
+  background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line));
+  border-radius:9px; font-size:12px; color:rgb(var(--c-ink-faint));
+  white-space:nowrap;
+}
+.crm-stat b{color:rgb(var(--c-ink)); font-weight:700;}
+.crm-stat .sep{width:1px; height:16px; background:rgb(var(--c-line));}
+
+/* --- painel / card genérico --- */
+.crm-panel{
+  background:rgb(var(--c-panel));
+  border:1px solid rgb(var(--c-line));
+  border-radius:14px;
+  box-shadow:var(--sh-card);
+}
+.crm-panel__head{
+  padding:16px 20px; border-bottom:1px solid rgb(var(--c-line));
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.crm-panel__head h2{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:14px; font-weight:600; color:rgb(var(--c-ink));
+}
+.crm-panel__body{padding:20px;}
+
+/* --- tabela --- */
+.crm-table{width:100%; border-collapse:collapse;}
+.crm-table th{
+  text-align:left; padding:11px 18px;
+  font-size:10px; font-weight:700; color:rgb(var(--c-ink-faint));
+  text-transform:uppercase; letter-spacing:.09em;
+  background:rgb(var(--c-deep));
+  border-bottom:1px solid rgb(var(--c-line));
+  white-space:nowrap;
+}
+.crm-table td{
+  padding:14px 18px; font-size:13px; color:rgb(var(--c-ink));
+  border-bottom:1px solid rgb(var(--c-line) / .55);
+  vertical-align:middle;
+}
+.crm-table tbody tr{transition:background .13s;}
+.crm-table tbody tr:hover{background:rgb(var(--c-accent) / .05);}
+.crm-table tbody tr:last-child td{border-bottom:none;}
+.crm-td-strong{font-weight:600; color:rgb(var(--c-ink));}
+.crm-td-sub{font-size:11.5px; color:rgb(var(--c-ink-faint)); margin-top:2px; display:flex; align-items:center; gap:5px;}
+
+/* --- chip / etiqueta --- */
+.crm-chip{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 9px; border-radius:20px;
+  font-size:10.5px; font-weight:600; letter-spacing:.02em;
+  border:1px solid; white-space:nowrap; line-height:1.5;
+}
+.crm-chip--neutral{background:rgb(var(--c-line) / .5); border-color:rgb(var(--c-line)); color:rgb(var(--c-ink-soft));}
+.crm-chip--accent {background:rgb(var(--c-accent) / .11); border-color:rgb(var(--c-accent) / .28); color:rgb(var(--c-accent-soft));}
+.crm-chip--success{background:rgb(var(--c-success) / .11); border-color:rgb(var(--c-success) / .28); color:rgb(var(--c-success));}
+.crm-chip--warn   {background:rgb(var(--c-warn) / .11); border-color:rgb(var(--c-warn) / .28); color:rgb(var(--c-warn));}
+.crm-chip--danger {background:rgb(var(--c-danger) / .11); border-color:rgb(var(--c-danger) / .28); color:rgb(var(--c-danger));}
+
+/* --- avatar --- */
+.crm-avatar{
+  width:28px; height:28px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:#fff;
+  background:linear-gradient(135deg, rgb(var(--c-accent-deep)), rgb(var(--c-accent)));
+  flex-shrink:0; border:1px solid rgb(var(--c-line));
+}
+.crm-avatar--empty{background:rgb(var(--c-line)); color:rgb(var(--c-ink-faint));}
+
+/* --- valores monetários --- */
+.crm-money{font-family:'JetBrains Mono',monospace; font-weight:700; letter-spacing:-.3px;}
+.crm-money--success{color:rgb(var(--c-success));}
+.crm-money--muted{color:rgb(var(--c-ink-faint)); font-weight:500;}
+
+/* --- estado vazio --- */
+.crm-empty{
+  text-align:center; padding:70px 24px; color:rgb(var(--c-ink-faint));
+}
+.crm-empty i{font-size:34px; opacity:.35; display:block; margin-bottom:14px;}
+.crm-empty h3{font-size:15px; font-weight:600; color:rgb(var(--c-ink-soft)); margin-bottom:5px;}
+.crm-empty p{font-size:13px;}
+
+/* --- barra de ferramentas --- */
+.crm-toolbar{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin-bottom:18px;
+}
+
+/* --- paginação --- */
+.crm-pagination{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px; border-top:1px solid rgb(var(--c-line));
+  font-size:12px; color:rgb(var(--c-ink-faint));
+}
+.crm-pagination .pages{display:flex; gap:7px;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVO
+   Desktop grande  → sidebar completa
+   Desktop menor   → sidebar só com ícones
+   Celular/tablet  → sidebar vira gaveta (drawer) sobreposta
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── tablet / notebook pequeno: sidebar encolhe pra ícones ── */
+@media (min-width:861px) and (max-width:1180px){
+  .crm-sidebar{width:66px;}
+  .crm-nav-text, .crm-brand-text, .crm-group-label, .crm-nav-badge{display:none;}
+  .crm-nav-item{justify-content:center; padding-left:0; padding-right:0;}
+  .crm-brand{justify-content:center; padding-left:0; padding-right:0;}
+  .crm-search{width:190px;}
+}
+
+/* ── celular e tablet retrato: gaveta ── */
+.crm-hamburger{display:none;}
+#crmBackdrop{display:none;}
+
+@media (max-width:860px){
+  .crm-sidebar{
+    position:fixed; top:0; bottom:0; left:0;
+    width:min(80vw, 268px) !important;
+    transform:translateX(-102%);
+    transition:transform .26s cubic-bezier(.32,.72,.24,1);
+    box-shadow:14px 0 40px -18px rgba(0,0,0,.6);
+    z-index:70;
+  }
+  /* dentro da gaveta os textos SEMPRE aparecem */
+  .crm-sidebar .crm-nav-text,
+  .crm-sidebar .crm-brand-text,
+  .crm-sidebar .crm-group-label,
+  .crm-sidebar .crm-nav-badge{display:block !important;}
+  .crm-sidebar .crm-nav-item{justify-content:flex-start !important; padding:10px 12px !important;}
+  .crm-sidebar .crm-brand{justify-content:flex-start !important; padding:0 16px !important;}
+  .crm-side-foot{flex-direction:row !important;}
+
+  html.crm-drawer-open .crm-sidebar{transform:translateX(0);}
+  html.crm-drawer-open{overflow:hidden;}
+
+  #crmBackdrop{
+    display:block; position:fixed; inset:0;
+    background:rgba(0,0,0,.5); backdrop-filter:blur(2px);
+    opacity:0; pointer-events:none; transition:opacity .22s; z-index:60;
+  }
+  html.crm-drawer-open #crmBackdrop{opacity:1; pointer-events:auto;}
+
+  /* topbar compacta */
+  .crm-hamburger{
+    display:flex; align-items:center; justify-content:center;
+    width:38px; height:38px; flex-shrink:0;
+    border-radius:9px; border:1px solid rgb(var(--c-line));
+    background:rgb(var(--c-panel)); color:rgb(var(--c-ink-soft));
+    cursor:pointer; font-size:15px;
+  }
+  .crm-topbar{
+    height:auto; min-height:60px; padding:10px 14px;
+    flex-wrap:wrap; row-gap:10px;
+  }
+  .crm-page-title h1{font-size:15px;}
+  .crm-page-title p{display:none;}
+  .crm-topbar-spacer{display:none;}
+
+  /* ações do topo passam a ocupar a linha inteira, roláveis */
+  .crm-topbar > .crm-acoes{
+    order:10; width:100%;
+    display:flex; gap:8px; align-items:center;
+    overflow-x:auto; padding-bottom:2px;
+    -ms-overflow-style:none; scrollbar-width:none;
+  }
+  .crm-topbar > .crm-acoes::-webkit-scrollbar{display:none;}
+  .crm-search{width:100%; min-width:150px; max-width:none; flex:1;}
+  .crm-stat{display:none;}
+
+  .crm-content{padding:14px;}
+  .crm-panel{border-radius:12px;}
+  .crm-panel__body{padding:14px;}
+  .crm-panel__head{padding:13px 15px;}
+
+  /* tabelas rolam na horizontal em vez de espremer */
+  .crm-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .crm-table{min-width:640px;}
+  .crm-table th{padding:10px 13px;}
+  .crm-table td{padding:11px 13px; font-size:12.5px;}
+
+  .crm-toolbar{gap:8px;}
+  .crm-toolbar > *{flex:1 1 auto;}
+
+  .crm-pagination{padding:12px 15px; flex-wrap:wrap; gap:10px;}
+}
+
+/* ── celular pequeno ── */
+@media (max-width:420px){
+  .crm-btn{padding:0 12px; font-size:12px;}
+  .crm-page-title h1{font-size:14px;}
+  .crm-content{padding:11px;}
+}
+
+/* alvos de toque confortáveis em telas sensíveis */
+@media (hover:none){
+  .crm-nav-item{padding-top:11px; padding-bottom:11px;}
+  .crm-btn, .crm-select, .crm-search input{min-height:40px;}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition-duration:.01ms !important; animation-duration:.01ms !important;}
+}
+</style>
+
+
+</head>
+
+<body>
+
+<!-- fundo escuro atrás da gaveta (só aparece no celular) -->
+<div id="crmBackdrop" onclick="crmFecharDrawer()" aria-hidden="true"></div>
+
+<!-- ═════════════════ SIDEBAR DO CRM ═════════════════ -->
+<aside class="crm-sidebar">
+
+  <div class="crm-brand">
+    <img class="crm-logo" alt="Lógica"
+         src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRQKHKW62m_Vk-z6o1l_jBbDrtnWt5Ho8plnWG7u6sXmcs4ghqG2umvQ6g&s=10">
+    <div class="crm-brand-text">
+      <div class="crm-brand-name">UnionCRM</div>
+      <div class="crm-brand-sub">Lógica</div>
+    </div>
+  </div>
+
+  <nav class="crm-nav">
+    
+    
+    
+    
+    
+    
+    
+
+    <p class="crm-group-label">Operação</p>
+
+    <a href="#" class="crm-nav-item is-active">
+      <i class="fa-solid fa-diagram-project"></i>
+      <span class="crm-nav-text">Funil de Vendas</span>
+    </a>
+    <a href="#" class="crm-nav-item is-active">
+      <i class="fa-solid fa-phone-volume"></i>
+      <span class="crm-nav-text">Mesa de Prospecção</span>
+    </a>
+
+    <p class="crm-group-label">Resultados</p>
+
+    <a href="#" class="crm-nav-item is-active">
+      <i class="fa-solid fa-trophy"></i>
+      <span class="crm-nav-text">Negócios Ganhos</span>
+    </a>
+    <a href="#" class="crm-nav-item is-active">
+      <i class="fa-solid fa-circle-xmark"></i>
+      <span class="crm-nav-text">Negócios Perdidos</span>
+    </a>
+    <a href="#" class="crm-nav-item is-active">
+      <i class="fa-solid fa-filter-circle-xmark"></i>
+      <span class="crm-nav-text">Descartados</span>
+    </a>
+    <a href="#" class="crm-nav-item is-active">
+      <i class="fa-solid fa-wallet"></i>
+      <span class="crm-nav-text">Minhas Vendas</span>
+    </a>
+
+    
+    <p class="crm-group-label">Gestão</p>
+    <a href="#" class="crm-nav-item is-active">
+      <i class="fa-solid fa-chart-pie"></i>
+      <span class="crm-nav-text">Painel do Gestor</span>
+    </a>
+    
+  </nav>
+
+  <div class="crm-side-foot">
+    <button type="button" class="crm-icon-btn" onclick="crmToggleTema()" title="Alternar tema">
+      <i class="fa-solid fa-circle-half-stroke"></i>
+    </button>
+    <button type="button" class="crm-icon-btn" onclick="crmToggleSidebar()" title="Recolher menu">
+      <i class="fa-solid fa-bars-staggered"></i>
+    </button>
+    <a href="/setup/" class="crm-icon-btn" title="Voltar ao UnionDESK">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i>
+    </a>
+  </div>
+
+</aside>
+
+<!-- ═════════════════ ÁREA PRINCIPAL ═════════════════ -->
+<div class="crm-main">
+
+  <header class="crm-topbar">
+    <button type="button" class="crm-hamburger" onclick="crmAbrirDrawer()" aria-label="Abrir menu">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="crm-page-title">
+      <h1>Funil de Vendas</h1>
+      <p>109 oportunidades em aberto</p>
+    </div>
+    <div class="crm-topbar-spacer"></div>
+    <div class="crm-acoes">
+      
+<div class="crm-search"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Buscar oportunidade..."></div>
+<select class="crm-select"><option>Equipe inteira</option></select>
+<div class="crm-stat"><span>109 <b>oportunidades</b></span><span class="sep"></span><b class="crm-money">R$ 78.232,00</b></div>
+<button class="crm-btn crm-btn--primary"><i class="fa-solid fa-plus"></i> Oportunidade</button>
+    </div>
+  </header>
+
+  <main class="crm-content ">
+    
+<div class="crm-toolbar">
+  <span class="crm-chip crm-chip--accent"><i class="fa-solid fa-tag"></i> ACCENT</span>
+  <span class="crm-chip crm-chip--success"><i class="fa-solid fa-check"></i> GANHO</span>
+  <span class="crm-chip crm-chip--warn"><i class="fa-solid fa-clock"></i> ATEN&Ccedil;&Atilde;O</span>
+  <span class="crm-chip crm-chip--danger"><i class="fa-solid fa-triangle-exclamation"></i> PARADO</span>
+  <span class="crm-chip crm-chip--neutral">NEUTRO</span>
+</div>
+<div class="crm-panel">
+  <div class="crm-panel__head"><h2>Exemplo de tabela</h2><button class="crm-btn crm-btn--sm">Filtrar</button></div>
+  <div class="crm-table-wrap">
+  <table class="crm-table">
+    <thead><tr><th>Empresa</th><th>Contato</th><th>Valor</th><th>Etapa</th><th>Vendedor</th></tr></thead>
+    <tbody>
+      <tr><td><div class="crm-td-strong">Taketa Pasteis Ltda</div><div class="crm-td-sub"><i class="fa-solid fa-id-card"></i> 12.345.678/0001-90</div></td>
+          <td><div class="crm-td-strong">Gilberto S.</div><div class="crm-td-sub"><i class="fa-solid fa-phone"></i> (47) 99999-0000</div></td>
+          <td><span class="crm-money crm-money--success">R$ 6.488,00</span><div class="crm-td-sub">+ R$ 200/m&ecirc;s</div></td>
+          <td><span class="crm-chip crm-chip--accent">Proposta</span></td>
+          <td><div style="display:flex;align-items:center;gap:8px"><div class="crm-avatar">G</div> Gilberto</div></td></tr>
+      <tr><td><div class="crm-td-strong">Supermercado do Pre&ccedil;o</div><div class="crm-td-sub"><i class="fa-solid fa-id-card"></i> N&atilde;o informado</div></td>
+          <td><div class="crm-td-strong">N&atilde;o informado</div><div class="crm-td-sub"><i class="fa-solid fa-phone"></i> (47) 98888-1111</div></td>
+          <td><span class="crm-money crm-money--muted">Sem valor</span></td>
+          <td><span class="crm-chip crm-chip--warn">Contato</span></td>
+          <td><div style="display:flex;align-items:center;gap:8px"><div class="crm-avatar crm-avatar--empty">?</div> Sem dono</div></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="crm-pagination"><span>P&aacute;gina 1 de 6</span><div class="pages"><button class="crm-btn crm-btn--sm">Anterior</button><button class="crm-btn crm-btn--sm">Pr&oacute;xima</button></div></div>
+</div>
+  </main>
+
+</div>
+
+
+
+<script>
+  function crmToggleTema(){
+    var ciclo = ['dark','gray','light'];
+    var atual = document.documentElement.getAttribute('data-theme') || 'dark';
+    var proximo = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
+    document.documentElement.setAttribute('data-theme', proximo);
+    try { localStorage.setItem('union_theme', proximo); } catch(e){}
+  }
+
+  /* No desktop o botão recolhe a sidebar; no celular ele fecha a gaveta. */
+  var CRM_MOBILE = window.matchMedia('(max-width: 860px)');
+  function crmToggleSidebar(){
+    if (CRM_MOBILE.matches){ crmFecharDrawer(); return; }
+    var fechada = document.documentElement.classList.toggle('crm-sidebar-closed');
+    try { localStorage.setItem('crm_sidebar', fechada ? 'closed' : 'open'); } catch(e){}
+  }
+
+  function crmAbrirDrawer(){ document.documentElement.classList.add('crm-drawer-open'); }
+  function crmFecharDrawer(){ document.documentElement.classList.remove('crm-drawer-open'); }
+
+  /* fecha a gaveta ao navegar, ao apertar Esc e ao voltar pro desktop */
+  document.querySelectorAll('.crm-nav-item').forEach(function(a){
+    a.addEventListener('click', crmFecharDrawer);
+  });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') crmFecharDrawer(); });
+  CRM_MOBILE.addEventListener('change', function(e){ if(!e.matches) crmFecharDrawer(); });
+</script>
+
+
+</body>
+</html>

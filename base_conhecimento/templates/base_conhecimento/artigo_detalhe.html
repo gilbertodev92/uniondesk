@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+{% block title %}{{ artigo.titulo }} | {{ sistema.nome }}
+<script>
+(function () {
+    "use strict";
+    const links = document.querySelectorAll('.kb-toc__item a');
+    if (!links.length) return;
+
+    const alvos = [];
+    links.forEach(a => {
+        const el = document.getElementById(a.dataset.target);
+        if (el) alvos.push({ link: a, el: el });
+    });
+    if (!alvos.length) return;
+
+    // destaca a seção visível — o técnico ao telefone sabe onde parou
+    const obs = new IntersectionObserver(entradas => {
+        entradas.forEach(e => {
+            if (!e.isIntersecting) return;
+            links.forEach(l => l.classList.remove('kb-toc--ativo'));
+            const achado = alvos.find(a => a.el === e.target);
+            if (achado) achado.link.classList.add('kb-toc--ativo');
+        });
+    }, { rootMargin: '0px 0px -75% 0px', threshold: 0 });
+
+    alvos.forEach(a => obs.observe(a.el));
+
+    // rolagem suave sem sujar o histórico do navegador
+    links.forEach(a => {
+        a.addEventListener('click', ev => {
+            const el = document.getElementById(a.dataset.target);
+            if (!el) return;
+            ev.preventDefault();
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+})();
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="kb-root">
+  <div class="kb-wrap">
+
+    <div class="kb-actions">
+      <a href="{% url 'base_conhecimento:sistema' sistema.pk %}" class="kb-btn kb-btn--ghost-wide">
+        <i class="fa-solid fa-arrow-left"></i> <span>{{ sistema.nome }}</span>
+      </a>
+
+      <div class="kb-actions__right">
+        {% if perms.base_conhecimento.change_artigo %}
+        <a href="{% url 'base_conhecimento:artigo_edit' sistema.pk artigo.slug %}"
+           class="kb-btn" title="Editar artigo">
+          <i class="fa-solid fa-pen-to-square"></i> <span>Editar</span>
+        </a>
+        {% endif %}
+        <a href="{% url 'base_conhecimento:artigo_pdf' sistema.pk artigo.slug %}"
+           class="kb-btn kb-btn--primary" target="_blank" rel="noopener">
+          <i class="fa-solid fa-file-pdf"></i> <span>Gerar PDF</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="kb-layout{% if toc %} kb-layout--toc{% endif %}">
+
+    <article class="kb-article kb-article--{{ artigo.tipo }}">
+
+      {% if artigo.esta_desatualizado %}
+      <div class="kb-stale" role="status">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+          <strong>Este procedimento foi revisado {{ artigo.idade_legivel }}.</strong>
+          Confirme se ainda vale antes de repassar ao cliente.
+        </div>
+      </div>
+      {% endif %}
+
+      <header class="kb-article__head">
+        <span class="kb-type kb-type--{{ artigo.tipo }}">{{ artigo.get_tipo_display }}</span>
+        <h1 class="kb-article__title">{{ artigo.titulo }}</h1>
+
+        <div class="kb-article__meta">
+          <span class="kb-meta-item">
+            <i class="fa-solid fa-barcode"></i> {{ artigo.codigo }}
+          </span>
+          <span class="kb-meta-item">
+            <i class="fa-regular fa-user"></i>
+            {{ artigo.autor.get_full_name|default:artigo.autor.username|default:"Equipe Lógica" }}
+          </span>
+          <span class="kb-meta-item{% if artigo.esta_desatualizado %} kb-meta-item--stale{% endif %}">
+            <i class="fa-regular fa-clock"></i> Atualizado {{ artigo.idade_legivel }}
+            <span class="kb-meta-exact">({{ artigo.atualizado_em|date:"d/m/Y" }})</span>
+          </span>
+          {% if artigo.visualizacoes %}
+          <span class="kb-meta-item">
+            <i class="fa-regular fa-eye"></i> {{ artigo.visualizacoes }} acesso{{ artigo.visualizacoes|pluralize }}
+          </span>
+          {% endif %}
+        </div>
+      </header>
+
+      <div class="kb-prose">
+
+        {{ conteudo_html }}
+      </div>
+
+      {% if hashtags %}
+      <footer class="kb-article__foot">
+        <span class="kb-foot-lbl"><i class="fa-solid fa-tags"></i> Tags</span>
+        <div class="kb-foot-tags">
+          {% for tag in hashtags %}
+          <a href="{% url 'base_conhecimento:sistema' sistema.pk %}?q={{ tag|urlencode }}" class="kb-foot-tag">#{{ tag }}</a>
+          {% endfor %}
+        </div>
+      </footer>
+      {% endif %}
+
+    </article>
+
+    {% if toc %}
+    <aside class="kb-toc" aria-label="Índice do artigo">
+      <div class="kb-toc__inner">
+        <h2 class="kb-toc__title"><i class="fa-solid fa-list-ol"></i> Neste artigo</h2>
+        <nav>
+          <ul class="kb-toc__list">
+            {% for item in toc %}
+            <li class="kb-toc__item kb-toc__item--n{{ item.nivel }}">
+              <a href="#{{ item.id }}" data-target="{{ item.id }}">{{ item.texto }}</a>
+            </li>
+            {% endfor %}
+          </ul>
+        </nav>
+      </div>
+    </aside>
+    {% endif %}
+
+    </div>
+
+  </div>
+</div>
+
+<style>
+.kb-root { padding: 20px 16px 40px; }
+.kb-wrap { max-width: 860px; margin: 0 auto; }
+
+.kb-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+.kb-actions__right { display:flex; gap:8px; }
+
+.kb-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:40px; padding:0 16px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; border-radius:11px; cursor:pointer; text-decoration:none; border:1px solid rgb(var(--c-line)); background:rgb(var(--c-panel)); color:rgb(var(--c-ink-soft)); transition:background-color .15s, color .15s, border-color .15s; white-space:nowrap; }
+.kb-btn:hover { color:rgb(var(--c-ink)); border-color:rgb(var(--c-ink-faint)); }
+.kb-btn--primary { background:rgb(var(--c-accent)); border-color:rgb(var(--c-accent)); color:#fff; }
+.kb-btn--primary:hover { filter:brightness(1.1); color:#fff; }
+.kb-btn--ghost-wide { background:transparent; }
+
+.kb-article {
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-top: 3px solid rgb(var(--c-accent));
+    border-radius: 16px;
+    overflow: hidden;
+    transition: background-color .25s, border-color .25s;
+}
+.kb-article--erro { border-top-color: rgb(var(--c-danger)); }
+.kb-article--procedimento { border-top-color: rgb(var(--c-accent)); }
+.kb-article--tutorial { border-top-color: rgb(var(--c-success)); }
+.kb-article--faq { border-top-color: rgb(var(--c-warn)); }
+
+.kb-article__head { padding: 28px 32px 22px; border-bottom: 1px solid rgb(var(--c-line)); }
+.kb-article__title { font-size: 26px; font-weight: 800; color: rgb(var(--c-ink)); line-height: 1.25; margin: 12px 0 16px; }
+
+.kb-type { display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.09em; border-radius:6px; padding:4px 10px; }
+.kb-type--erro { color:rgb(var(--c-danger)); background:rgb(var(--c-danger) / .1); border:1px solid rgb(var(--c-danger) / .25); }
+.kb-type--procedimento { color:rgb(var(--c-accent)); background:rgb(var(--c-accent) / .1); border:1px solid rgb(var(--c-accent) / .25); }
+.kb-type--tutorial { color:rgb(var(--c-success)); background:rgb(var(--c-success) / .1); border:1px solid rgb(var(--c-success) / .25); }
+.kb-type--faq { color:rgb(var(--c-warn)); background:rgb(var(--c-warn) / .1); border:1px solid rgb(var(--c-warn) / .25); }
+
+.kb-article__meta { display:flex; gap:16px; flex-wrap:wrap; }
+.kb-meta-item { font-size:11px; font-weight:600; color:rgb(var(--c-ink-faint)); display:flex; align-items:center; gap:7px; }
+.kb-meta-item i { font-size:11px; }
+
+/* ═══════════════════════════════════════════════════════════
+   PROSE — o conteúdo do CKEditor.
+   Antes dependia de `prose-invert` do Tailwind (que não existe
+   sem o plugin @tailwindcss/typography) + overrides em hex fixo.
+   Aqui é CSS próprio e tematizado.
+   ═══════════════════════════════════════════════════════════ */
+.kb-prose {
+    padding: 30px 32px;
+    color: rgb(var(--c-ink-soft));
+    font-size: 15px;
+    line-height: 1.75;
+}
+.kb-prose > *:first-child { margin-top: 0; }
+.kb-prose > *:last-child { margin-bottom: 0; }
+
+.kb-prose h1, .kb-prose h2, .kb-prose h3, .kb-prose h4 {
+    color: rgb(var(--c-ink));
+    font-weight: 800;
+    line-height: 1.3;
+    margin: 32px 0 12px;
+}
+.kb-prose h1 { font-size: 22px; }
+.kb-prose h2 { font-size: 19px; padding-bottom: 8px; border-bottom: 1px solid rgb(var(--c-line)); }
+.kb-prose h3 { font-size: 16px; }
+.kb-prose h4 { font-size: 14px; }
+
+.kb-prose p { margin: 0 0 16px; }
+.kb-prose strong, .kb-prose b { color: rgb(var(--c-ink)); font-weight: 700; }
+.kb-prose em, .kb-prose i { font-style: italic; }
+
+.kb-prose a {
+    color: rgb(var(--c-accent));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.kb-prose a:hover { color: rgb(var(--c-accent-soft)); }
+
+.kb-prose ul, .kb-prose ol { margin: 0 0 16px; padding-left: 24px; }
+.kb-prose li { margin-bottom: 6px; }
+.kb-prose ul { list-style: disc; }
+.kb-prose ol { list-style: decimal; }
+
+.kb-prose blockquote {
+    border-left: 3px solid rgb(var(--c-accent));
+    background: rgb(var(--c-accent) / .06);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+    color: rgb(var(--c-ink-soft));
+}
+.kb-prose blockquote p:last-child { margin-bottom: 0; }
+
+.kb-prose code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    background: rgb(var(--c-deep));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 5px;
+    padding: 2px 6px;
+    color: rgb(var(--c-ink));
+}
+.kb-prose pre {
+    background: rgb(var(--c-bg));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 20px 0;
+}
+.kb-prose pre code { background: none; border: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+
+.kb-prose img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    border: 1px solid rgb(var(--c-line));
+    margin: 20px auto;
+    display: block;
+}
+
+.kb-prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 13px;
+}
+.kb-prose th, .kb-prose td {
+    border: 1px solid rgb(var(--c-line));
+    padding: 9px 12px;
+    text-align: left;
+}
+.kb-prose th { background: rgb(var(--c-deep)); color: rgb(var(--c-ink)); font-weight: 700; }
+
+.kb-prose hr { border: none; border-top: 1px solid rgb(var(--c-line)); margin: 28px 0; }
+
+/* O CKEditor grava cor inline (style="color:#000"). Em fundo escuro isso
+   some. Neutralizamos, deixando o token cuidar da legibilidade. */
+html[data-theme="dark"] .kb-prose [style*="color"],
+html[data-theme="gray"] .kb-prose [style*="color"] {
+    color: inherit !important;
+}
+html[data-theme="dark"] .kb-prose [style*="background"],
+html[data-theme="gray"] .kb-prose [style*="background"] {
+    background-color: transparent !important;
+}
+
+/* ── rodapé ── */
+.kb-article__foot {
+    padding: 20px 32px;
+    background: rgb(var(--c-deep));
+    border-top: 1px solid rgb(var(--c-line));
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.kb-foot-lbl { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.14em; color:rgb(var(--c-ink-faint)); flex-shrink:0; }
+.kb-foot-tags { display:flex; gap:6px; flex-wrap:wrap; }
+.kb-foot-tag {
+    font-size:10.5px; font-weight:700;
+    color:rgb(var(--c-accent)); background:rgb(var(--c-accent) / .08);
+    border:1px solid rgb(var(--c-accent) / .22);
+    padding:4px 10px; border-radius:6px; text-decoration:none;
+    font-family:'JetBrains Mono', monospace;
+    transition:background-color .15s, color .15s;
+}
+.kb-foot-tag:hover { background:rgb(var(--c-accent)); color:#fff; }
+
+
+/* ═══ FASE 2 ═══ */
+
+/* Layout com índice */
+.kb-layout--toc { display: grid; grid-template-columns: 1fr 232px; gap: 20px; align-items: start; }
+
+.kb-toc__inner {
+    position: sticky; top: 12px;
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 14px;
+    padding: 16px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+}
+.kb-toc__title {
+    font-size: 9.5px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .15em; color: rgb(var(--c-ink-faint));
+    padding-bottom: 10px; margin-bottom: 10px;
+    border-bottom: 1px solid rgb(var(--c-line));
+}
+.kb-toc__title i { color: rgb(var(--c-accent)); margin-right: 6px; }
+.kb-toc__list { list-style: none; margin: 0; padding: 0; }
+.kb-toc__item a {
+    display: block; padding: 6px 9px;
+    font-size: 11.5px; font-weight: 600; line-height: 1.4;
+    color: rgb(var(--c-ink-soft)); text-decoration: none;
+    border-left: 2px solid transparent; border-radius: 0 6px 6px 0;
+    transition: color .15s, background-color .15s, border-color .15s;
+}
+.kb-toc__item a:hover { color: rgb(var(--c-ink)); background: rgb(var(--c-deep)); }
+.kb-toc__item--n3 a { padding-left: 18px; font-size: 11px; opacity: .85; }
+.kb-toc__item a.kb-toc--ativo {
+    color: rgb(var(--c-accent));
+    background: rgb(var(--c-accent) / .08);
+    border-left-color: rgb(var(--c-accent));
+}
+
+/* âncora não fica escondida sob o topo ao pular */
+.kb-prose .kb-anchor { scroll-margin-top: 16px; }
+
+/* Aviso de artigo velho */
+.kb-stale {
+    display: flex; align-items: flex-start; gap: 11px;
+    margin: 0; padding: 13px 18px;
+    background: rgb(var(--c-warn) / .1);
+    border-bottom: 1px solid rgb(var(--c-warn) / .25);
+    font-size: 12.5px; color: rgb(var(--c-ink-soft)); line-height: 1.5;
+}
+.kb-stale i { color: rgb(var(--c-warn)); font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+.kb-stale strong { color: rgb(var(--c-warn)); display: block; }
+
+.kb-meta-item--stale { color: rgb(var(--c-warn)) !important; }
+.kb-meta-exact { opacity: .6; margin-left: 3px; }
+
+@media (max-width: 1000px) {
+    .kb-layout--toc { grid-template-columns: 1fr; }
+    .kb-toc { order: -1; }
+    .kb-toc__inner { position: static; max-height: none; }
+    .kb-toc__list { display: flex; flex-wrap: wrap; gap: 4px; }
+    .kb-toc__item a { border-left: none; border: 1px solid rgb(var(--c-line)); border-radius: 7px; }
+    .kb-toc__item--n3 a { padding-left: 9px; }
+}
+
+@media (max-width: 720px) {
+    .kb-article__head { padding: 22px 18px 18px; }
+    .kb-article__title { font-size: 21px; }
+    .kb-prose { padding: 22px 18px; font-size: 14.5px; }
+    .kb-article__foot { padding: 16px 18px; }
+    .kb-actions { flex-direction: column; align-items: stretch; }
+    .kb-actions__right { display: grid; grid-template-columns: 1fr 1fr; }
+    .kb-btn { width: 100%; }
+}
+</style>
+
+<script>
+(function () {
+    "use strict";
+    const links = document.querySelectorAll('.kb-toc__item a');
+    if (!links.length) return;
+
+    const alvos = [];
+    links.forEach(a => {
+        const el = document.getElementById(a.dataset.target);
+        if (el) alvos.push({ link: a, el: el });
+    });
+    if (!alvos.length) return;
+
+    // destaca a seção visível — o técnico ao telefone sabe onde parou
+    const obs = new IntersectionObserver(entradas => {
+        entradas.forEach(e => {
+            if (!e.isIntersecting) return;
+            links.forEach(l => l.classList.remove('kb-toc--ativo'));
+            const achado = alvos.find(a => a.el === e.target);
+            if (achado) achado.link.classList.add('kb-toc--ativo');
+        });
+    }, { rootMargin: '0px 0px -75% 0px', threshold: 0 });
+
+    alvos.forEach(a => obs.observe(a.el));
+
+    // rolagem suave sem sujar o histórico do navegador
+    links.forEach(a => {
+        a.addEventListener('click', ev => {
+            const el = document.getElementById(a.dataset.target);
+            if (!el) return;
+            ev.preventDefault();
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+})();
+</script>
+{% endblock %}

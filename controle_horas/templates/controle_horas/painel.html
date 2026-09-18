@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Controle de Horas{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8 p-4">
+
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white flex items-center gap-3">
+                <span class="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
+                    <i class="fa-solid fa-clock"></i>
+                </span>
+                Controle de Horas
+            </h1>
+            <p class="text-slate-400 text-sm mt-1">Gestão de jornada Union Desk – Competência: <strong class="text-slate-200">{{ mes }}/{{ ano }}</strong></p>
+        </div>
+
+        <div class="flex gap-3">
+            <a href="{% url 'controle_horas:meus_apontamentos' %}" class="px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-white text-sm font-bold hover:bg-slate-700 transition-all shadow-lg">
+                <i class="fa-solid fa-list-check mr-2"></i> Meus Registros
+            </a>
+            <a href="{% url 'controle_horas:bater_ponto_rapido' %}" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-black transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-2">
+                <i class="fa-solid fa-bolt"></i> BATER PONTO - HOME OFFICE 
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl relative overflow-hidden group">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all pointer-events-none"></div>
+            <p class="text-xs text-slate-500 uppercase font-bold tracking-widest mb-2">Total Trabalhado (Mês)</p>
+            <div class="flex items-baseline gap-2">
+                <span class="text-5xl font-black text-white">{{ total_min|floatformat:2|default:"0.00" }}</span>
+                <span class="text-lg text-slate-400 font-medium">horas</span>
+            </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl relative overflow-hidden group">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all pointer-events-none"></div>
+            <p class="text-xs text-slate-500 uppercase font-bold tracking-widest mb-2">Saldo de Horas Extras</p>
+            <div class="flex items-baseline gap-2">
+                <span class="text-5xl font-black {% if extra_min > 0 %}text-emerald-400{% else %}text-white{% endif %}">
+                    {{ extra_min|floatformat:2|default:"0.00" }}
+                </span>
+                <span class="text-lg text-slate-400 font-medium">horas</span>
+            </div>
+        </div>
+    </div>
+
+    {% if is_gestor %}
+    <div class="pt-8 border-t border-slate-800/50">
+        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Painel de Gestão</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <a href="{% url 'controle_horas:aprovacoes' %}" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-yellow-500/50 transition-all group flex items-start gap-5">
+                <div class="p-4 bg-yellow-500/10 text-yellow-500 rounded-xl text-2xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white mb-1">Aprovações Pendentes</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">Homologue os apontamentos da equipe.</p>
+                </div>
+            </a>
+            <a href="{% url 'controle_horas:fechamentos' %}" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-500/50 transition-all group flex items-start gap-5">
+                <div class="p-4 bg-blue-500/10 text-blue-400 rounded-xl text-2xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white mb-1">Fechamento de Folha</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">Relatórios em CSV para contabilidade.</p>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

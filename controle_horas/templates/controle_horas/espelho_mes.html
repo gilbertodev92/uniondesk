@@ -1,0 +1,147 @@
+{% load static %}
+{% load horas_extras %} {# <= seu módulo com hhmm e weekday_pt #}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Espelho diário</title>
+
+  <style>
+    /* Página A4 paisagem e margens enxutas */
+    @page {
+      size: A4 landscape;
+      margin: 10mm 10mm 12mm 10mm;
+    }
+
+    html, body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11px;
+      color: #222;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      margin: 0 0 8px 0;
+    }
+
+    .meta {
+      margin: 0 0 10px 0;
+      line-height: 1.4;
+    }
+    .meta b { font-weight: 700; }
+
+    /* Tabela configurada para caber na largura */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;  /* força distribuição por colgroup */
+    }
+
+    /* Define larguras fixas por coluna */
+    col.c-data     { width: 10%; }
+    col.c-dia      { width: 14%; }
+    col.c-e1       { width: 8%;  }
+    col.c-s1       { width: 8%;  }
+    col.c-e2       { width: 8%;  }
+    col.c-s2       { width: 8%;  }
+    col.c-total    { width: 9%;  }
+    col.c-extra    { width: 9%;  }
+    col.c-tipo     { width: 26%; } /* campo que pode quebrar mais */
+
+    thead th {
+      background: #2f3b45;
+      color: #fff;
+      padding: 6px 6px;
+      border: 1px solid #222;
+      font-size: 11px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 5px 6px;
+      border: 1px solid #cfd6dc;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 11px;
+    }
+
+    tbody tr:nth-child(odd) td {
+      background: #f6fafc;
+    }
+
+    /* Colunas de horas ficam monoespaçadas p/ caber melhor */
+    .hh { font-family: "Courier New", Courier, monospace; }
+
+    /* Coluna Tipo: quebrar linhas, evitar estourar */
+    td.tipo {
+      text-align: left;
+      word-break: break-word;
+      white-space: normal;
+    }
+
+    /* Reduz um pouco o cabeçalho meta quando precisa caber mais */
+    .wrap {
+      page-break-inside: avoid;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Espelho diário</h1>
+    <div class="meta">
+      <div><b>Competência:</b> {{ competencia }}</div>
+      <div><b>Colaborador:</b> {{ usuario.get_full_name|default:usuario.username }} ({{ usuario.username }})</div>
+    </div>
+
+    <table>
+      <colgroup>
+        <col class="c-data" />
+        <col class="c-dia" />
+        <col class="c-e1" />
+        <col class="c-s1" />
+        <col class="c-e2" />
+        <col class="c-s2" />
+        <col class="c-total" />
+        <col class="c-extra" />
+        <col class="c-tipo" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Dia da semana</th>
+          <th>Entrada 1</th>
+          <th>Saída 1</th>
+          <th>Entrada 2</th>
+          <th>Saída 2</th>
+          <th>Total do dia</th>
+          <th>Horas extra</th>
+          <th>Tipo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if rows %}
+          {% for r in rows %}
+          <tr>
+            <td>{{ r.data|date:"d/m/Y" }}</td>
+            <td>{{ r.data|weekday_pt|capfirst }}</td>
+            <td class="hh">{% if r.e1 %}{{ r.e1|time:"H:i" }}{% else %}—{% endif %}</td>
+            <td class="hh">{% if r.s1 %}{{ r.s1|time:"H:i" }}{% else %}—{% endif %}</td>
+            <td class="hh">{% if r.e2 %}{{ r.e2|time:"H:i" }}{% else %}—{% endif %}</td>
+            <td class="hh">{% if r.s2 %}{{ r.s2|time:"H:i" }}{% else %}—{% endif %}</td>
+            <td class="hh">{{ r.total|hhmm }}</td>
+            <td class="hh">{{ r.extra|hhmm }}</td>
+            <td class="tipo">{{ r.tipo }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="9" style="text-align:center;">Sem lançamentos aprovados nesta competência.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

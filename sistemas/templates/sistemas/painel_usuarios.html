@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 p-8">
+    <div class="max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Painel de Administração</h1>
+
+        <!-- Tabs -->
+        <div class="flex justify-center space-x-4 mb-6">
+            <button onclick="showTab('usuarios')" id="tabUsuarios"
+                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">Usuários</button>
+            <button onclick="showTab('grupos')" id="tabGrupos"
+                class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition">Grupos</button>
+        </div>
+
+        <!-- Usuários -->
+        <div id="usuarios" class="tab-content">
+            <div class="flex justify-between items-center mb-4">
+                <a href="{% url 'usuario_create' %}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">+ Novo Usuário</a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="table-auto w-full border-collapse border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-800">
+                            <th class="px-4 py-2 border">Username</th>
+                            <th class="px-4 py-2 border">Email</th>
+                            <th class="px-4 py-2 border">Grupos</th>
+                            <th class="px-4 py-2 border">Ativo</th>
+                            <th class="px-4 py-2 border">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for usuario in usuarios %}
+                        <tr class="hover:bg-gray-100">
+                            <td class="px-4 py-2 border">{{ usuario.username }}</td>
+                            <td class="px-4 py-2 border">{{ usuario.email }}</td>
+                            <td class="px-4 py-2 border">
+                                {% for grupo in usuario.groups.all %}
+                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">{{ grupo.name }}</span>
+                                {% empty %}
+                                    -
+                                {% endfor %}
+                            </td>
+                            <td class="px-4 py-2 border text-center">
+                                {% if usuario.is_active %}
+                                    <span class="text-green-600 font-bold">Sim</span>
+                                {% else %}
+                                    <span class="text-red-600 font-bold">Não</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-2 border text-center">
+                                <a href="{% url 'usuario_edit' usuario.id %}" class="text-blue-600 hover:underline">Editar</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-2 text-center">Nenhum usuário encontrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Grupos -->
+        <div id="grupos" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <a href="{% url 'grupo_create' %}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">+ Novo Grupo</a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="table-auto w-full border-collapse border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-800">
+                            <th class="px-4 py-2 border">Nome</th>
+                            <th class="px-4 py-2 border">Permissões</th>
+                            <th class="px-4 py-2 border">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grupo in grupos %}
+                        <tr class="hover:bg-gray-100">
+                            <td class="px-4 py-2 border">{{ grupo.name }}</td>
+                            <td class="px-4 py-2 border">
+                                {% for perm in grupo.permissions.all %}
+                                    <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-sm">{{ perm.name }}</span>
+                                {% empty %}
+                                    -
+                                {% endfor %}
+                            </td>
+                            <td class="px-4 py-2 border text-center">
+                                <a href="{% url 'grupo_edit' grupo.id %}" class="text-blue-600 hover:underline">Editar</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="px-4 py-2 text-center">Nenhum grupo encontrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Botão voltar -->
+        <div class="mt-6 text-center">
+            <a href="{% url 'home' %}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded transition">Voltar para Home</a>
+        </div>
+
+    </div>
+</div>
+
+<script>
+function showTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(function(el) {
+        el.classList.add('hidden');
+    });
+    document.getElementById(tab).classList.remove('hidden');
+
+    // Atualiza cores das tabs
+    document.getElementById('tabUsuarios').classList.remove('bg-blue-700');
+    document.getElementById('tabUsuarios').classList.add('bg-blue-500');
+    document.getElementById('tabGrupos').classList.remove('bg-blue-700');
+    document.getElementById('tabGrupos').classList.add('bg-gray-300');
+
+    if(tab === 'usuarios'){
+        document.getElementById('tabUsuarios').classList.remove('bg-blue-500');
+        document.getElementById('tabUsuarios').classList.add('bg-blue-700');
+    } else {
+        document.getElementById('tabGrupos').classList.remove('bg-gray-300');
+        document.getElementById('tabGrupos').classList.add('bg-blue-700');
+    }
+}
+</script>
+{% endblock %}

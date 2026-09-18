@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Espelho do mês - Controle de Horas{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="mb-3">
+    <h2 class="fw-bold mb-1 text-primary">Espelho por dia</h2>
+    <small class="text-muted">Entradas/Saídas e totais por colaborador na competência informada.</small>
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="ud-filter d-flex flex-wrap align-items-end gap-2 mb-3">
+    <div class="ud-field">
+      <label for="competencia">Competência</label>
+      <input type="month" id="competencia" name="competencia" class="form-control" value="{{ competencia }}">
+    </div>
+
+    <div class="ud-field">
+      <label for="usuario">Colaborador</label>
+      <select id="usuario" name="usuario" class="form-select">
+        <option value="">— Todos com apontamento —</option>
+        {% for u in usuarios %}
+          <option value="{{ u.pk }}" {% if usuario_id == u.pk|stringformat:"s" %}selected{% endif %}>
+            {{ u.get_full_name|default:u.username }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button class="ud-btn" type="submit">Filtrar</button>
+  </form>
+
+  {% if grupos %}
+    {% for g in grupos %}
+      <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-end mb-2">
+          <div>
+            <div class="fw-bold" style="font-size:1.1rem;">
+              {{ g.usuario.get_full_name|default:g.usuario.username }}
+            </div>
+            <small class="text-muted">{{ ano }}/{{ mes|stringformat:"02d" }}</small>
+          </div>
+          <div class="text-end">
+            <div><b>Total do mês:</b> {{ g.total_mes }}</div>
+            <div><b>Extra do mês:</b> {{ g.extra_mes }}</div>
+          </div>
+        </div>
+
+        <div class="table-responsive ud-card-table">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th style="min-width:120px;">Data</th>
+                <th>Dia da semana</th>
+                <th>Entrada</th>
+                <th>Saída</th>
+                <th>Entrada 2</th>
+                <th>Saída 2</th>
+                <th>Total do dia</th>
+                <th>Horas extras</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in g.linhas %}
+              <tr class="{% cycle '' 'table-light' %}">
+                <td>{{ l.data|date:"d/m/Y" }}</td>
+                <td class="text-capitalize">{{ l.weekday }}</td>
+                <td>{{ l.e1|time:"H:i"|default:"—" }}</td>
+                <td>{{ l.s1|time:"H:i"|default:"—" }}</td>
+                <td>{{ l.e2|time:"H:i"|default:"—" }}</td>
+                <td>{{ l.s2|time:"H:i"|default:"—" }}</td>
+                <td><b>{{ l.total }}</b></td>
+                <td>{{ l.extra }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="text-muted">Nenhum apontamento aprovado para a competência selecionada.</div>
+  {% endif %}
+
+  <!-- Rodapé -->
+  <div class="d-flex justify-content-end mt-4">
+    <a href="{% url 'controle_horas:painel' %}" class="ud-btn-outline">Voltar ao Painel</a>
+  </div>
+</div>
+
+<style>
+  .ud-btn{display:inline-block;padding:.55rem .9rem;border:2px solid #0d6efd;border-radius:10px;background:#0d6efd;color:#fff;font-weight:600;text-decoration:none;transition:.2s;box-shadow:0 6px 14px rgba(13,110,253,.18)}
+  .ud-btn:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(13,110,253,.22)}
+  .ud-btn-outline{display:inline-block;padding:.5rem .8rem;border:2px solid #ced4da;border-radius:10px;text-decoration:none;font-weight:600;color:#495057;background:#fff;transition:.2s}
+  .ud-btn-outline:hover{background:#f8f9fa}
+  .ud-filter .ud-field label{font-size:.8rem;color:#6c757d;margin-bottom:2px;display:block}
+  .ud-card-table{border:1.5px solid #e9ecef;background:#fff;border-radius:14px;padding:6px 8px;box-shadow:0 4px 14px rgba(0,0,0,.06)}
+</style>
+{% endblock %}

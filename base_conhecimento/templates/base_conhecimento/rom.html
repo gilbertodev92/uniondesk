@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% block title %}Central de Conhecimento | Lógica{% endblock %}
+
+{% block content %}
+<div class="kb-root">
+  <div class="kb-wrap">
+
+    <header class="kb-head">
+      <div class="kb-head__id">
+        <span class="kb-head__icon" aria-hidden="true"><i class="fa-solid fa-brain"></i></span>
+        <div>
+          <h1 class="kb-title">Central de Conhecimento</h1>
+          <p class="kb-subtitle">Lógica Tecnologia • Base operacional</p>
+        </div>
+      </div>
+
+      <div class="kb-head__stats">
+        <div class="kb-stat">
+          <span class="kb-stat__num">{{ sistemas|length }}</span>
+          <span class="kb-stat__lbl">Sistemas</span>
+        </div>
+        <div class="kb-stat">
+          <span class="kb-stat__num">{{ total_artigos }}</span>
+          <span class="kb-stat__lbl">Artigos</span>
+        </div>
+      </div>
+    </header>
+
+    <form method="get" action="{% url 'base_conhecimento:busca_global' %}" class="kb-hero-search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" name="q" class="kb-search kb-search--hero" autofocus
+             placeholder="Buscar em toda a base — código, título ou tag..." autocomplete="off">
+      <button type="submit" class="kb-hero-btn">Buscar</button>
+    </form>
+
+    {% if recentes or populares %}
+    <div class="kb-atalhos">
+      {% if recentes %}
+      <section class="kb-atalho-col">
+        <h2 class="kb-atalho-title"><i class="fa-solid fa-clock-rotate-left"></i> Vistos recentemente</h2>
+        <ul class="kb-atalho-list">
+          {% for a in recentes %}
+          <li>
+            <a href="{% url 'base_conhecimento:artigo_detalhe' a.sistema.pk a.slug %}" class="kb-atalho{% if a.esta_desatualizado %} kb-atalho--stale{% endif %}">
+              <span class="kb-atalho-code">{{ a.codigo }}</span>
+              <span class="kb-atalho-txt">{{ a.titulo }}</span>
+              <span class="kb-atalho-sis">{{ a.sistema.nome }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
+      {% if populares %}
+      <section class="kb-atalho-col">
+        <h2 class="kb-atalho-title"><i class="fa-solid fa-fire"></i> Mais acessados</h2>
+        <ul class="kb-atalho-list">
+          {% for a in populares %}
+          <li>
+            <a href="{% url 'base_conhecimento:artigo_detalhe' a.sistema.pk a.slug %}" class="kb-atalho{% if a.esta_desatualizado %} kb-atalho--stale{% endif %}">
+              <span class="kb-atalho-code">{{ a.codigo }}</span>
+              <span class="kb-atalho-txt">{{ a.titulo }}</span>
+              <span class="kb-atalho-sis"><i class="fa-regular fa-eye"></i> {{ a.visualizacoes }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="kb-section-lbl">
+      <span>Ou navegue por sistema</span>
+      <div class="kb-section-line"></div>
+    </div>
+
+    <div class="kb-search-wrap kb-search-wrap--sm">
+      <i class="fa-solid fa-filter"></i>
+      <input type="text" id="kb-search" class="kb-search"
+             placeholder="Filtrar sistema ou fabricante..." autocomplete="off">
+    </div>
+
+    <div class="kb-grid" id="kb-grid">
+      {% for sistema in sistemas %}
+      <a href="{% url 'base_conhecimento:sistema' sistema.pk %}"
+         class="kb-card"
+         data-nome="{{ sistema.nome|lower }}"
+         data-fab="{{ sistema.fabricante|default:''|lower }}">
+
+        <div class="kb-card__top">
+          <span class="kb-card__icon" aria-hidden="true"><i class="fa-solid fa-microchip"></i></span>
+          <div class="kb-card__names">
+            <h2 class="kb-card__name" title="{{ sistema.nome }}">{{ sistema.nome }}</h2>
+            <p class="kb-card__fab">{{ sistema.fabricante|default:"Lógica Tecnologia" }}</p>
+          </div>
+        </div>
+
+        <div class="kb-card__foot">
+          <span class="kb-card__count">
+            <i class="fa-solid fa-file-lines"></i>
+            {{ sistema.n_artigos }} artigo{{ sistema.n_artigos|pluralize }}
+          </span>
+          <span class="kb-card__go" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
+        </div>
+      </a>
+      {% empty %}
+      <div class="kb-empty">
+        <i class="fa-solid fa-server"></i>
+        <p>Nenhum sistema cadastrado</p>
+        <span>Cadastre um sistema para começar a documentar.</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <p class="kb-empty-filter" id="kb-empty-filter" hidden>
+      <i class="fa-solid fa-filter-circle-xmark"></i> Nenhum sistema corresponde à busca.
+    </p>
+
+  </div>
+</div>
+
+<style>
+/* ══ Base de Conhecimento — tokens globais do base.html ══ */
+.kb-root { padding: 20px 16px 40px; }
+.kb-wrap { max-width: 1300px; margin: 0 auto; }
+
+.kb-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap;
+    padding-bottom: 18px; margin-bottom: 20px;
+    border-bottom: 1px solid rgb(var(--c-line));
+}
+.kb-head__id { display: flex; align-items: center; gap: 14px; }
+.kb-head__icon {
+    width: 46px; height: 46px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgb(var(--c-accent) / .1);
+    border: 1px solid rgb(var(--c-accent) / .25);
+    border-radius: 13px; color: rgb(var(--c-accent)); font-size: 19px;
+}
+.kb-title { font-size: 20px; font-weight: 800; color: rgb(var(--c-ink)); line-height: 1.2; }
+.kb-subtitle {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .16em; color: rgb(var(--c-ink-faint)); margin-top: 6px;
+}
+
+.kb-head__stats { display: flex; gap: 10px; }
+.kb-stat {
+    background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line));
+    border-radius: 12px; padding: 10px 18px; text-align: center; min-width: 88px;
+}
+.kb-stat__num {
+    display: block; font-size: 22px; font-weight: 800;
+    color: rgb(var(--c-ink)); line-height: 1; font-variant-numeric: tabular-nums;
+}
+.kb-stat__lbl {
+    display: block; font-size: 9px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .14em; color: rgb(var(--c-ink-faint)); margin-top: 6px;
+}
+
+.kb-search-wrap { position: relative; margin-bottom: 16px; }
+.kb-search-wrap i {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    color: rgb(var(--c-ink-faint)); font-size: 13px; pointer-events: none;
+}
+.kb-search {
+    width: 100%; background: rgb(var(--c-deep));
+    border: 1px solid rgb(var(--c-line)); border-radius: 12px;
+    padding: 13px 16px 13px 44px; color: rgb(var(--c-ink));
+    font-size: 13px; font-family: 'Inter', sans-serif; outline: none;
+    transition: border-color .15s;
+}
+.kb-search::placeholder { color: rgb(var(--c-ink-faint)); }
+.kb-search:focus { border-color: rgb(var(--c-accent)); box-shadow: 0 0 0 2px rgb(var(--c-accent) / .18); }
+
+.kb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+
+.kb-card {
+    display: flex; flex-direction: column; justify-content: space-between;
+    background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line));
+    border-radius: 14px; padding: 16px; text-decoration: none;
+    transition: border-color .15s, transform .12s, background-color .25s;
+}
+.kb-card:hover { border-color: rgb(var(--c-accent) / .45); transform: translateY(-2px); }
+.kb-card__top { display: flex; align-items: center; gap: 12px; min-width: 0; margin-bottom: 14px; }
+.kb-card__icon {
+    width: 38px; height: 38px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgb(var(--c-deep)); border: 1px solid rgb(var(--c-line));
+    border-radius: 10px; color: rgb(var(--c-accent)); font-size: 15px;
+}
+.kb-card__names { min-width: 0; }
+.kb-card__name {
+    font-size: 13.5px; font-weight: 700; color: rgb(var(--c-ink));
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kb-card__fab {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .1em; color: rgb(var(--c-ink-faint)); margin-top: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kb-card__foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 12px; border-top: 1px solid rgb(var(--c-line));
+}
+.kb-card__count {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: rgb(var(--c-ink-soft));
+}
+.kb-card__count i { color: rgb(var(--c-ink-faint)); margin-right: 6px; }
+.kb-card__go {
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; background: rgb(var(--c-deep)); border: 1px solid rgb(var(--c-line));
+    color: rgb(var(--c-ink-faint)); font-size: 10px;
+    transition: background-color .15s, color .15s;
+}
+.kb-card:hover .kb-card__go { background: rgb(var(--c-accent)); color: #fff; border-color: rgb(var(--c-accent)); }
+
+.kb-empty {
+    grid-column: 1 / -1; text-align: center; padding: 70px 20px;
+    border: 1px dashed rgb(var(--c-line)); border-radius: 14px;
+}
+.kb-empty i { font-size: 38px; color: rgb(var(--c-line)); display: block; margin-bottom: 14px; }
+.kb-empty p { font-size: 14px; font-weight: 700; color: rgb(var(--c-ink-soft)); }
+.kb-empty span { font-size: 12px; color: rgb(var(--c-ink-faint)); }
+.kb-empty-filter {
+    text-align: center; padding: 34px 16px;
+    color: rgb(var(--c-ink-faint)); font-size: 13px; font-weight: 600;
+}
+
+
+/* ── Atalhos: recentes e populares ──
+   Suporte é 80/20 — poucos artigos resolvem a maior parte das chamadas.
+   Antes eles eram reencontrados do zero toda vez. */
+.kb-atalhos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+.kb-atalho-col {
+    background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line));
+    border-radius: 14px; padding: 16px;
+}
+.kb-atalho-title {
+    font-size: 9.5px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .15em; color: rgb(var(--c-ink-faint));
+    padding-bottom: 10px; margin-bottom: 8px;
+    border-bottom: 1px solid rgb(var(--c-line));
+}
+.kb-atalho-title i { color: rgb(var(--c-accent)); margin-right: 6px; }
+.kb-atalho-list { list-style: none; margin: 0; padding: 0; }
+.kb-atalho {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 9px; border-radius: 8px; text-decoration: none;
+    transition: background-color .15s;
+}
+.kb-atalho:hover { background: rgb(var(--c-deep)); }
+.kb-atalho-code {
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px; font-weight: 700;
+    color: rgb(var(--c-accent)); background: rgb(var(--c-accent) / .08);
+    border: 1px solid rgb(var(--c-accent) / .2);
+    border-radius: 5px; padding: 2px 6px; flex-shrink: 0;
+}
+.kb-atalho-txt {
+    flex: 1; min-width: 0; font-size: 12px; font-weight: 600;
+    color: rgb(var(--c-ink-soft));
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kb-atalho:hover .kb-atalho-txt { color: rgb(var(--c-ink)); }
+.kb-atalho-sis {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: rgb(var(--c-ink-faint)); flex-shrink: 0;
+}
+/* artigo velho fica marcado já no atalho */
+.kb-atalho--stale .kb-atalho-code {
+    color: rgb(var(--c-warn)); background: rgb(var(--c-warn) / .1);
+    border-color: rgb(var(--c-warn) / .25);
+}
+
+@media (max-width: 860px) { .kb-atalhos { grid-template-columns: 1fr; } }
+
+/* ── Busca principal: é o motivo de a página existir ──
+   O técnico está ao telefone e o cliente descreve o PROBLEMA, não o
+   sistema. Antes era preciso escolher o sistema para só então ter uma
+   caixa de busca — quem não sabia onde procurar, caçava um por um. */
+.kb-hero-search {
+    display: flex; align-items: center; gap: 10px;
+    position: relative; margin-bottom: 22px;
+}
+.kb-hero-search > i {
+    position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+    color: rgb(var(--c-ink-faint)); font-size: 16px; pointer-events: none; z-index: 1;
+}
+.kb-search--hero {
+    flex: 1; padding: 18px 20px 18px 52px !important;
+    font-size: 15px !important; border-radius: 14px !important;
+}
+.kb-hero-btn {
+    height: 56px; padding: 0 28px; flex-shrink: 0;
+    background: rgb(var(--c-accent)); border: 1px solid rgb(var(--c-accent));
+    border-radius: 14px; color: #fff;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .1em; cursor: pointer;
+    transition: filter .15s;
+}
+.kb-hero-btn:hover { filter: brightness(1.1); }
+
+.kb-section-lbl {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 14px;
+}
+.kb-section-lbl span {
+    font-size: 9.5px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .16em; color: rgb(var(--c-ink-faint)); flex-shrink: 0;
+}
+.kb-section-line { flex: 1; height: 1px; background: rgb(var(--c-line)); }
+
+.kb-search-wrap--sm .kb-search { padding: 10px 14px 10px 40px; font-size: 12.5px; }
+.kb-search-wrap--sm { margin-bottom: 14px; }
+
+@media (max-width: 640px) {
+    .kb-hero-search { flex-direction: column; align-items: stretch; }
+    .kb-hero-search > i { top: 28px; }
+    .kb-hero-btn { width: 100%; height: 48px; }
+}
+
+@media (max-width: 640px) {
+    .kb-head { gap: 14px; }
+    .kb-head__stats { width: 100%; }
+    .kb-stat { flex: 1; }
+    .kb-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+(function () {
+    "use strict";
+    const search = document.getElementById('kb-search');
+    const cards  = Array.from(document.querySelectorAll('.kb-card'));
+    const empty  = document.getElementById('kb-empty-filter');
+
+    // A busca antiga usava card.innerText — varria o texto todo, então
+    // digitar "3" casava com a contagem de artigos. Agora só nome/fabricante.
+    search.addEventListener('input', function () {
+        const t = this.value.toLowerCase().trim();
+        let n = 0;
+        cards.forEach(c => {
+            const hit = !t || c.dataset.nome.includes(t) || c.dataset.fab.includes(t);
+            c.style.display = hit ? '' : 'none';
+            if (hit) n++;
+        });
+        if (empty) empty.hidden = n > 0 || cards.length === 0;
+    });
+})();
+</script>
+{% endblock %}

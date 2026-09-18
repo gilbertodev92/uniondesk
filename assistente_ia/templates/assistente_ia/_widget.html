@@ -1,0 +1,246 @@
+{# Assistente IA - aba lateral discreta. Documentação de uso: ver README.md do app assistente_ia. #}
+{% if request.user.is_authenticated %}
+<div id="ia-widget" class="fixed right-0 top-1/2 -translate-y-1/2 z-[999] flex items-center font-sans">
+
+  <div id="ia-painel"
+       class="hidden flex-col absolute right-9 top-1/2 -translate-y-1/2 w-[360px] h-[480px] min-w-[300px] min-h-[320px] max-w-[90vw] max-h-[85vh] rounded-xl border border-core-line bg-core-panel shadow-2xl overflow-hidden"
+       style="backdrop-filter: blur(14px); background: var(--sh-glass-bg); resize: both;">
+
+    <div id="ia-header" class="flex items-center justify-between px-4 py-3 border-b border-core-line/60 shrink-0 bg-core-deep/40 cursor-move select-none">
+      <div class="flex items-center gap-2.5 pointer-events-none">
+        <div class="w-7 h-7 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-user-tie text-accent-soft text-[11px]"></i>
+        </div>
+        <div class="leading-tight">
+          <div class="text-[11px] font-semibold uppercase tracking-wide text-ink">Falar com o Gerente</div>
+          <div class="text-[10px] text-ink-faint">só quando precisar — não é bate-papo</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <button type="button" onclick="window.open('{% url 'assistente_ia:tela_cheia' %}', '_blank')" class="util-btn !w-7 !h-7" aria-label="Abrir em aba nova" title="Abrir em aba nova">
+          <i class="fa-solid fa-up-right-from-square text-[10px]"></i>
+        </button>
+        <button type="button" onclick="iaFecharPainel()" class="util-btn !w-7 !h-7" aria-label="Fechar">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="ia-mensagens" class="flex-1 overflow-y-auto px-3 py-3 space-y-2.5 text-[12.5px] leading-relaxed custom-scrollbar"></div>
+
+    <div id="ia-preview-wrap" class="hidden px-3 pb-2 shrink-0">
+      <div class="relative inline-block">
+        <img id="ia-preview-img" class="h-14 w-14 object-cover rounded-lg border border-core-line" />
+        <button type="button" onclick="iaRemoverImagem()"
+          class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-danger text-white flex items-center justify-center text-[9px]"
+          aria-label="Remover imagem">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+
+    <form id="ia-form" class="border-t border-core-line/60 p-2.5 flex items-end gap-1.5 shrink-0 bg-core-deep/20">
+      {% csrf_token %}
+      <button type="button" onclick="document.getElementById('ia-arquivo').click()"
+        class="util-btn !w-8 !h-8 shrink-0" aria-label="Anexar imagem" title="Anexar imagem (ou cole com Ctrl+V)">
+        <i class="fa-solid fa-paperclip text-xs"></i>
+      </button>
+      <input type="file" id="ia-arquivo" accept="image/*" class="hidden" />
+      <textarea id="ia-pergunta" rows="1" placeholder="Pergunta rápida ou cole um print..."
+        class="flex-1 resize-none rounded-lg border border-core-line bg-core-deep text-ink text-xs px-3 py-2 focus:outline-none focus:border-accent"></textarea>
+      <button type="submit" class="w-8 h-8 rounded-lg bg-accent hover:bg-accent-soft text-white flex items-center justify-center shrink-0 transition-colors" aria-label="Enviar pergunta">
+        <i class="fa-solid fa-paper-plane text-xs"></i>
+      </button>
+    </form>
+  </div>
+
+  <button type="button" id="ia-tab" onclick="iaTogglePainel()"
+    class="flex flex-col items-center justify-center gap-2 w-7 h-32 rounded-l-lg border border-r-0 border-core-line/50 bg-core-panel/35 text-ink-faint opacity-60 hover:opacity-100 hover:bg-accent hover:text-white hover:border-accent transition-all duration-200 shadow-lg backdrop-blur-sm"
+    aria-label="Falar com o Gerente" title="Falar com o Gerente — quando precisar">
+    <i class="fa-solid fa-user-tie text-[11px]"></i>
+    <span class="text-[9.5px] font-semibold uppercase tracking-wider whitespace-nowrap" style="writing-mode: vertical-rl; transform: rotate(180deg);">Falar com o Gerente</span>
+  </button>
+</div>
+
+<script>
+(function () {
+  let imagemPendente = null; // { base64, mime }
+  const painel = document.getElementById('ia-painel');
+  const CHAVE_POS = 'ia_painel_pos_v1';
+
+  function getCookie(nome) {
+    const valor = document.cookie.split('; ').find(l => l.startsWith(nome + '='));
+    return valor ? decodeURIComponent(valor.split('=')[1]) : '';
+  }
+
+  // ── posição salva (arrastar) ──────────────────────────────────
+  function aplicarPosicaoSalva() {
+    try {
+      const salvo = JSON.parse(localStorage.getItem(CHAVE_POS) || 'null');
+      if (salvo && typeof salvo.left === 'number' && typeof salvo.top === 'number') {
+        const left = Math.min(Math.max(0, salvo.left), window.innerWidth - 80);
+        const top = Math.min(Math.max(0, salvo.top), window.innerHeight - 80);
+        painel.style.position = 'fixed';
+        painel.style.left = left + 'px';
+        painel.style.top = top + 'px';
+        painel.style.right = 'auto';
+        painel.style.transform = 'none';
+      }
+    } catch (e) { /* ignora posição corrompida */ }
+  }
+  aplicarPosicaoSalva();
+
+  (function habilitarArraste() {
+    const header = document.getElementById('ia-header');
+    let arrastando = false, offX = 0, offY = 0;
+
+    header.addEventListener('mousedown', function (e) {
+      if (e.target.closest('button')) return; // não inicia arraste clicando nos botões do header
+      arrastando = true;
+      const rect = painel.getBoundingClientRect();
+      offX = e.clientX - rect.left;
+      offY = e.clientY - rect.top;
+      painel.style.position = 'fixed';
+      painel.style.right = 'auto';
+      painel.style.transform = 'none';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function (e) {
+      if (!arrastando) return;
+      const left = Math.min(Math.max(0, e.clientX - offX), window.innerWidth - 60);
+      const top = Math.min(Math.max(0, e.clientY - offY), window.innerHeight - 40);
+      painel.style.left = left + 'px';
+      painel.style.top = top + 'px';
+    });
+    document.addEventListener('mouseup', function () {
+      if (!arrastando) return;
+      arrastando = false;
+      const rect = painel.getBoundingClientRect();
+      localStorage.setItem(CHAVE_POS, JSON.stringify({ left: rect.left, top: rect.top }));
+    });
+  })();
+
+  window.iaTogglePainel = function () {
+    painel.classList.toggle('hidden');
+    painel.classList.toggle('flex');
+    if (!painel.classList.contains('hidden')) {
+      document.getElementById('ia-pergunta').focus();
+    }
+  };
+  window.iaFecharPainel = function () {
+    painel.classList.add('hidden');
+    painel.classList.remove('flex');
+  };
+
+  function mostrarPreview(dataUrl) {
+    document.getElementById('ia-preview-img').src = dataUrl;
+    document.getElementById('ia-preview-wrap').classList.remove('hidden');
+  }
+  window.iaRemoverImagem = function () {
+    imagemPendente = null;
+    document.getElementById('ia-preview-wrap').classList.add('hidden');
+    document.getElementById('ia-arquivo').value = '';
+  };
+
+  function carregarImagem(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      imagemPendente = { base64: e.target.result, mime: file.type };
+      mostrarPreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  document.getElementById('ia-arquivo').addEventListener('change', function (e) {
+    if (e.target.files[0]) carregarImagem(e.target.files[0]);
+  });
+
+  document.getElementById('ia-pergunta').addEventListener('paste', function (e) {
+    const item = Array.from(e.clipboardData.items || []).find(i => i.type.startsWith('image/'));
+    if (item) {
+      e.preventDefault();
+      carregarImagem(item.getAsFile());
+    }
+  });
+
+  function addMensagem(texto, autor, imagemDataUrl) {
+    const box = document.getElementById('ia-mensagens');
+    const linha = document.createElement('div');
+    const ehAnalista = autor === 'analista';
+    linha.className = ehAnalista ? 'flex justify-end' : 'flex justify-start';
+
+    const bolha = document.createElement('div');
+    bolha.className = ehAnalista
+      ? 'max-w-[85%] rounded-xl rounded-br-sm bg-accent text-white px-3 py-2'
+      : 'max-w-[85%] rounded-xl rounded-bl-sm bg-core-bubble-in border border-core-line text-ink px-3 py-2';
+
+    if (imagemDataUrl) {
+      const img = document.createElement('img');
+      img.src = imagemDataUrl;
+      img.className = 'rounded-lg mb-1.5 max-h-32 object-cover';
+      bolha.appendChild(img);
+    }
+    const span = document.createElement('div');
+    span.style.whiteSpace = 'pre-wrap';
+    span.textContent = texto;
+    bolha.appendChild(span);
+
+    linha.appendChild(bolha);
+    box.appendChild(linha);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  document.getElementById('ia-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const campo = document.getElementById('ia-pergunta');
+    const pergunta = campo.value.trim();
+    if (!pergunta && !imagemPendente) return;
+
+    addMensagem(pergunta || '(imagem)', 'analista', imagemPendente ? imagemPendente.base64 : null);
+    campo.value = '';
+    const imgEnviada = imagemPendente;
+    iaRemoverImagem();
+
+    const ctx = window.assistenteContexto || {};
+    const box = document.getElementById('ia-mensagens');
+    const carregando = document.createElement('div');
+    carregando.className = 'flex justify-start';
+    carregando.innerHTML = '<div class="rounded-xl rounded-bl-sm bg-core-bubble-in border border-core-line text-ink-faint px-3 py-2 text-xs">Pensando...</div>';
+    box.appendChild(carregando);
+    box.scrollTop = box.scrollHeight;
+
+    try {
+      const resp = await fetch('{% url "assistente_ia:perguntar" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({
+          pergunta: pergunta,
+          pagina: window.location.pathname,
+          session_id: ctx.session_id || null,
+          contexto: ctx.contexto || '',
+          imagem_base64: imgEnviada ? imgEnviada.base64 : null,
+          imagem_mime: imgEnviada ? imgEnviada.mime : null,
+        }),
+      });
+      const dados = await resp.json();
+      carregando.remove();
+      addMensagem(dados.resposta || dados.erro || 'Sem resposta.', 'ia');
+    } catch (err) {
+      carregando.remove();
+      addMensagem('Erro de conexão. Tente novamente.', 'ia');
+    }
+  });
+
+  document.getElementById('ia-pergunta').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.getElementById('ia-form').requestSubmit();
+    }
+  });
+})();
+</script>
+{% endif %}

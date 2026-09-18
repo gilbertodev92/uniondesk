@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Raio-X (God Mode) | Lógica Desk{% endblock %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+    body { font-family: 'Inter', sans-serif; background-color: #05070c; }
+
+    .rx-bg {
+        background-color: #05070c;
+        background-image:
+            radial-gradient(circle at 50% 0%, rgba(240, 180, 41, 0.06) 0%, transparent 55%),
+            radial-gradient(circle at 100% 100%, rgba(61, 90, 254, 0.04) 0%, transparent 45%);
+    }
+
+    .hud-panel {
+        background: rgba(10, 14, 23, 0.8);
+        backdrop-filter: blur(16px);
+        border: 1px solid #1b2333;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #1b2333; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #f0b429; }
+
+    h1, h2 { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono-num { font-family: 'JetBrains Mono', monospace; }
+
+    .score-bar-track { background: #05070c; border: 1px solid #1b2333; border-radius: 6px; overflow: hidden; height: 5px; }
+    .score-bar-fill { height: 100%; background: linear-gradient(90deg, #f0b429, #f5c559); border-radius: 6px; }
+
+    .rank-badge { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+    .rank-1 { background: rgba(240, 180, 41, 0.18); color: #f0b429; border: 1px solid rgba(240, 180, 41, 0.4); }
+    .rank-2 { background: rgba(203, 213, 225, 0.12); color: #cbd5e1; border: 1px solid rgba(203, 213, 225, 0.3); }
+    .rank-3 { background: rgba(217, 119, 6, 0.15); color: #d97706; border: 1px solid rgba(217, 119, 6, 0.35); }
+    .rank-n { background: rgba(27, 35, 51, 0.6); color: #64748b; border: 1px solid #1b2333; }
+</style>
+
+<div class="rx-bg min-h-screen p-4 md:p-6 text-slate-200 antialiased">
+    <div class="max-w-[1700px] mx-auto space-y-6">
+
+        <div class="hud-panel rounded-2xl p-6 border-l-2 border-l-[#f0b429] flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-xl font-semibold text-white flex items-center gap-2.5">
+                    <i class="fa-solid fa-crosshairs text-[#f0b429]"></i> Raio-X Operacional
+                </h1>
+                <p class="text-xs text-slate-500 mt-1.5">
+                    Curva de média dinâmica · Média da equipe no período: <span class="text-[#f0b429] font-semibold font-mono-num">{{ media_equipe }} pts</span>
+                </p>
+            </div>
+
+            <form method="GET" class="flex flex-wrap items-center gap-3 bg-core-bg p-2 rounded-xl border border-core-line">
+                <div class="flex items-center gap-2 px-2 text-sm">
+                    <span class="text-[10px] font-mono-num uppercase text-slate-500">De</span>
+                    <input type="date" name="inicio" value="{{ inicio }}" class="bg-transparent text-white font-mono-num text-sm outline-none cursor-pointer">
+                </div>
+                <div class="flex items-center gap-2 px-2 border-l border-core-line text-sm">
+                    <span class="text-[10px] font-mono-num uppercase text-slate-500">Até</span>
+                    <input type="date" name="fim" value="{{ fim }}" class="bg-transparent text-white font-mono-num text-sm outline-none cursor-pointer">
+                </div>
+                <button type="submit" class="bg-[#f0b429] hover:bg-[#f5c559] text-black px-5 py-2 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all">
+                    <i class="fa-solid fa-filter mr-1"></i> Filtrar
+                </button>
+            </form>
+        </div>
+
+        <div class="hud-panel rounded-2xl overflow-hidden">
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <thead>
+                        <tr class="bg-core-bg/60 text-[9px] uppercase text-slate-600 font-mono-num tracking-widest">
+                            <th class="p-2 text-center" colspan="2"></th>
+                            <th class="p-2 text-center border-x border-core-line/60" colspan="6">Pilares de Produtividade</th>
+                            <th class="p-2 text-center border-r border-core-line/60" colspan="2">Performance</th>
+                            <th class="p-2 text-center" colspan="2">Classificação</th>
+                        </tr>
+                        <tr class="bg-core-deep text-[10px] uppercase text-slate-400 font-mono-num tracking-widest border-b border-core-line">
+                            <th class="p-3 text-center w-10">#</th>
+                            <th class="p-3">Colaborador</th>
+                            <th class="p-3 text-center border-l border-core-line/60 text-orange-400" title="O.S. do Radar Concluídas"><i class="fa-solid fa-ticket mr-1"></i>O.S.</th>
+                            <th class="p-3 text-center text-fuchsia-400" title="Implantação de Clientes ou Módulos"><i class="fa-solid fa-rocket mr-1"></i>Imp.</th>
+                            <th class="p-3 text-center text-rose-400" title="Ações de Retenção e Customer Success"><i class="fa-solid fa-heart-pulse mr-1"></i>CS</th>
+                            <th class="p-3 text-center text-emerald-400" title="Agendamentos e Visitas Externas"><i class="fa-solid fa-calendar-day mr-1"></i>Vist.</th>
+                            <th class="p-3 text-center text-yellow-300" title="Avaliações 4 ou 5 estrelas no WhatsApp"><i class="fa-solid fa-star mr-1"></i>Aval.</th>
+                            <th class="p-3 text-center text-accent-soft border-r border-core-line/60" title="Mensagens enviadas (Grupos têm peso 1.2x)"><i class="fa-brands fa-whatsapp mr-1"></i>Zap</th>
+                            <th class="p-3 text-center text-[#f0b429]" title="Bônus multitarefa (+10% por pilar ativo)"><i class="fa-solid fa-bolt mr-1"></i>Bônus</th>
+                            <th class="p-3 text-center border-r border-core-line/60" title="% em relação à média da equipe">Efic.</th>
+                            <th class="p-3 text-left w-[180px]">Score</th>
+                            <th class="p-3 text-center">Perfil</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-slate-200 divide-y divide-core-line/50">
+                        {% for t in auditoria %}
+                        <tr class="hover:bg-white/[0.02] transition-colors group">
+                            <td class="p-3 text-center">
+                                <span class="rank-badge {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-n{% endif %} mx-auto">
+                                    {{ forloop.counter }}
+                                </span>
+                            </td>
+
+                            <td class="p-3">
+                                <div class="flex flex-col">
+                                    <span class="font-semibold text-white text-xs group-hover:text-[#f0b429] transition-colors">{{ t.nome }}</span>
+                                    <span class="text-[9px] font-mono-num text-slate-500 uppercase tracking-wider mt-0.5">{{ t.setor }}</span>
+                                </div>
+                            </td>
+
+                            <td class="p-3 text-center font-mono-num text-slate-200 border-l border-core-line/40">{{ t.os }}</td>
+                            <td class="p-3 text-center font-mono-num text-slate-200">{{ t.imp }}</td>
+                            <td class="p-3 text-center font-mono-num text-slate-200">{{ t.cs }}</td>
+                            <td class="p-3 text-center font-mono-num text-slate-200">{{ t.agenda }}</td>
+                            <td class="p-3 text-center font-mono-num text-yellow-100">{{ t.avaliacoes }}</td>
+                            <td class="p-3 text-center font-mono-num text-slate-400 border-r border-core-line/40">{{ t.msgs }}</td>
+
+                            <td class="p-3 text-center font-mono-num text-[#f0b429] text-xs">+{{ t.bonus|default:"0%" }}</td>
+
+                            <td class="p-3 text-center font-mono-num text-emerald-400 text-xs border-r border-core-line/40">{{ t.eficiencia_pct }}</td>
+
+                            <td class="p-3">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="font-mono-num font-semibold text-white text-sm w-12 shrink-0">{{ t.score }}</span>
+                                    <div class="score-bar-track flex-1">
+                                        <div class="score-bar-fill" style="width: {{ t.eficiencia_pct }};"></div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="p-3 border-l border-core-line/40">
+                                <div class="flex items-center justify-center gap-3">
+                                    <span class="inline-flex items-center justify-center w-9 h-8 rounded-lg border font-bold text-sm {{ t.classe_css }}">
+                                        {{ t.letra }}
+                                    </span>
+                                    <span class="text-[10px] font-medium uppercase tracking-wider text-slate-500 hidden xl:inline-block w-32 text-left leading-tight" title="{{ t.titulo }}">{{ t.titulo }}</span>
+                                    <a href="{% url 'raio_x:detalhe_usuario' t.id %}?inicio={{ inicio }}&fim={{ fim }}" class="inline-flex w-8 h-8 items-center justify-center bg-core-bg hover:bg-[#f0b429] text-slate-400 hover:text-black border border-core-line hover:border-[#f0b429] rounded-lg transition-all" title="Expandir Raio-X Individual">
+                                        <i class="fa-solid fa-expand text-xs"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="12" class="p-16 text-center text-slate-600">
+                                <i class="fa-solid fa-ghost text-4xl mb-4 opacity-40 block"></i>
+                                <span class="text-xs font-mono-num uppercase tracking-widest">Nenhum registro produtivo encontrado nesse intervalo</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

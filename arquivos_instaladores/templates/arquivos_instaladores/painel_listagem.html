@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}Hub de Instaladores{% endblock %}
+
+{% block content %}
+<div class="ai-root">
+  <div class="ai-wrap ai-wrap--lg">
+
+    <!-- ═══ CABEÇALHO ═══ -->
+    <header class="ai-topbar">
+      <div class="ai-topbar__id">
+        <span class="ai-topbar__icon"><i class="fa-solid fa-box-archive"></i></span>
+        <div>
+          <h1 class="ai-title">Hub de Instaladores</h1>
+          <p class="ai-subtitle">Repositório oficial · Lógica</p>
+        </div>
+      </div>
+
+      {% if perms.arquivos_instaladores.add_arquivoitem %}
+      <a href="{% url 'arquivos_instaladores:create' %}" class="ai-btn ai-btn--primary">
+        <i class="fa-solid fa-cloud-arrow-up"></i> <span>Novo recurso</span>
+      </a>
+      {% endif %}
+    </header>
+
+    <!-- ═══ MÉTRICAS (reais) ═══ -->
+    <div class="ai-stats">
+      <div class="ai-stat">
+        <span class="ai-stat__num">{{ total_arquivos }}</span>
+        <span class="ai-stat__lbl"><i class="fa-solid fa-cubes"></i> Recursos ativos</span>
+      </div>
+      <div class="ai-stat">
+        <span class="ai-stat__num">{{ total_downloads }}</span>
+        <span class="ai-stat__lbl"><i class="fa-solid fa-download"></i> Downloads</span>
+      </div>
+      <div class="ai-stat ai-stat--wide">
+        <span class="ai-stat__num" id="ai-espaco">{{ espaco_total }}</span>
+        <span class="ai-stat__lbl"><i class="fa-solid fa-hard-drive"></i> Em disco</span>
+      </div>
+    </div>
+
+    <!-- ═══ FILTROS ═══ -->
+    <form method="get" class="ai-filters">
+      <div class="ai-search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" name="q" value="{{ q }}" class="ai-input" placeholder="Buscar por nome, versão ou descrição..." autocomplete="off">
+      </div>
+      <select name="categoria" class="ai-input ai-select" onchange="this.form.submit()">
+        <option value="">Todas as categorias</option>
+        {% for val, label in categorias %}
+        <option value="{{ val }}" {% if categoria == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="ai-btn"><i class="fa-solid fa-filter"></i> <span>Filtrar</span></button>
+      <a href="?ativos={% if ativos %}0{% else %}1{% endif %}"
+         class="ai-btn {% if not ativos %}ai-btn--warn{% endif %}"
+         title="{% if ativos %}Ver arquivados{% else %}Ver ativos{% endif %}">
+        <i class="fa-solid {% if ativos %}fa-box-archive{% else %}fa-inbox{% endif %}"></i>
+        <span>{% if ativos %}Arquivados{% else %}Ativos{% endif %}</span>
+      </a>
+    </form>
+
+    <!-- ═══ GRID ═══ -->
+    <div class="ai-cards">
+      {% for item in page_obj.object_list %}
+      <article class="ai-card-item {% if not item.is_ativo %}ai-card-item--arch{% endif %}">
+
+        <div class="ai-card-item__top">
+          <span class="ai-card-item__icon"><i class="fa-solid {{ item.icone }}"></i></span>
+          <div class="ai-card-item__badges">
+            {% if item.versao %}<span class="ai-vbadge ai-mono">v{{ item.versao }}</span>{% endif %}
+            {% if not item.is_ativo %}<span class="ai-arch-badge">Arquivado</span>{% endif %}
+          </div>
+        </div>
+
+        <h3 class="ai-card-item__title" title="{{ item.titulo }}">{{ item.titulo }}</h3>
+        <span class="ai-cat-tag">{{ item.get_categoria_display }}</span>
+
+        {% if item.descricao %}
+        <p class="ai-card-item__desc">{{ item.descricao }}</p>
+        {% else %}
+        <p class="ai-card-item__desc ai-card-item__desc--empty">Sem descrição.</p>
+        {% endif %}
+
+        <div class="ai-card-item__meta">
+          {% if item.tem_arquivo_local %}
+          <span title="Tamanho"><i class="fa-solid fa-hard-drive"></i> {{ item.tamanho_legivel }}</span>
+          {% else %}
+          <span title="Link externo"><i class="fa-solid fa-link"></i> Externo</span>
+          {% endif %}
+          <span title="Downloads"><i class="fa-solid fa-download"></i> {{ item.downloads }}</span>
+        </div>
+
+        <div class="ai-card-item__actions">
+          {% if item.is_ativo %}
+            <a href="{% url 'arquivos_instaladores:download' item.pk %}" class="ai-dl-btn">
+              <i class="fa-solid fa-download"></i> Baixar
+            </a>
+            <button type="button" class="ai-icon-btn ai-copy" data-url="{% url 'arquivos_instaladores:download' item.pk %}" title="Copiar link">
+              <i class="fa-solid fa-link"></i>
+            </button>
+            {% if perms.arquivos_instaladores.change_arquivoitem %}
+            <a href="{% url 'arquivos_instaladores:edit' item.pk %}" class="ai-icon-btn ai-icon-btn--edit" title="Editar">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+            {% endif %}
+            {% if perms.arquivos_instaladores.delete_arquivoitem %}
+            <a href="{% url 'arquivos_instaladores:delete' item.pk %}" class="ai-icon-btn ai-icon-btn--del" title="Arquivar ou excluir">
+              <i class="fa-solid fa-trash"></i>
+            </a>
+            {% endif %}
+          {% else %}
+            {% if perms.arquivos_instaladores.change_arquivoitem %}
+            <form method="post" action="{% url 'arquivos_instaladores:restaurar' item.pk %}" style="flex:1;">
+              {% csrf_token %}
+              <button type="submit" class="ai-dl-btn ai-dl-btn--restore" style="width:100%;">
+                <i class="fa-solid fa-rotate-left"></i> Restaurar
+              </button>
+            </form>
+            {% endif %}
+            {% if perms.arquivos_instaladores.delete_arquivoitem %}
+            <a href="{% url 'arquivos_instaladores:delete' item.pk %}" class="ai-icon-btn ai-icon-btn--del" title="Excluir definitivamente">
+              <i class="fa-solid fa-trash"></i>
+            </a>
+            {% endif %}
+          {% endif %}
+        </div>
+      </article>
+      {% empty %}
+      <div class="ai-empty">
+        <i class="fa-solid fa-box-open"></i>
+        {% if q or categoria %}
+        <p>Nenhum recurso encontrado</p>
+        <span>Tente outros termos ou limpe os filtros.</span>
+        {% elif not ativos %}
+        <p>Nenhum recurso arquivado</p>
+        <span>Os itens arquivados aparecem aqui.</span>
+        {% else %}
+        <p>O repositório está vazio</p>
+        <span>Suba o primeiro instalador para a equipe.</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- ═══ PAGINAÇÃO ═══ -->
+    {% if page_obj.has_other_pages %}
+    <nav class="ai-pager">
+      {% if page_obj.has_previous %}
+      <a href="?q={{ q|urlencode }}&categoria={{ categoria }}&ativos={{ ativos|yesno:'1,0' }}&page={{ page_obj.previous_page_number }}" class="ai-pager__btn"><i class="fa-solid fa-chevron-left"></i></a>
+      {% endif %}
+      <span class="ai-pager__info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+      <a href="?q={{ q|urlencode }}&categoria={{ categoria }}&ativos={{ ativos|yesno:'1,0' }}&page={{ page_obj.next_page_number }}" class="ai-pager__btn"><i class="fa-solid fa-chevron-right"></i></a>
+      {% endif %}
+    </nav>
+    {% endif %}
+
+  </div>
+</div>
+
+<style>
+.ai-root { padding: 20px 16px 40px; }
+.ai-wrap { max-width: 1100px; margin: 0 auto; }
+.ai-wrap--lg { max-width: 1400px; }
+
+.ai-topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding-bottom:18px; margin-bottom:18px; border-bottom:1px solid rgb(var(--c-line)); }
+.ai-topbar__id { display:flex; align-items:center; gap:14px; }
+.ai-topbar__icon { width:46px; height:46px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgb(var(--c-accent) / .1); border:1px solid rgb(var(--c-accent) / .25); border-radius:13px; color:rgb(var(--c-accent)); font-size:19px; }
+.ai-title { font-size:20px; font-weight:800; color:rgb(var(--c-ink)); line-height:1.2; }
+.ai-subtitle { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:rgb(var(--c-ink-faint)); margin-top:5px; }
+
+.ai-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:44px; padding:0 18px; font-family:'Inter',sans-serif; font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; border-radius:11px; cursor:pointer; text-decoration:none; border:1px solid rgb(var(--c-line)); background:rgb(var(--c-deep)); color:rgb(var(--c-ink-soft)); transition:.15s; white-space:nowrap; }
+.ai-btn:hover { color:rgb(var(--c-ink)); border-color:rgb(var(--c-ink-faint)); }
+.ai-btn--primary { background:rgb(var(--c-accent)); border-color:rgb(var(--c-accent)); color:#fff; }
+.ai-btn--primary:hover { filter:brightness(1.1); }
+.ai-btn--warn { color:rgb(var(--c-warn)); border-color:rgb(var(--c-warn) / .4); background:rgb(var(--c-warn) / .08); }
+
+.ai-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+.ai-stat { background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:12px; padding:16px 18px; }
+.ai-stat__num { display:block; font-size:24px; font-weight:800; color:rgb(var(--c-ink)); line-height:1; font-variant-numeric:tabular-nums; }
+.ai-stat__lbl { display:flex; align-items:center; gap:7px; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.12em; color:rgb(var(--c-ink-faint)); margin-top:8px; }
+.ai-stat__lbl i { color:rgb(var(--c-accent)); }
+
+.ai-filters { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.ai-search-wrap { position:relative; flex:1; min-width:220px; }
+.ai-search-wrap i { position:absolute; left:16px; top:50%; transform:translateY(-50%); color:rgb(var(--c-ink-faint)); font-size:13px; pointer-events:none; }
+.ai-input { width:100%; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:11px; padding:12px 14px; color:rgb(var(--c-ink)); font-size:13px; font-family:'Inter',sans-serif; outline:none; transition:border-color .15s; }
+.ai-search-wrap .ai-input { padding-left:44px; }
+.ai-input:focus { border-color:rgb(var(--c-accent)); box-shadow:0 0 0 2px rgb(var(--c-accent) / .18); }
+.ai-select { cursor:pointer; appearance:none; min-width:200px; }
+.ai-select option { background:rgb(var(--c-panel)); }
+.ai-mono { font-family:'JetBrains Mono', monospace; }
+
+.ai-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }
+
+.ai-card-item { display:flex; flex-direction:column; background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:14px; padding:18px; transition:border-color .15s, transform .12s, background-color .25s; }
+.ai-card-item:hover { border-color:rgb(var(--c-accent) / .4); transform:translateY(-2px); }
+.ai-card-item--arch { opacity:.7; }
+
+.ai-card-item__top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:14px; }
+.ai-card-item__icon { width:44px; height:44px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:11px; color:rgb(var(--c-accent)); font-size:18px; }
+.ai-card-item__badges { display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
+.ai-vbadge { font-size:10px; font-weight:700; color:rgb(var(--c-accent)); background:rgb(var(--c-accent) / .1); border:1px solid rgb(var(--c-accent) / .25); border-radius:6px; padding:3px 8px; }
+.ai-arch-badge { font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:rgb(var(--c-warn)); background:rgb(var(--c-warn) / .1); border:1px solid rgb(var(--c-warn) / .25); border-radius:5px; padding:2px 7px; }
+
+.ai-card-item__title { font-size:14.5px; font-weight:800; color:rgb(var(--c-ink)); margin-bottom:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ai-cat-tag { align-self:flex-start; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:rgb(var(--c-ink-soft)); background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:5px; padding:3px 8px; margin-bottom:11px; }
+.ai-card-item__desc { font-size:12px; color:rgb(var(--c-ink-soft)); line-height:1.55; margin-bottom:14px; flex:1; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.ai-card-item__desc--empty { color:rgb(var(--c-ink-faint)); font-style:italic; }
+
+.ai-card-item__meta { display:flex; gap:14px; padding:11px 0; border-top:1px solid rgb(var(--c-line)); margin-bottom:12px; }
+.ai-card-item__meta span { font-size:10.5px; font-weight:700; color:rgb(var(--c-ink-faint)); font-family:'JetBrains Mono', monospace; display:flex; align-items:center; gap:6px; }
+.ai-card-item__meta i { font-size:10px; }
+
+.ai-card-item__actions { display:flex; gap:7px; margin-top:auto; }
+.ai-dl-btn { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:7px; height:38px; border-radius:9px; background:rgb(var(--c-accent) / .1); border:1px solid rgb(var(--c-accent) / .3); color:rgb(var(--c-accent)); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; text-decoration:none; transition:.15s; }
+.ai-dl-btn:hover { background:rgb(var(--c-accent)); color:#fff; border-color:rgb(var(--c-accent)); }
+.ai-dl-btn--restore { color:rgb(var(--c-success)); background:rgb(var(--c-success) / .1); border-color:rgb(var(--c-success) / .3); }
+.ai-dl-btn--restore:hover { background:rgb(var(--c-success)); color:#fff; }
+
+.ai-icon-btn { width:38px; height:38px; flex-shrink:0; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); color:rgb(var(--c-ink-faint)); cursor:pointer; text-decoration:none; transition:.15s; }
+.ai-icon-btn:hover { color:rgb(var(--c-ink)); border-color:rgb(var(--c-ink-faint)); }
+.ai-icon-btn--edit:hover { color:rgb(var(--c-accent)); border-color:rgb(var(--c-accent) / .5); background:rgb(var(--c-accent) / .1); }
+.ai-icon-btn--del:hover { color:rgb(var(--c-danger)); border-color:rgb(var(--c-danger) / .5); background:rgb(var(--c-danger) / .1); }
+.ai-copy.ai-copied { color:rgb(var(--c-success)); border-color:rgb(var(--c-success) / .5); background:rgb(var(--c-success) / .1); }
+
+.ai-empty { grid-column:1 / -1; text-align:center; padding:70px 20px; border:1px dashed rgb(var(--c-line)); border-radius:14px; }
+.ai-empty i { font-size:40px; color:rgb(var(--c-line)); display:block; margin-bottom:14px; }
+.ai-empty p { font-size:14px; font-weight:700; color:rgb(var(--c-ink-soft)); }
+.ai-empty span { font-size:12px; color:rgb(var(--c-ink-faint)); }
+
+.ai-pager { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:22px; }
+.ai-pager__btn { width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); color:rgb(var(--c-ink-soft)); text-decoration:none; transition:.15s; }
+.ai-pager__btn:hover { color:rgb(var(--c-accent)); border-color:rgb(var(--c-accent) / .4); }
+.ai-pager__info { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:rgb(var(--c-ink-faint)); }
+
+@media (max-width: 640px) {
+    .ai-stats { grid-template-columns:1fr; }
+    .ai-cards { grid-template-columns:1fr; }
+    .ai-filters { flex-direction:column; }
+    .ai-select { min-width:0; }
+    .ai-btn span, .ai-btn--primary span { display:inline; }
+}
+</style>
+
+<script>
+(function () {
+    // formata o "em disco" (o back manda bytes crus)
+    const el = document.getElementById("ai-espaco");
+    if (el) {
+        let n = parseInt(el.textContent, 10) || 0;
+        const u = ["B","KB","MB","GB","TB"]; let i = 0;
+        while (n >= 1024 && i < u.length-1) { n /= 1024; i++; }
+        el.textContent = (i < 2 ? n.toFixed(0) : n.toFixed(1)) + " " + u[i];
+    }
+
+    document.querySelectorAll(".ai-copy").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const url = new URL(btn.dataset.url, window.location.origin).href;
+            try { await navigator.clipboard.writeText(url); }
+            catch (e) {
+                const t = document.createElement("textarea");
+                t.value = url; document.body.appendChild(t); t.select();
+                document.execCommand("copy"); document.body.removeChild(t);
+            }
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            btn.classList.add("ai-copied");
+            setTimeout(() => { btn.innerHTML = original; btn.classList.remove("ai-copied"); }, 1400);
+        });
+    });
+})();
+</script>
+{% endblock %}

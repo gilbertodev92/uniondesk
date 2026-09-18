@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+{% block title %}{% if creating %}Nova{% else %}Editar{% endif %} credencial — Cofre{% endblock %}
+
+{% block content %}
+<div class="cf-root">
+  <div class="cf-wrap">
+
+    <header class="cf-head">
+      <div class="cf-head__left">
+        <a href="{% url 'cofre_senhas:list' %}" class="cf-back" aria-label="Voltar ao cofre">
+          <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div>
+          <h1 class="cf-title">{% if creating %}Nova credencial{% else %}Editar credencial{% endif %}</h1>
+          <p class="cf-subtitle"><i class="fa-solid fa-lock"></i> Criptografada no banco</p>
+        </div>
+      </div>
+    </header>
+
+    <form method="post" id="cf-form" autocomplete="off">
+      {% csrf_token %}
+
+      {% if form.errors or formset.non_form_errors %}
+      <div class="cf-alert">
+        <strong><i class="fa-solid fa-triangle-exclamation"></i> Não foi possível salvar:</strong>
+        <ul>
+          {% for field in form %}{% for e in field.errors %}<li>{{ field.label }}: {{ e }}</li>{% endfor %}{% endfor %}
+          {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+          {% for e in formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <!-- ═══ DADOS DA ENTRADA ═══ -->
+      <section class="cf-card">
+        <h2 class="cf-card__title">Identificação</h2>
+
+        <div class="cf-grid">
+          <div class="cf-field cf-field--full">
+            <label for="{{ form.title.id_for_label }}">Título <span class="cf-req">*</span></label>
+            {{ form.title }}
+            <small>Ex.: “Portal do Fornecedor X”, “Servidor de produção”.</small>
+          </div>
+
+          <div class="cf-field cf-field--full">
+            <label for="{{ form.tags.id_for_label }}">Tags</label>
+            {{ form.tags }}
+            <small>Separe por vírgula. Ajuda a achar depois.</small>
+          </div>
+        </div>
+
+        <label class="cf-check">
+          {{ form.is_favorite }} <span><i class="fa-solid fa-star"></i> Marcar como favorita</span>
+        </label>
+      </section>
+
+      <!-- ═══ ACESSOS ═══ -->
+      <section class="cf-card">
+        <div class="cf-card__head">
+          <div>
+            <h2 class="cf-card__title cf-card__title--flush">Acessos</h2>
+            <p class="cf-card__hint">
+              Um por cliente/ambiente. Cada senha é criptografada e auditada
+              separadamente — não use o campo de notas para isso.
+            </p>
+          </div>
+          <button type="button" id="cf-add-account" class="cf-btn cf-btn--reveal">
+            <i class="fa-solid fa-plus"></i> <span>Adicionar acesso</span>
+          </button>
+        </div>
+
+        {{ formset.management_form }}
+
+        <div id="cf-account-rows" class="cf-rows">
+          {% for f in formset %}
+          <div class="cf-row" data-index="{{ forloop.counter0 }}">
+            {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+
+            <div class="cf-row__grid">
+              <div class="cf-field">
+                <label>Cliente / identificação</label>
+                {{ f.label }}
+              </div>
+              <div class="cf-field">
+                <label>Login</label>
+                {{ f.username }}
+              </div>
+              <div class="cf-field">
+                <label>Senha {% if f.instance.pk %}<span class="cf-keep">(em branco = manter)</span>{% endif %}</label>
+                {{ f.password }}
+              </div>
+            </div>
+
+            <div class="cf-row__side">
+              {% if formset.can_delete %}
+              <label class="cf-del" title="Remover este acesso">
+                {{ f.DELETE }}
+                <i class="fa-solid fa-trash"></i>
+              </label>
+              {% endif %}
+            </div>
+
+            {% if f.errors %}
+            <ul class="cf-row__errors">
+              {% for field in f %}{% for e in field.errors %}<li>{{ field.label }}: {{ e }}</li>{% endfor %}{% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <p class="cf-rows__empty" id="cf-rows-empty" {% if formset|length %}hidden{% endif %}>
+          Nenhum acesso adicionado. Use <strong>Adicionar acesso</strong> para cadastrar vários clientes,
+          ou preencha a senha única abaixo.
+        </p>
+      </section>
+
+      <!-- ═══ SENHA ÚNICA (opcional) ═══ -->
+      <section class="cf-card">
+        <h2 class="cf-card__title">Acesso único <span class="cf-optional">(opcional)</span></h2>
+        <p class="cf-card__hint" style="margin-bottom:14px">
+          Use apenas quando a entrada tiver um login só. Se você cadastrou acessos acima, deixe em branco.
+        </p>
+
+        <div class="cf-grid">
+          <div class="cf-field">
+            <label for="{{ form.username.id_for_label }}">Usuário / Login</label>
+            {{ form.username }}
+          </div>
+          <div class="cf-field">
+            <label for="{{ form.password.id_for_label }}">
+              Senha {% if not creating %}<span class="cf-keep">(em branco = manter)</span>{% endif %}
+            </label>
+            {{ form.password }}
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ NOTAS ═══ -->
+      <section class="cf-card">
+        <h2 class="cf-card__title">Notas seguras</h2>
+        <p class="cf-card__hint" style="margin-bottom:12px">
+          Tokens, perguntas de segurança, URLs de painel. Para senhas de clientes, use <strong>Acessos</strong>.
+        </p>
+        {{ form.notes_plain }}
+      </section>
+
+      <footer class="cf-footer">
+        <a href="{% url 'cofre_senhas:list' %}" class="cf-foot-btn">Cancelar</a>
+        <button type="submit" class="cf-foot-btn cf-foot-btn--primary">
+          <i class="fa-solid fa-lock"></i> Salvar e criptografar
+        </button>
+      </footer>
+    </form>
+
+  </div>
+</div>
+
+<!-- molde para novas linhas do formset -->
+<template id="cf-row-template">
+  <div class="cf-row" data-index="__prefix__">
+    <div class="cf-row__grid">
+      <div class="cf-field">
+        <label>Cliente / identificação</label>
+        <input type="text" name="{{ formset.prefix }}-__prefix__-label" maxlength="200" placeholder="Ex.: Mercado Feller">
+      </div>
+      <div class="cf-field">
+        <label>Login</label>
+        <input type="text" name="{{ formset.prefix }}-__prefix__-username" maxlength="200" placeholder="login ou e-mail" autocomplete="off">
+      </div>
+      <div class="cf-field">
+        <label>Senha</label>
+        <input type="password" name="{{ formset.prefix }}-__prefix__-password" placeholder="senha do acesso" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="cf-row__side">
+      <button type="button" class="cf-del cf-del--new" title="Remover"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    <input type="hidden" name="{{ formset.prefix }}-__prefix__-order" value="0">
+    <input type="hidden" name="{{ formset.prefix }}-__prefix__-id">
+  </div>
+</template>
+
+<style>
+.cf-root { padding: 20px 16px 40px; }
+.cf-wrap { max-width: 980px; margin: 0 auto; }
+
+.cf-head { display:flex; align-items:flex-start; gap:16px; padding-bottom:18px; margin-bottom:20px; border-bottom:1px solid rgb(var(--c-line)); }
+.cf-head__left { display:flex; align-items:center; gap:14px; }
+.cf-back { width:42px; height:42px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:11px; color:rgb(var(--c-ink-soft)); text-decoration:none; transition:color .15s, border-color .15s; }
+.cf-back:hover { color:rgb(var(--c-accent)); border-color:rgb(var(--c-accent) / .4); }
+.cf-title { font-size:20px; font-weight:800; color:rgb(var(--c-ink)); line-height:1.2; }
+.cf-subtitle { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:rgb(var(--c-ink-faint)); margin-top:5px; display:flex; align-items:center; gap:7px; }
+
+.cf-alert { background:rgb(var(--c-danger) / .1); border:1px solid rgb(var(--c-danger) / .3); border-radius:12px; padding:14px 16px; margin-bottom:16px; color:rgb(var(--c-danger)); font-size:12.5px; }
+.cf-alert ul { margin:8px 0 0; padding-left:20px; }
+.cf-alert li { margin-bottom:3px; }
+
+.cf-card { background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:14px; padding:20px; margin-bottom:14px; transition:background-color .25s, border-color .25s; }
+.cf-card__head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+.cf-card__title { font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.15em; color:rgb(var(--c-ink-faint)); padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid rgb(var(--c-line)); }
+.cf-card__title--flush { border:none; padding:0; margin:0 0 4px; }
+.cf-card__hint { font-size:11.5px; color:rgb(var(--c-ink-faint)); line-height:1.55; max-width:60ch; }
+.cf-optional { text-transform:none; letter-spacing:0; font-weight:600; opacity:.7; }
+
+.cf-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.cf-field { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.cf-field--full { grid-column:1 / -1; }
+.cf-field label { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:rgb(var(--c-ink-soft)); }
+.cf-field small { font-size:11px; color:rgb(var(--c-ink-faint)); }
+.cf-req { color:rgb(var(--c-danger)); }
+.cf-keep { text-transform:none; letter-spacing:0; font-weight:500; color:rgb(var(--c-ink-faint)); }
+
+#cf-form input[type="text"], #cf-form input[type="password"], #cf-form textarea {
+    width:100%; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line));
+    border-radius:9px; padding:10px 12px; color:rgb(var(--c-ink));
+    font-size:13px; font-family:'Inter', sans-serif; outline:none; transition:border-color .15s;
+}
+#cf-form input[type="password"] { font-family:'JetBrains Mono', monospace; }
+#cf-form input::placeholder, #cf-form textarea::placeholder { color:rgb(var(--c-ink-faint)); }
+#cf-form input:focus, #cf-form textarea:focus { border-color:rgb(var(--c-accent)); box-shadow:0 0 0 2px rgb(var(--c-accent) / .18); }
+#cf-form textarea { min-height:110px; resize:vertical; font-family:'JetBrains Mono', monospace; font-size:12px; line-height:1.6; }
+
+.cf-check { display:flex; align-items:center; gap:10px; margin-top:16px; cursor:pointer; font-size:12.5px; font-weight:600; color:rgb(var(--c-ink-soft)); }
+.cf-check input { width:17px; height:17px; accent-color:rgb(var(--c-accent)); cursor:pointer; }
+.cf-check i { color:rgb(var(--c-warn)); }
+
+/* ── linhas de acesso ── */
+.cf-rows { display:flex; flex-direction:column; gap:8px; }
+.cf-row { display:flex; align-items:flex-start; gap:12px; background:rgb(var(--c-bg)); border:1px solid rgb(var(--c-line)); border-radius:11px; padding:14px; flex-wrap:wrap; }
+.cf-row--removed { opacity:.4; }
+.cf-row__grid { flex:1; display:grid; grid-template-columns:1.2fr 1.2fr 1fr; gap:12px; min-width:0; }
+.cf-row__side { display:flex; align-items:center; padding-top:22px; }
+.cf-row__errors { flex-basis:100%; margin:4px 0 0; padding-left:18px; color:rgb(var(--c-danger)); font-size:11px; }
+
+.cf-del { width:34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid rgb(var(--c-danger) / .25); background:rgb(var(--c-danger) / .08); color:rgb(var(--c-danger)); cursor:pointer; transition:background-color .15s, color .15s; }
+.cf-del:hover { background:rgb(var(--c-danger)); color:#fff; }
+.cf-del input { display:none; }
+.cf-del--checked { background:rgb(var(--c-danger)); color:#fff; }
+
+.cf-rows__empty { text-align:center; padding:26px 16px; color:rgb(var(--c-ink-faint)); font-size:12.5px; line-height:1.6; }
+
+.cf-btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; height:36px; padding:0 14px; font-family:'Inter', sans-serif; font-size:11.5px; font-weight:700; border-radius:9px; cursor:pointer; border:1px solid rgb(var(--c-line)); background:rgb(var(--c-deep)); color:rgb(var(--c-ink-soft)); transition:background-color .15s, color .15s, border-color .15s; white-space:nowrap; }
+.cf-btn--reveal { color:rgb(var(--c-accent)); border-color:rgb(var(--c-accent) / .3); background:rgb(var(--c-accent) / .08); }
+.cf-btn--reveal:hover { background:rgb(var(--c-accent)); color:#fff; border-color:rgb(var(--c-accent)); }
+
+.cf-footer { display:flex; gap:10px; margin-top:20px; }
+.cf-foot-btn { flex:1; text-align:center; padding:13px; border-radius:11px; border:1px solid rgb(var(--c-line)); background:rgb(var(--c-panel)); color:rgb(var(--c-ink-soft)); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; text-decoration:none; cursor:pointer; transition:background-color .15s, color .15s, border-color .15s; }
+.cf-foot-btn:hover { color:rgb(var(--c-ink)); border-color:rgb(var(--c-ink-faint)); }
+.cf-foot-btn--primary { background:rgb(var(--c-accent)); border-color:rgb(var(--c-accent)); color:#fff; }
+.cf-foot-btn--primary:hover { filter:brightness(1.1); color:#fff; }
+
+@media (max-width: 760px) {
+    .cf-grid { grid-template-columns:1fr; }
+    .cf-row__grid { grid-template-columns:1fr; }
+    .cf-row__side { padding-top:0; width:100%; }
+    .cf-del { width:100%; }
+    .cf-footer { flex-direction:column-reverse; }
+}
+</style>
+
+<script>
+(function () {
+    "use strict";
+
+    const rows      = document.getElementById('cf-account-rows');
+    const tpl       = document.getElementById('cf-row-template');
+    const addBtn    = document.getElementById('cf-add-account');
+    const emptyMsg  = document.getElementById('cf-rows-empty');
+    const totalForms = document.getElementById('id_{{ formset.prefix }}-TOTAL_FORMS');
+
+    function refreshEmpty() {
+        const visiveis = rows.querySelectorAll('.cf-row:not(.cf-row--removed)').length;
+        emptyMsg.hidden = visiveis > 0;
+    }
+
+    // ── Adicionar acesso ──
+    addBtn.addEventListener('click', function () {
+        const idx = parseInt(totalForms.value, 10);
+        const html = tpl.innerHTML.replace(/__prefix__/g, idx);
+        const div = document.createElement('div');
+        div.innerHTML = html.trim();
+        const node = div.firstElementChild;
+        rows.appendChild(node);
+        totalForms.value = idx + 1;
+        node.querySelector('input[type="text"]').focus();
+        refreshEmpty();
+    });
+
+    // ── Remover ──
+    // Linha nova: remove do DOM e reindexa.
+    // Linha existente: marca o DELETE do formset (o Django apaga no save).
+    rows.addEventListener('click', function (e) {
+        const novo = e.target.closest('.cf-del--new');
+        if (novo) {
+            novo.closest('.cf-row').remove();
+            reindexar();
+            refreshEmpty();
+            return;
+        }
+
+        const del = e.target.closest('.cf-del');
+        if (del && !novo) {
+            const cb = del.querySelector('input[type="checkbox"]');
+            if (!cb) return;
+            // o clique no label já alterna o checkbox; refletimos no visual
+            setTimeout(() => {
+                const row = del.closest('.cf-row');
+                row.classList.toggle('cf-row--removed', cb.checked);
+                del.classList.toggle('cf-del--checked', cb.checked);
+                refreshEmpty();
+            }, 0);
+        }
+    });
+
+    function reindexar() {
+        const todas = rows.querySelectorAll('.cf-row');
+        todas.forEach((row, i) => {
+            row.dataset.index = i;
+            row.querySelectorAll('input, select, textarea').forEach(inp => {
+                if (inp.name) inp.name = inp.name.replace(/-\d+-/, `-${i}-`);
+                if (inp.id)   inp.id   = inp.id.replace(/-\d+-/, `-${i}-`);
+            });
+        });
+        totalForms.value = todas.length;
+    }
+
+    refreshEmpty();
+})();
+</script>
+{% endblock %}

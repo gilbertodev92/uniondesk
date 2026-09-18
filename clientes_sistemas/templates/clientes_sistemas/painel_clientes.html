@@ -1,0 +1,842 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+<style>
+/* ── RESET ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.cl-root {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    background: rgb(var(--c-bg));
+    color: rgb(var(--c-ink));
+    min-height: calc(100vh - 1rem);
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px 0 0 0;
+    border-left: 1px solid rgb(var(--c-line));
+    border-top: 1px solid rgb(var(--c-line));
+    overflow: hidden;
+}
+
+/* ── TOPBAR ──────────────────────────────────────────────── */
+.cl-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 16px 24px;
+    background: rgb(var(--c-panel));
+    border-bottom: 1px solid rgb(var(--c-line));
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.cl-topbar__left { display: flex; flex-direction: column; gap: 4px; }
+
+.cl-topbar__eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgb(var(--c-success));
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cl-topbar__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: rgb(var(--c-ink));
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+
+.cl-stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.cl-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+    white-space: nowrap;
+}
+.cl-stat strong { font-weight: 700; }
+
+.cl-stat--total   { background: rgb(var(--c-line)); border-color: rgb(var(--c-line)); color: rgb(var(--c-ink-soft)); }
+.cl-stat--total strong { color: rgb(var(--c-ink)); }
+.cl-stat--active  { background: rgb(var(--c-success) / 0.12); border-color: rgb(var(--c-success) / 0.3); color: rgb(var(--c-success)); }
+.cl-stat--active strong { color: rgb(var(--c-success)); }
+.cl-stat--soft    { background: rgb(var(--c-accent) / 0.12); border-color: rgb(var(--c-accent) / 0.3); color: rgb(var(--c-accent)); }
+.cl-stat--soft strong { color: rgb(var(--c-accent)); }
+.cl-stat--tef     { background: rgb(var(--c-signal) / 0.12); border-color: rgb(var(--c-signal) / 0.3); color: rgb(var(--c-signal)); }
+.cl-stat--tef strong { color: rgb(var(--c-signal)); }
+.cl-stat--backup  { background: rgb(var(--c-warn) / 0.12); border-color: rgb(var(--c-warn) / 0.3); color: rgb(var(--c-warn)); }
+.cl-stat--backup strong { color: rgb(var(--c-warn)); }
+.cl-stat--cloud   { background: rgb(var(--c-special) / 0.12); border-color: rgb(var(--c-special) / 0.3); color: rgb(var(--c-special)); }
+.cl-stat--cloud strong { color: rgb(var(--c-special)); }
+.cl-stat--classA  { background: rgb(var(--c-danger) / 0.12); border-color: rgb(var(--c-danger) / 0.3); color: rgb(var(--c-danger)); }
+.cl-stat--classA strong { color: rgb(var(--c-danger)); }
+
+.cl-btn-new {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgb(var(--c-success));
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    border: 1px solid rgb(var(--c-success));
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.cl-btn-new:hover { background: rgb(var(--c-success)); }
+
+/* ── FILTERS ─────────────────────────────────────────────── */
+.cl-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: rgb(var(--c-bg));
+    border-bottom: 1px solid rgb(var(--c-line));
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.cl-search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+}
+.cl-search-wrap i {
+    position: absolute;
+    left: 11px; top: 50%;
+    transform: translateY(-50%);
+    color: rgb(var(--c-ink-faint)); font-size: 14px;
+    pointer-events: none;
+}
+.cl-search-wrap input {
+    width: 100%;
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 7px;
+    color: rgb(var(--c-ink));
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 12px 8px 34px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.cl-search-wrap input:focus { border-color: rgb(var(--c-accent)); }
+.cl-search-wrap input::placeholder { color: rgb(var(--c-ink-faint)); }
+
+.cl-select {
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 7px;
+    color: rgb(var(--c-ink-soft));
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 28px 8px 10px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+    background-color: rgb(var(--c-panel));
+}
+.cl-select:focus { border-color: rgb(var(--c-accent)); }
+
+.cl-filter-btn {
+    background: rgb(var(--c-line));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 7px;
+    color: rgb(var(--c-ink-soft));
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    text-decoration: none;
+}
+.cl-filter-btn[type="submit"]:hover { background: rgb(var(--c-accent)); color: #fff; border-color: rgb(var(--c-accent)); }
+.cl-filter-btn.clear:hover { background: rgb(var(--c-danger) / 0.12); color: rgb(var(--c-danger)); border-color: rgb(var(--c-danger) / 0.3); }
+
+/* ── CONTENT AREA ────────────────────────────────────────── */
+.cl-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    min-height: 0;
+}
+.cl-content::-webkit-scrollbar { width: 4px; }
+.cl-content::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 4px; }
+
+/* ── TABLE ───────────────────────────────────────────────── */
+.cl-table-wrap {
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.cl-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.cl-table thead th {
+    padding: 11px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: rgb(var(--c-ink-faint));
+    background: rgb(var(--c-bg));
+    border-bottom: 1px solid rgb(var(--c-line));
+    white-space: nowrap;
+}
+.cl-table thead th:first-child { border-radius: 0; }
+.cl-table thead th.right { text-align: right; }
+.cl-table thead th.center { text-align: center; }
+
+.cl-table tbody tr {
+    border-bottom: 1px solid rgb(var(--c-line));
+    transition: background 0.1s;
+    cursor: default;
+}
+.cl-table tbody tr:last-child { border-bottom: none; }
+.cl-table tbody tr:hover { background: rgb(var(--c-panel)); }
+
+.cl-table tbody td {
+    padding: 12px 14px;
+    vertical-align: middle;
+}
+.cl-table tbody td.center { text-align: center; }
+.cl-table tbody td.right  { text-align: right; }
+
+/* ── CELL: CLIENTE ───────────────────────────────────────── */
+.cl-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgb(var(--c-ink));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 280px;
+    display: block;
+}
+tr:hover .cl-name { color: rgb(var(--c-accent)); }
+
+.cl-sub {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgb(var(--c-ink-faint));
+    font-family: 'Courier New', monospace;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+.cl-sub span { color: rgb(var(--c-ink-faint)); }
+
+/* ── CELL: SAÚDE ─────────────────────────────────────────── */
+.cl-health {
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+}
+.cl-health--good  { color: rgb(var(--c-success)); }
+.cl-health--ok    { color: rgb(var(--c-warn)); }
+.cl-health--bad   { color: rgb(var(--c-danger)); }
+
+/* ── CELL: FINANCEIRO ────────────────────────────────────── */
+.cl-fin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid;
+    cursor: pointer;
+    background: none;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+}
+.cl-fin-btn--ok      { color: rgb(var(--c-success)); border-color: rgb(var(--c-success) / 0.3); background: rgb(var(--c-success) / 0.12); }
+.cl-fin-btn--ok:hover { background: rgb(var(--c-success)); color: #fff; }
+.cl-fin-btn--pend    { color: rgb(var(--c-danger)); border-color: rgb(var(--c-danger) / 0.3); background: rgb(var(--c-danger) / 0.12); }
+.cl-fin-btn--pend:hover { background: rgb(var(--c-danger)); color: #fff; }
+
+/* ── CELL: CLASSE ────────────────────────────────────────── */
+.cl-class-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    border: 1px solid;
+}
+.cl-class--A { color: rgb(var(--c-warn)); background: rgb(var(--c-warn) / 0.12); border-color: rgb(var(--c-warn) / 0.3); }
+.cl-class--B { color: rgb(var(--c-special)); background: rgb(var(--c-special) / 0.12); border-color: rgb(var(--c-special) / 0.3); }
+.cl-class--C { color: rgb(var(--c-accent)); background: rgb(var(--c-accent) / 0.12); border-color: rgb(var(--c-accent) / 0.3); }
+.cl-class--D { color: rgb(var(--c-ink-faint)); background: rgb(var(--c-line)); border-color: rgb(var(--c-line)); }
+
+/* ── CELL: SERVIÇOS ──────────────────────────────────────── */
+.cl-services {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.cl-svc-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid;
+    white-space: nowrap;
+}
+.cl-svc--soft  { color: rgb(var(--c-accent)); border-color: rgb(var(--c-accent) / 0.3); background: rgb(var(--c-accent) / 0.12); }
+.cl-svc--hard  { color: rgb(var(--c-special)); border-color: rgb(var(--c-special) / 0.3); background: rgb(var(--c-special) / 0.12); }
+.cl-svc--bkup  { color: rgb(var(--c-warn)); border-color: rgb(var(--c-warn) / 0.3); background: rgb(var(--c-warn) / 0.12); }
+.cl-svc--cloud { color: rgb(var(--c-signal)); border-color: rgb(var(--c-signal) / 0.3); background: rgb(var(--c-signal) / 0.12); }
+.cl-svc--none  { color: rgb(var(--c-ink-faint)); border-color: rgb(var(--c-line)); background: rgb(var(--c-line)); }
+
+/* ── CELL: STATUS ────────────────────────────────────────── */
+.cl-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.cl-status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+}
+.cl-status--active .cl-status-dot { background: rgb(var(--c-success)); box-shadow: 0 0 5px rgb(var(--c-success))66; }
+.cl-status--active { color: rgb(var(--c-success)); }
+.cl-status--inactive .cl-status-dot { background: rgb(var(--c-ink-faint)); }
+.cl-status--inactive { color: rgb(var(--c-ink-faint)); }
+
+/* ── CELL: AÇÕES ─────────────────────────────────────────── */
+.cl-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.cl-action-btn {
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    border: 1px solid;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+.cl-action-btn--ticket { color: rgb(var(--c-warn)); background: rgb(var(--c-warn) / 0.12); border-color: rgb(var(--c-warn) / 0.3); }
+.cl-action-btn--ticket:hover { background: rgb(var(--c-warn)); color: #fff; }
+.cl-action-btn--whats  { color: rgb(var(--c-success)); background: rgb(var(--c-success) / 0.12); border-color: rgb(var(--c-success))33; }
+.cl-action-btn--whats:hover  { background: rgb(var(--c-success)); color: #fff; }
+.cl-action-btn--edit   { color: rgb(var(--c-accent)); background: rgb(var(--c-accent) / 0.12); border-color: rgb(var(--c-accent))33; }
+.cl-action-btn--edit:hover   { background: rgb(var(--c-accent)); color: #fff; }
+
+/* ── EMPTY STATE ─────────────────────────────────────────── */
+.cl-empty {
+    text-align: center;
+    padding: 60px 24px;
+    color: rgb(var(--c-line));
+}
+.cl-empty i { font-size: 40px; display: block; margin-bottom: 12px; }
+.cl-empty p { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgb(var(--c-ink-faint)); }
+
+/* ── PAGINATION ──────────────────────────────────────────── */
+.cl-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0 2px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.cl-page-info {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgb(var(--c-ink-faint));
+}
+.cl-page-info strong { color: rgb(var(--c-ink-soft)); font-weight: 600; }
+
+.cl-page-btns {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.cl-page-btn {
+    min-width: 34px; height: 34px;
+    border-radius: 7px;
+    border: 1px solid rgb(var(--c-line));
+    background: rgb(var(--c-panel));
+    color: rgb(var(--c-ink-faint));
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 8px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.cl-page-btn:hover:not(:disabled) { background: rgb(var(--c-line)); color: rgb(var(--c-ink)); }
+.cl-page-btn.active { background: rgb(var(--c-accent) / 0.15); border-color: rgb(var(--c-accent)); color: rgb(var(--c-accent)); }
+.cl-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.cl-page-btn--prev, .cl-page-btn--next { font-size: 14px; }
+
+/* ── FOCUS ───────────────────────────────────────────────── */
+:focus-visible { outline: 2px solid rgb(var(--c-accent)); outline-offset: 2px; }
+/* ── MOBILE: tabela vira cards ────────────────────────────── */
+@media (max-width: 820px) {
+    .cl-topbar { padding: 14px 16px; }
+    .cl-stats { width: 100%; }
+    .cl-filters { padding: 12px 16px; }
+    .cl-content { padding: 14px 16px; }
+
+    .cl-table-wrap { background: transparent; border: none; }
+    .cl-table, .cl-table thead, .cl-table tbody, .cl-table tr, .cl-table td { display: block; width: 100%; }
+    .cl-table thead { display: none; } /* cabeçalhos somem; usamos data-label */
+
+    .cl-table tbody tr {
+        background: rgb(var(--c-panel));
+        border: 1px solid rgb(var(--c-line));
+        border-radius: 12px;
+        margin-bottom: 12px;
+        padding: 6px 4px;
+    }
+    .cl-table tbody tr:hover { background: rgb(var(--c-panel)); }
+
+    .cl-table tbody td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        text-align: right !important;
+        padding: 9px 14px;
+        border-bottom: 1px solid rgb(var(--c-line));
+    }
+    .cl-table tbody td:last-child { border-bottom: none; }
+
+    /* o rótulo da coluna aparece à esquerda de cada valor */
+    .cl-table tbody td::before {
+        content: attr(data-label);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgb(var(--c-ink-faint));
+        flex-shrink: 0;
+    }
+    /* a célula do cliente ocupa o topo do card, sem rótulo */
+    .cl-table tbody td[data-label="Cliente"] { flex-direction: column; align-items: flex-start; text-align: left !important; }
+    .cl-table tbody td[data-label="Cliente"]::before { display: none; }
+    .cl-name { max-width: none; white-space: normal; }
+    .cl-services { justify-content: flex-end; }
+}
+</style>
+
+<div class="cl-root" role="main">
+
+    <!-- TOPBAR -->
+    <header class="cl-topbar">
+        <div>
+            <div class="cl-topbar__eyebrow">
+                <i class="fa-solid fa-address-book" aria-hidden="true"></i>
+                Base Operacional
+            </div>
+            <h1 class="cl-topbar__title">Gestão de Clientes</h1>
+        </div>
+
+        <div class="cl-stats" role="region" aria-label="Indicadores da base de clientes">
+            <span class="cl-stat cl-stat--total"><i class="fa-solid fa-users" aria-hidden="true"></i> Total <strong>{{ total }}</strong></span>
+            <span class="cl-stat cl-stat--active"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Ativos <strong>{{ ativos }}</strong></span>
+            <span class="cl-stat cl-stat--soft"><i class="fa-solid fa-display" aria-hidden="true"></i> Software <strong>{{ com_contrato }}</strong></span>
+            <span class="cl-stat cl-stat--tef"><i class="fa-solid fa-credit-card" aria-hidden="true"></i> TEF <strong>{{ tef }}</strong></span>
+            <span class="cl-stat cl-stat--backup"><i class="fa-solid fa-hard-drive" aria-hidden="true"></i> Backup <strong>{{ backup }}</strong></span>
+            <span class="cl-stat cl-stat--cloud"><i class="fa-solid fa-cloud" aria-hidden="true"></i> Cloud <strong>{{ datacenter }}</strong></span>
+            <span class="cl-stat cl-stat--classA"><i class="fa-solid fa-star" aria-hidden="true"></i> Classe A <strong>{{ classe_a }}</strong></span>
+        </div>
+
+        <a href="{% url 'cliente_create' %}" class="cl-btn-new" aria-label="Cadastrar novo cliente">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i> Novo Cliente
+        </a>
+    </header>
+
+    <!-- FILTERS -->
+    <form method="get" class="cl-filters" role="search" aria-label="Filtros de clientes">
+        <div class="cl-search-wrap">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input
+                type="text"
+                name="busca"
+                placeholder="Razão social ou CNPJ..."
+                value="{{ request.GET.busca }}"
+                aria-label="Buscar clientes"
+            >
+        </div>
+
+        <select name="status" class="cl-select" aria-label="Filtrar por status">
+            <option value="">Status — todos</option>
+            <option value="ativo"   {% if request.GET.status == 'ativo'   %}selected{% endif %}>Ativos</option>
+            <option value="inativo" {% if request.GET.status == 'inativo' %}selected{% endif %}>Inativos</option>
+        </select>
+
+        <select name="faturamento" class="cl-select" aria-label="Filtrar por classe">
+            <option value="">Classe — todas</option>
+            <option value="A" {% if request.GET.faturamento == 'A' %}selected{% endif %}>Classe A</option>
+            <option value="B" {% if request.GET.faturamento == 'B' %}selected{% endif %}>Classe B</option>
+            <option value="C" {% if request.GET.faturamento == 'C' %}selected{% endif %}>Classe C</option>
+            <option value="D" {% if request.GET.faturamento == 'D' %}selected{% endif %}>Classe D</option>
+        </select>
+
+        <button type="submit" class="cl-filter-btn" aria-label="Aplicar filtros">
+            <i class="fa-solid fa-filter" aria-hidden="true"></i> Filtrar
+        </button>
+        <a href="{% url 'painel_clientes' %}" class="cl-filter-btn clear" aria-label="Limpar filtros">
+            <i class="fa-solid fa-eraser" aria-hidden="true"></i> Limpar
+        </a>
+    </form>
+
+    <!-- CONTENT -->
+    <div class="cl-content">
+
+        <div class="cl-table-wrap">
+            <table class="cl-table" role="grid" aria-label="Lista de clientes">
+                <colgroup>
+                    <col style="width:32%">
+                    <col style="width:8%">
+                    <col style="width:10%">
+                    <col style="width:7%">
+                    <col style="width:16%">
+                    <col style="width:9%">
+                    <col style="width:18%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Cliente / CNPJ</th>
+                        <th class="center">Saúde</th>
+                        <th class="center">Financeiro</th>
+                        <th class="center">Classe</th>
+                        <th class="center">Serviços</th>
+                        <th class="center">Status</th>
+                        <th class="right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="cl-tbody">
+                    {% for cliente in clientes %}
+                    <tr class="cl-row" data-index="{{ forloop.counter0 }}">
+
+                        <td data-label="Cliente">
+                            <span class="cl-name" title="{{ cliente.razao_social }}">{{ cliente.razao_social }}</span>
+                            <span class="cl-sub">CNPJ: <span>{{ cliente.cnpj }}</span> &nbsp;·&nbsp; ID: <span>{{ cliente.codigo }}</span></span>
+                        </td>
+
+                        <td class="center" data-label="Saúde">
+                            <span class="cl-health
+                                {% if cliente.health_score >= 75 %}cl-health--good
+                                {% elif cliente.health_score >= 50 %}cl-health--ok
+                                {% else %}cl-health--bad{% endif %}"
+                                aria-label="Saúde: {{ cliente.health_score }}%">
+                                {{ cliente.health_score }}%
+                            </span>
+                        </td>
+
+                        <td class="center" data-label="Financeiro" id="td-financeiro-{{ cliente.pk }}">
+                            {% if cliente.status_financeiro == 'EM_DIA' %}
+                            <button
+                                class="cl-fin-btn cl-fin-btn--ok"
+                                onclick="alternarFinanceiro({{ cliente.pk }}, 'EM_DIA')"
+                                aria-label="Status financeiro: Em dia — clique para alterar">
+                                <i class="fa-solid fa-check" aria-hidden="true"></i> Em dia
+                            </button>
+                            {% else %}
+                            <button
+                                class="cl-fin-btn cl-fin-btn--pend"
+                                onclick="alternarFinanceiro({{ cliente.pk }}, 'PENDENTE')"
+                                aria-label="Status financeiro: Pendente — clique para alterar">
+                                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Pendente
+                            </button>
+                            {% endif %}
+                        </td>
+
+                        <td class="center" data-label="Classe">
+                            <span class="cl-class-badge cl-class--{{ cliente.faturamento_cliente|default:'D' }}"
+                                  aria-label="Classe {{ cliente.faturamento_cliente|default:'D' }}">
+                                {{ cliente.faturamento_cliente|default:"D" }}
+                            </span>
+                        </td>
+
+                        <td class="center" data-label="Serviços">
+                            <div class="cl-services">
+                                {% if not cliente.contrato_software and not cliente.contrato_hardware and not cliente.backup_contratado and not cliente.hospedagem_datacenter %}
+                                <span class="cl-svc-tag cl-svc--none">Sem serviço</span>
+                                {% else %}
+                                    {% if cliente.contrato_software %}<span class="cl-svc-tag cl-svc--soft">Software</span>{% endif %}
+                                    {% if cliente.contrato_hardware %}<span class="cl-svc-tag cl-svc--hard">Hardware</span>{% endif %}
+                                    {% if cliente.backup_contratado %}<span class="cl-svc-tag cl-svc--bkup">Backup</span>{% endif %}
+                                    {% if cliente.hospedagem_datacenter %}<span class="cl-svc-tag cl-svc--cloud">Cloud</span>{% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td class="center" data-label="Status">
+                            {% if cliente.ativo %}
+                            <span class="cl-status cl-status--active" aria-label="Cliente ativo">
+                                <span class="cl-status-dot"></span> Ativo
+                            </span>
+                            {% else %}
+                            <span class="cl-status cl-status--inactive" aria-label="Cliente inativo">
+                                <span class="cl-status-dot"></span> Inativo
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="right" data-label="Ações">
+                            <div class="cl-actions">
+                                <a href="{% url 'atendimentos_chamados:criar' %}?cliente_id={{ cliente.codigo }}&cliente_nome={{ cliente.razao_social|urlencode }}"
+                                   class="cl-action-btn cl-action-btn--ticket"
+                                   title="Abrir chamado para {{ cliente.razao_social }}"
+                                   aria-label="Abrir chamado para {{ cliente.razao_social }}">
+                                    <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+                                </a>
+                                {% if cliente.telefone %}
+                                <a href="https://api.whatsapp.com/send?phone=55{{ cliente.telefone }}"
+                                   target="_blank"
+                                   class="cl-action-btn cl-action-btn--whats"
+                                   title="WhatsApp de {{ cliente.razao_social }}"
+                                   aria-label="Abrir WhatsApp de {{ cliente.razao_social }}">
+                                    <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'cliente_edit' cliente.pk %}"
+                                   class="cl-action-btn cl-action-btn--edit"
+                                   title="Editar {{ cliente.razao_social }}"
+                                   aria-label="Editar cadastro de {{ cliente.razao_social }}">
+                                    <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </td>
+
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="cl-empty" role="status">
+                                <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+                                <p>Nenhum cliente encontrado na base</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINATION -->
+        <div class="cl-pagination" id="cl-pagination" role="navigation" aria-label="Paginação de clientes">
+            <div class="cl-page-info" id="cl-page-info" aria-live="polite"></div>
+            <div class="cl-page-btns" id="cl-page-btns"></div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+(function () {
+    /* ── PAGINAÇÃO FRONTEND ───────────────────────────────── */
+    const PER_PAGE = 50;
+    const rows = Array.from(document.querySelectorAll('#cl-tbody .cl-row'));
+    let currentPage = 1;
+
+    function totalPages() { return Math.max(1, Math.ceil(rows.length / PER_PAGE)); }
+
+    function renderPage(page) {
+        currentPage = Math.min(Math.max(1, page), totalPages());
+        const start = (currentPage - 1) * PER_PAGE;
+        const end   = start + PER_PAGE;
+
+        rows.forEach((r, i) => {
+            r.style.display = (i >= start && i < end) ? '' : 'none';
+        });
+
+        renderInfo();
+        renderButtons();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderInfo() {
+        const start = (currentPage - 1) * PER_PAGE + 1;
+        const end   = Math.min(currentPage * PER_PAGE, rows.length);
+        const info  = document.getElementById('cl-page-info');
+        if (!info) return;
+        if (rows.length === 0) { info.textContent = ''; return; }
+        info.innerHTML = `Exibindo <strong>${start}–${end}</strong> de <strong>${rows.length}</strong> clientes`;
+    }
+
+    function renderButtons() {
+        const wrap  = document.getElementById('cl-page-btns');
+        const total = totalPages();
+        if (!wrap || total <= 1) { if (wrap) wrap.innerHTML = ''; return; }
+
+        let html = '';
+
+        html += `<button class="cl-page-btn cl-page-btn--prev" onclick="goPage(${currentPage - 1})"
+                    ${currentPage === 1 ? 'disabled' : ''} aria-label="Página anterior">
+                    <i class="fa-solid fa-chevron-left"></i>
+                 </button>`;
+
+        /* Janela de páginas: sempre mostra primeira, última, e ±2 ao redor da atual */
+        const pages = new Set();
+        pages.add(1);
+        pages.add(total);
+        for (let p = Math.max(1, currentPage - 2); p <= Math.min(total, currentPage + 2); p++) pages.add(p);
+        const sorted = Array.from(pages).sort((a, b) => a - b);
+
+        let prev = null;
+        sorted.forEach(p => {
+            if (prev !== null && p - prev > 1) {
+                html += `<button class="cl-page-btn" disabled aria-hidden="true">…</button>`;
+            }
+            html += `<button class="cl-page-btn ${p === currentPage ? 'active' : ''}"
+                        onclick="goPage(${p})"
+                        aria-label="Página ${p}"
+                        ${p === currentPage ? 'aria-current="page"' : ''}>
+                        ${p}
+                     </button>`;
+            prev = p;
+        });
+
+        html += `<button class="cl-page-btn cl-page-btn--next" onclick="goPage(${currentPage + 1})"
+                    ${currentPage === total ? 'disabled' : ''} aria-label="Próxima página">
+                    <i class="fa-solid fa-chevron-right"></i>
+                 </button>`;
+
+        wrap.innerHTML = html;
+    }
+
+    window.goPage = function (p) { renderPage(p); };
+
+    /* Inicializa */
+    if (rows.length > 0) renderPage(1);
+
+    /* ── FINANCEIRO TOGGLE ───────────────────────────────── */
+    window.alternarFinanceiro = function (clienteId, statusAtual) {
+        const novoNome = statusAtual === 'EM_DIA' ? 'PENDENTE' : 'EM DIA';
+        const cor      = statusAtual === 'EM_DIA' ? 'rgb(var(--c-danger))' : 'rgb(var(--c-success))';
+
+        Swal.fire({
+            title: 'Alterar status financeiro?',
+            html: `Mudar para <b style="color:${cor}">${novoNome}</b>?`,
+            icon: statusAtual === 'EM_DIA' ? 'warning' : 'question',
+            showCancelButton: true,
+            confirmButtonColor: cor,
+            cancelButtonColor: 'rgb(var(--c-line))',
+            confirmButtonText: 'Sim, alterar',
+            cancelButtonText: 'Cancelar',
+            background: 'rgb(var(--c-panel))',
+            color: 'rgb(var(--c-ink))',
+            borderRadius: '12px'
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            fetch(`/clientes/toggle-financeiro/${clienteId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status !== 'success') throw new Error('fail');
+
+                const td = document.getElementById(`td-financeiro-${clienteId}`);
+                if (data.novo_status === 'EM_DIA') {
+                    td.innerHTML = `
+                        <button class="cl-fin-btn cl-fin-btn--ok"
+                                onclick="alternarFinanceiro(${clienteId}, 'EM_DIA')"
+                                aria-label="Status financeiro: Em dia — clique para alterar">
+                            <i class="fa-solid fa-check"></i> Em dia
+                        </button>`;
+                } else {
+                    td.innerHTML = `
+                        <button class="cl-fin-btn cl-fin-btn--pend"
+                                onclick="alternarFinanceiro(${clienteId}, 'PENDENTE')"
+                                aria-label="Status financeiro: Pendente — clique para alterar">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Pendente
+                        </button>`;
+                }
+
+                Swal.fire({
+                    toast: true, position: 'top-end',
+                    icon: 'success', title: 'Status atualizado',
+                    showConfirmButton: false, timer: 2000,
+                    background: 'rgb(var(--c-panel))', color: 'rgb(var(--c-success))'
+                });
+            })
+            .catch(() => {
+                Swal.fire({
+                    title: 'Erro', text: 'Falha ao comunicar com o servidor.',
+                    icon: 'error', background: 'rgb(var(--c-panel))', color: 'rgb(var(--c-ink))'
+                });
+            });
+        });
+    };
+
+    /* Selects auto-submit no filtro */
+    document.querySelectorAll('.cl-filters .cl-select').forEach(sel => {
+        sel.addEventListener('change', () => sel.closest('form').submit());
+    });
+})();
+</script>
+
+{% endblock %}

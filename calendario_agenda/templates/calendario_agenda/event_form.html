@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+{% if mode == "create" %}Novo Evento{% else %}Editar Evento{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-5 p-3 md:p-4">
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 class="text-xl md:text-2xl font-bold text-ink flex items-center gap-3">
+            <i class="fa-solid fa-calendar-plus text-accent"></i>
+            {% if mode == "create" %}Novo Evento{% else %}Editar Evento{% endif %}
+        </h1>
+
+        <div class="flex gap-2">
+            <a href="{% url 'calendario_agenda:calendar' %}"
+               class="flex-1 sm:flex-none text-center px-4 py-2.5 text-sm rounded-xl border border-core-line text-ink-soft hover:bg-core-deep hover:text-ink transition font-medium">
+                Cancelar
+            </a>
+            <button form="eventForm" type="submit"
+                    class="flex-1 sm:flex-none px-6 py-2.5 text-sm rounded-xl bg-accent hover:bg-accent-soft text-white font-bold shadow-lg transition-all">
+                Salvar Evento
+            </button>
+        </div>
+    </div>
+
+    <form id="eventForm" method="post" class="space-y-5">
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="bg-danger/10 border border-danger/25 rounded-xl p-4">
+            <h3 class="text-danger font-bold text-sm mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i> Não foi possível salvar:
+            </h3>
+            <ul class="text-xs text-danger list-disc pl-5 space-y-1">
+                {% for field in form %}{% for error in field.errors %}<li><strong>{{ field.label }}:</strong> {{ error }}</li>{% endfor %}{% endfor %}
+                {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="bg-core-panel border border-core-line rounded-2xl p-5 md:p-8">
+
+            <h2 class="text-[11px] font-bold text-ink-faint uppercase tracking-widest border-b border-core-line pb-3 mb-6">
+                Detalhes do Agendamento
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div class="md:col-span-2">
+                    <label class="ud-label">Título do Evento</label>
+                    {{ form.title }}
+                </div>
+
+                <div>
+                    <label class="ud-label">Tipo do Evento</label>
+                    {{ form.source }}
+                </div>
+
+                <div>
+                    <label class="ud-label ud-label--link">
+                        Cliente Vinculado <i class="fa-solid fa-link ml-1"></i>
+                    </label>
+                    <div class="ud-select-fix">
+                        {{ form.cliente }}
+                    </div>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="ud-label">Local / Link da Reunião</label>
+                    {{ form.location }}
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="ud-label">Descrição / Pauta</label>
+                    {{ form.description }}
+                </div>
+
+                <div>
+                    <label class="ud-label">Início</label>
+                    <div class="relative">
+                        {{ form.start }}
+                        <i class="fa-regular fa-calendar absolute right-4 top-3.5 text-ink-faint pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="ud-label">Fim</label>
+                    <div class="relative">
+                        {{ form.end }}
+                        <i class="fa-regular fa-calendar absolute right-4 top-3.5 text-ink-faint pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="ud-label">Participantes Envolvidos</label>
+                    {{ form.attendees }}
+                </div>
+
+                <div class="md:col-span-2 flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-8 pt-4 border-t border-core-line">
+                    <label class="flex items-center gap-3 text-sm text-ink-soft font-medium cursor-pointer">
+                        {{ form.all_day }} Dia Inteiro
+                    </label>
+                    <label class="flex items-center gap-3 text-sm text-ink-soft font-medium cursor-pointer">
+                        {{ form.is_background }} Evento de Fundo (Bloqueio de Agenda)
+                    </label>
+                </div>
+
+            </div>
+        </div>
+    </form>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+{# NOTA: removido o themes/dark.css do flatpickr — ele fixava um tema escuro
+   e quebrava no modo claro. O calendário agora é tematizado abaixo por tokens. #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   FORMULÁRIO DE EVENTO — 100% tokens do base.html
+   ═══════════════════════════════════════════════════════════ */
+
+.ud-label {
+    font-size: 11px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgb(var(--c-ink-soft));
+}
+.ud-label--link { color: rgb(var(--c-success)); }
+
+/* ── Inputs padrão do Django ── */
+.ud-input, .ud-input-textarea {
+    width: 100%;
+    background-color: rgb(var(--c-deep)) !important;
+    border: 1px solid rgb(var(--c-line)) !important;
+    color: rgb(var(--c-ink)) !important;
+    border-radius: 0.75rem !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.875rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s, background-color 0.25s;
+}
+.ud-input::placeholder, .ud-input-textarea::placeholder { color: rgb(var(--c-ink-faint)) !important; }
+.ud-input:focus, .ud-input-textarea:focus {
+    border-color: rgb(var(--c-accent)) !important;
+    box-shadow: 0 0 0 2px rgb(var(--c-accent) / 0.2);
+}
+
+.ud-checkbox {
+    width: 1.2rem;
+    height: 1.2rem;
+    background-color: rgb(var(--c-deep));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 0.25rem;
+    accent-color: rgb(var(--c-accent));
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* ── TOM SELECT ── */
+.ts-wrapper { width: 100%; }
+
+.ts-control, .ts-wrapper.single.input-active .ts-control {
+    background-color: rgb(var(--c-deep)) !important;
+    border: 1px solid rgb(var(--c-line)) !important;
+    color: rgb(var(--c-ink)) !important;
+    border-radius: 0.75rem !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.875rem;
+    box-shadow: none !important;
+    transition: border-color 0.2s, background-color 0.25s;
+}
+.ts-wrapper.focus .ts-control {
+    border-color: rgb(var(--c-accent)) !important;
+    box-shadow: 0 0 0 2px rgb(var(--c-accent) / 0.2) !important;
+}
+.ts-control input { color: rgb(var(--c-ink)) !important; font-size: 0.875rem; }
+.ts-control input::placeholder { color: rgb(var(--c-ink-faint)) !important; }
+.ts-wrapper.single .ts-control > .item { color: rgb(var(--c-ink)) !important; }
+
+.ts-dropdown, .ts-dropdown.form-control, .ts-dropdown.plugin-optgroup_columns {
+    background-color: rgb(var(--c-panel)) !important;
+    border: 1px solid rgb(var(--c-line)) !important;
+    color: rgb(var(--c-ink)) !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 12px 30px -10px rgb(0 0 0 / 0.35);
+    padding: 0.4rem 0;
+    margin-top: 4px;
+}
+.ts-dropdown .option {
+    padding: 0.55rem 1rem;
+    color: rgb(var(--c-ink-soft));
+    transition: background-color 0.1s;
+}
+.ts-dropdown .option:hover, .ts-dropdown .active {
+    background-color: rgb(var(--c-accent)) !important;
+    color: #fff !important;
+}
+.ts-dropdown .no-results { color: rgb(var(--c-ink-faint)); padding: 0.55rem 1rem; }
+
+/* seleção múltipla (participantes) */
+.ts-wrapper.multi .ts-control > div {
+    background-color: rgb(var(--c-accent)) !important;
+    color: #ffffff !important;
+    border: 1px solid rgb(var(--c-accent-deep)) !important;
+    border-radius: 0.5rem !important;
+    padding: 2px 8px !important;
+    margin: 2px !important;
+    font-weight: 500;
+}
+.ts-wrapper.multi .ts-control > div .remove {
+    border-left: 1px solid rgb(255 255 255 / 0.3) !important;
+    color: #fff !important;
+    margin-left: 6px;
+    padding-left: 6px;
+}
+.ts-wrapper.multi .ts-control > div .remove:hover { background-color: rgb(0 0 0 / 0.2) !important; }
+
+.ts-wrapper.single .ts-control:after {
+    border-color: rgb(var(--c-ink-faint)) transparent transparent transparent !important;
+}
+
+/* ── FLATPICKR — tematizado por tokens (substitui o themes/dark.css) ── */
+.flatpickr-calendar {
+    background: rgb(var(--c-panel)) !important;
+    border: 1px solid rgb(var(--c-line)) !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 16px 40px -12px rgb(0 0 0 / 0.4) !important;
+    color: rgb(var(--c-ink)) !important;
+}
+.flatpickr-calendar.arrowTop:before, .flatpickr-calendar.arrowTop:after,
+.flatpickr-calendar.arrowBottom:before, .flatpickr-calendar.arrowBottom:after { display: none; }
+
+.flatpickr-months, .flatpickr-month { background: transparent !important; color: rgb(var(--c-ink)) !important; }
+.flatpickr-current-month, .flatpickr-current-month input.cur-year { color: rgb(var(--c-ink)) !important; font-weight: 700; }
+.flatpickr-monthDropdown-months { background: rgb(var(--c-panel)) !important; color: rgb(var(--c-ink)) !important; }
+.flatpickr-monthDropdown-month { background: rgb(var(--c-panel)) !important; }
+.flatpickr-prev-month svg, .flatpickr-next-month svg { fill: rgb(var(--c-ink-soft)) !important; }
+.flatpickr-prev-month:hover svg, .flatpickr-next-month:hover svg { fill: rgb(var(--c-accent)) !important; }
+
+.flatpickr-weekdays { background: transparent !important; }
+span.flatpickr-weekday { color: rgb(var(--c-ink-faint)) !important; font-weight: 700; background: transparent !important; }
+
+.flatpickr-day {
+    color: rgb(var(--c-ink-soft)) !important;
+    border-radius: 8px !important;
+    border-color: transparent !important;
+}
+.flatpickr-day:hover { background: rgb(var(--c-line)) !important; color: rgb(var(--c-ink)) !important; }
+.flatpickr-day.today { border-color: rgb(var(--c-accent)) !important; color: rgb(var(--c-accent)) !important; font-weight: 700; }
+.flatpickr-day.selected, .flatpickr-day.selected:hover {
+    background: rgb(var(--c-accent)) !important;
+    border-color: rgb(var(--c-accent)) !important;
+    color: #fff !important;
+}
+.flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay, .flatpickr-day.flatpickr-disabled {
+    color: rgb(var(--c-ink-faint) / 0.45) !important;
+}
+
+.flatpickr-time { border-top: 1px solid rgb(var(--c-line)) !important; }
+.flatpickr-time input, .flatpickr-time .flatpickr-time-separator, .flatpickr-time .flatpickr-am-pm {
+    color: rgb(var(--c-ink)) !important;
+    background: transparent !important;
+}
+.flatpickr-time input:hover, .flatpickr-time .flatpickr-am-pm:hover,
+.flatpickr-time input:focus, .flatpickr-time .flatpickr-am-pm:focus {
+    background: rgb(var(--c-deep)) !important;
+}
+.flatpickr-time .numInputWrapper span.arrowUp:after { border-bottom-color: rgb(var(--c-ink-faint)) !important; }
+.flatpickr-time .numInputWrapper span.arrowDown:after { border-top-color: rgb(var(--c-ink-faint)) !important; }
+.numInputWrapper:hover { background: rgb(var(--c-deep)) !important; }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    flatpickr(".js-datetime", {
+        enableTime: true,
+        dateFormat: "d/m/Y H:i",
+        time_24hr: true,
+        locale: "pt",
+        allowInput: true
+    });
+
+    // O forms.py define o id como "select-cliente"
+    if (document.getElementById("select-cliente")) {
+        new TomSelect("#select-cliente", {
+            create: false,
+            sortField: { field: "text", direction: "asc" },
+            placeholder: "Pesquise pelo nome do cliente..."
+        });
+    }
+
+    if (document.getElementById("id_attendees")) {
+        new TomSelect("#id_attendees", {
+            plugins: ['remove_button'],
+            placeholder: "Pesquise e selecione a equipe..."
+        });
+    }
+
+    if (document.getElementById("id_source")) {
+        new TomSelect("#id_source", {
+            create: false,
+            controlInput: null
+        });
+    }
+});
+</script>
+{% endblock %}

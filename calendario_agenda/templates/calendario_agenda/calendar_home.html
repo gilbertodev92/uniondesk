@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Agenda e Calendário{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl space-y-6 p-4">
+  
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white flex items-center gap-3">
+        <i class="fa-solid fa-calendar-days text-blue-400"></i> Agenda e Calendário
+      </h1>
+      <p class="text-sm text-slate-400 mt-1">Visualize compromissos por mês, semana, dia ou lista.</p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1">
+        <button id="cal-prev" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"><i class="fa-solid fa-chevron-left"></i> Anterior</button>
+        <button id="cal-today" class="px-4 py-2 text-xs font-bold text-slate-300 hover:text-white transition-all uppercase tracking-tighter">Hoje</button>
+        <button id="cal-next" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all">Próximo <i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+
+      {% if perms.calendario_agenda.add_evento %}
+      <a href="{% url 'calendario_agenda:event_create' %}" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg flex items-center gap-2 transition-all">
+        <i class="fa-solid fa-circle-plus"></i> Novo evento
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="flex flex-wrap gap-2">
+    <button class="chip chip-active" data-view="dayGridMonth"><i class="fa-solid fa-calendar-days"></i> Mês</button>
+    <button class="chip" data-view="timeGridWeek"><i class="fa-solid fa-calendar-week"></i> Semana</button>
+    <button class="chip" data-view="timeGridDay"><i class="fa-solid fa-calendar-day"></i> Dia</button>
+    <button class="chip" data-view="listWeek"><i class="fa-solid fa-list"></i> Lista</button>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+    <div class="lg:col-span-9">
+      <div id="calendar" class="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-xl"></div>
+    </div>
+
+    <aside class="lg:col-span-3 space-y-4">
+      <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm">
+        <h2 class="mb-4 text-sm font-bold text-white uppercase tracking-tighter">Legenda</h2>
+        <ul class="space-y-3 text-xs text-slate-300 font-medium">
+          <li class="flex items-center gap-3"><span class="dot dot-blue"></span> Reuniões / Visitas</li>
+          <li class="flex items-center gap-3"><span class="dot dot-emerald"></span> Implantações</li>
+          <li class="flex items-center gap-3"><span class="dot dot-amber"></span> Lembretes / Tarefas</li>
+          <li class="flex items-center gap-3"><span class="dot dot-rose"></span> Urgentes</li>
+        </ul>
+      </div>
+
+      <div class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-5 shadow-sm">
+        <h2 class="mb-2 text-sm font-bold text-indigo-400">Dicas rápidas</h2>
+        <ul class="list-disc pl-5 text-[11px] text-slate-400 space-y-1.5 leading-relaxed">
+          <li>Clique em um evento para editar.</li>
+          <li>Passe o mouse para ver detalhes (empresa, local, criador).</li>
+          <li>Use os botões acima para alternar visualizações.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+{{ events_payload|json_script:"events-data" }}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales-all.global.min.js"></script>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Chips Premium */
+  .chip { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 1rem; border-radius:10px; background:#1e293b; color:#94a3b8; font-weight:700; font-size:12px; border:1px solid #334155; transition:all 0.2s; text-transform:uppercase; }
+  .chip:hover { background:#334155; color:#fff; }
+  .chip-active { background:rgba(59,130,246,0.1) !important; color:#60a5fa !important; border-color:rgba(59,130,246,0.4) !important; }
+
+  /* Calendário Customizado */
+  #calendar { min-height: 560px; }
+  .fc { --fc-border-color: #1e293b; --fc-today-bg-color: rgba(59,130,246,0.05); }
+  .fc .fc-toolbar-title { font-size: 1.1rem; font-weight: 800; color: #f8fafc; text-transform: capitalize; }
+  .fc-theme-standard td, .fc-theme-standard th { border-color: #1e293b; }
+  .fc .fc-col-header-cell-cushion { color: #94a3b8; font-size: 11px; text-transform: uppercase; font-weight: 700; padding: 10px 0; }
+  .fc .fc-daygrid-day-number { color: #cbd5e1; font-weight: 600; font-size: 12px; padding: 8px; }
+  .fc-event { border-radius: 4px; border: none; padding: 2px 4px; font-size: 11px; font-weight: 700; }
+  .fc-header-toolbar { display: none !important; } /* Esconde o header original do plugin */
+
+  /* Legenda (bolinhas brilhantes) */
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot-blue { background: #3b82f6; box-shadow: 0 0 8px rgba(59,130,246,0.5); }
+  .dot-emerald { background: #10b981; box-shadow: 0 0 8px rgba(16,185,129,0.5); }
+  .dot-amber { background: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,0.5); }
+  .dot-rose { background: #f43f5e; box-shadow: 0 0 8px rgba(244,63,94,0.5); }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const eventsData = JSON.parse(document.getElementById("events-data").textContent || "[]");
+
+  const colorByType = { meeting: "#3b82f6", deploy: "#10b981", reminder: "#f59e0b", urgent: "#f43f5e" };
+  const events = eventsData.map(ev => {
+    if (ev.extendedProps && ev.extendedProps.type && colorByType[ev.extendedProps.type]) {
+      ev.color = colorByType[ev.extendedProps.type];
+    }
+    return ev;
+  });
+
+  const cal = new FullCalendar.Calendar(document.getElementById("calendar"), {
+    initialView: "dayGridMonth",
+    height: "auto",
+    locale: "pt-br",
+    firstDay: 0,
+    headerToolbar: false,
+    dayMaxEventRows: true,
+    events,
+    eventMouseEnter(info){
+      const ext = info.event.extendedProps || {};
+      const linhas = [
+        info.event.title || "",
+        ext.empresa ? `Empresa: ${ext.empresa}` : "",
+        ext.location ? `Local: ${ext.location}` : "",
+        ext.createdBy ? `Criado por: ${ext.createdBy}` : "",
+        ext.remindMinutes ? `Lembrete: ${ext.remindMinutes} min antes` : ""
+      ].filter(Boolean);
+      info.el.title = linhas.join("\n");
+    },
+    eventClick(info){
+      if (info.event.url){ info.jsEvent.preventDefault(); window.location.href = info.event.url; }
+    }
+  });
+  cal.render();
+
+  // Controles
+  const $ = s => document.querySelector(s);
+  $("#cal-prev")?.addEventListener("click", ()=> cal.prev());
+  $("#cal-next")?.addEventListener("click", ()=> cal.next());
+  $("#cal-today")?.addEventListener("click", ()=> cal.today());
+
+  // Chips
+  const chips = document.querySelectorAll(".chip");
+  chips.forEach(ch => {
+    ch.addEventListener("click", ()=>{
+      chips.forEach(c=>c.classList.remove("chip-active"));
+      ch.classList.add("chip-active");
+      const view = ch.getAttribute("data-view");
+      if (view) cal.changeView(view);
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,1084 @@
+{% extends "base.html" %}
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    :root{
+        --bg-0:rgb(var(--c-bg));
+        --bg-1:rgb(var(--c-deep));
+        --panel:rgb(var(--c-panel) / .92);
+        --panel-solid:rgb(var(--c-deep));
+        --stroke:rgb(var(--c-line) / .8);
+        --stroke-soft:rgb(var(--c-line) / .5);
+        --accent:rgb(var(--c-accent));
+        --accent-soft:rgba(59,130,246,.14);
+        --emerald:rgb(var(--c-success));
+        --amber:rgb(var(--c-warn));
+        --rose:rgb(var(--c-danger));
+    }
+
+    /* FUNDO – malha técnica limpa, sem ruído de fotos */
+    .cyber-bg{
+        background-color:var(--bg-0);
+        background-image:
+            radial-gradient(900px circle at 12% -10%, rgba(59,130,246,.10), transparent 55%),
+            radial-gradient(800px circle at 100% 110%, rgba(16,185,129,.07), transparent 50%),
+            linear-gradient(180deg,rgb(var(--c-bg)) 0%,rgb(var(--c-deep)) 100%);
+    }
+    .grid-overlay{
+        background-image:
+            linear-gradient(rgba(148,163,184,.045) 1px,transparent 1px),
+            linear-gradient(90deg,rgba(148,163,184,.045) 1px,transparent 1px);
+        background-size:46px 46px;
+        mask-image:radial-gradient(ellipse at center,#000 30%,transparent 85%);
+    }
+
+    .font-display{ font-family:'Sora',sans-serif; }
+
+    .hud-panel{
+        background:var(--panel);
+        backdrop-filter:blur(20px);
+        border:1px solid var(--stroke);
+        box-shadow:0 24px 60px -20px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.02) inset;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar{width:6px;height:6px;}
+    .custom-scrollbar::-webkit-scrollbar-track{background:transparent;}
+    .custom-scrollbar::-webkit-scrollbar-thumb{background:rgb(var(--c-line));border-radius:10px;border:1px solid rgb(var(--c-deep));}
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover{background:rgb(var(--c-line));}
+    .no-scrollbar::-webkit-scrollbar{display:none;}
+
+    /* CARD DE CONVERSA */
+    .card-conversa{ transition:background .18s ease,border-color .18s ease,transform .18s ease; }
+    .card-conversa::before{
+        content:"";position:absolute;left:0;top:14%;bottom:14%;width:3px;border-radius:99px;
+        background:linear-gradient(180deg,var(--accent),rgb(var(--c-accent)));
+        opacity:0;transform:scaleY(.4);transition:.2s ease;
+    }
+    .card-conversa:hover{ transform:translateX(2px); }
+    .card-ativo{
+        background:linear-gradient(90deg,rgba(59,130,246,.16),rgba(30,41,59,.55)) !important;
+        border-color:rgba(59,130,246,.45) !important;
+    }
+    .card-ativo::before{ opacity:1;transform:scaleY(1); }
+
+    /* Botões das abas (estado base; o ativo é controlado pelo JS com bg-blue-600) */
+    .aba-btn{ transition:all .15s ease; }
+
+    .icon-btn{ transition:all .15s ease; }
+    .icon-btn:hover{ transform:translateY(-1px); }
+
+    .modal-pop{ animation:modalPop .22s cubic-bezier(.2,.8,.2,1); }
+    @keyframes modalPop{ from{opacity:0;transform:translateY(10px) scale(.97);} to{opacity:1;transform:translateY(0) scale(1);} }
+
+    @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.35}}
+    .live-dot{animation:pulseDot 1.6s ease-in-out infinite;}
+
+    select.clean-select{
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat:no-repeat;background-position:right .7rem center;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const mainPad = document.querySelector('main');
+
+    if(mainPad && !window.location.search.includes('isolado=true')) {
+        mainPad.classList.remove('p-8', 'lg:p-10', 'p-4', 'lg:p-6', 'p-2');
+        mainPad.classList.add('p-0');
+        mainPad.style.overflow = 'hidden';
+        const innerDiv = mainPad.querySelector('.mx-auto');
+        if(innerDiv) innerDiv.style.height = '100%';
+    }
+
+    if(window.location.search.includes('isolado=true')){
+        const aside = document.querySelector('aside');
+        if (aside) aside.style.display = 'none';
+        const header = document.querySelector('header');
+        if (header) header.style.display = 'none';
+        if(mainPad) {
+            mainPad.classList.remove('p-8', 'lg:p-10', 'p-4', 'lg:p-6', 'p-2');
+            mainPad.classList.add('p-0');
+            mainPad.style.overflow = 'hidden';
+            const innerDiv = mainPad.querySelector('.mx-auto');
+            if(innerDiv) innerDiv.style.height = '100%';
+        }
+        const appWrapper = document.getElementById('app-wrapper');
+        if(appWrapper) {
+            appWrapper.classList.remove('rounded-tl-3xl', 'border-l', 'border-t', 'shadow-2xl');
+            appWrapper.classList.add('h-screen', 'w-full', 'rounded-none', 'border-none');
+        }
+    }
+
+    const setorSalvo = localStorage.getItem('filtroSetorLogica');
+    if (setorSalvo) {
+        const combo = document.getElementById('filtro-setor');
+        if (combo) combo.value = setorSalvo;
+    }
+
+    const abaSalva = localStorage.getItem('filtroAbaLogica') || 'pendente';
+    if(typeof filtroAtivo !== 'undefined') filtroAtivo = abaSalva;
+
+    const botaoAba = document.querySelector(`.aba-btn[onclick*="${abaSalva}"]`);
+    if(botaoAba) {
+        document.querySelectorAll('.aba-btn').forEach(b => {
+            b.classList.remove('bg-blue-600', 'text-ink', 'shadow-[0_0_10px_rgba(59,130,246,0.3)]', 'border-blue-500');
+            b.classList.add('text-ink-soft', 'border-transparent', 'hover:bg-core-panel');
+        });
+        botaoAba.classList.remove('text-ink-soft', 'border-transparent', 'hover:bg-core-panel');
+        botaoAba.classList.add('bg-blue-600', 'text-ink', 'shadow-[0_0_10px_rgba(59,130,246,0.3)]', 'border-blue-500');
+    }
+
+    aplicarFiltros();
+    initNotificacoes();
+});
+</script>
+
+<div id="app-wrapper" class="flex h-full w-full cyber-bg rounded-tl-3xl border-l border-t border-core-line/70 shadow-2xl relative antialiased overflow-hidden" style="font-family: 'Inter', sans-serif;">
+
+    <div class="grid-overlay absolute inset-0 pointer-events-none z-0"></div>
+
+    <!-- ===================== SIDEBAR ===================== -->
+    <div class="w-1/3 min-w-[330px] max-w-[400px] border-r border-core-line flex flex-col bg-core-deep z-10 shadow-[8px_0_30px_-12px_rgb(var(--c-bg))] relative">
+
+        <!-- Cabeçalho -->
+        <div class="px-4 pt-4 pb-3 border-b border-core-line/70 bg-gradient-to-b from-core-deep/60 to-transparent relative">
+            <div class="flex justify-between items-center mb-3.5">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/25 to-blue-600/10 border border-blue-500/40 flex items-center justify-center text-blue-300 shadow-[0_0_18px_-4px_rgba(59,130,246,.6)] shrink-0">
+                        <i class="fa-solid fa-headset text-[15px]"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="font-display text-[15px] font-bold text-ink leading-none tracking-tight">Atendimentos</h2>
+                        <span class="text-[10px] text-ink-faint font-medium flex items-center gap-1.5 mt-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 live-dot"></span> Central LÓGICA.DESK
+                        </span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button onclick="window.open(window.location.pathname + '?isolado=true', '_blank')" class="icon-btn w-8 h-8 rounded-lg bg-core-deep border border-core-line/60 text-ink-soft hover:text-blue-300 hover:border-blue-500/40 flex items-center justify-center" title="Abrir Chat em Tela Cheia"><i class="fa-solid fa-up-right-and-down-left-from-center text-[11px]"></i></button>
+                    <button id="btn-notificacao" onclick="window.toggleNotificacoes()" class="icon-btn w-8 h-8 rounded-lg bg-core-deep border border-core-line/60 text-ink-soft hover:text-amber-300 hover:border-amber-500/40 flex items-center justify-center" title="Ativar/Desativar Som">
+                        <i id="icon-notificacao" class="fa-solid fa-bell-slash text-[11px]"></i>
+                    </button>
+                    <button onclick="abrirModal('modalNovoChat')" class="icon-btn w-8 h-8 bg-emerald-600 hover:bg-emerald-500 text-ink rounded-lg flex items-center justify-center shadow-[0_0_14px_-2px_rgba(16,185,129,.6)] border border-emerald-400/40" title="Novo Contato">
+                        <i class="fa-solid fa-plus text-[12px]"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <div class="relative flex-1 group">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint text-[12px] group-focus-within:text-blue-400 transition-colors"></i>
+                    <input type="text" id="busca-contato" onkeyup="aplicarFiltros()" placeholder="Buscar cliente, número..." class="w-full bg-core-bg border border-core-line/70 rounded-xl py-2.5 pl-9 pr-3 text-[12px] font-medium text-ink focus:outline-none focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/15 shadow-inner transition-all placeholder:text-ink-faint">
+                </div>
+                <select id="filtro-setor" onchange="aplicarFiltros()" class="clean-select bg-core-bg border border-core-line/70 rounded-xl py-2.5 pl-3 pr-7 text-[10px] font-bold uppercase tracking-wider text-ink-soft outline-none focus:border-blue-500/70 w-[120px] shrink-0 cursor-pointer shadow-inner appearance-none">
+                    <option value="">Todas filas</option>
+                    <option value="SUPORTE">Suporte</option>
+                    <option value="ASSISTENCIA">Assistência</option>
+                    <option value="COMERCIAL">Comercial</option>
+                    <option value="FINANCEIRO">Financeiro</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Abas -->
+        <div id="abas-filtro" class="px-3 py-2.5 border-b border-core-line/70 flex gap-1.5 overflow-x-auto no-scrollbar bg-core-bg">
+            <button onclick="filtrarAbas('pendente', this)" class="aba-btn whitespace-nowrap shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-500 text-[10px] font-bold tracking-wide bg-blue-600 text-ink shadow-[0_0_10px_rgba(59,130,246,0.3)]">
+                Pendentes <span id="badge-aguardando" class="hidden bg-rose-500 text-ink rounded-md px-1.5 py-0.5 text-[9px] leading-none font-extrabold shadow-sm"></span>
+            </button>
+            <button onclick="filtrarAbas('meus', this)" class="aba-btn whitespace-nowrap shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-transparent text-[10px] font-bold tracking-wide text-ink-soft hover:bg-core-panel">
+                Meus <span id="badge-meus" class="hidden bg-rose-500 text-ink rounded-md px-1.5 py-0.5 text-[9px] leading-none font-extrabold shadow-sm"></span>
+            </button>
+            <button onclick="filtrarAbas('geral', this)" class="aba-btn whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg border border-transparent text-[10px] font-bold tracking-wide text-ink-soft hover:bg-core-panel">Geral</button>
+            <button onclick="filtrarAbas('grupos', this)" class="aba-btn whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg border border-transparent text-[10px] font-bold tracking-wide text-ink-soft hover:bg-core-panel">Grupos</button>
+            <button onclick="filtrarAbas('fechados', this)" class="aba-btn whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg border border-transparent text-[10px] font-bold tracking-wide text-ink-soft hover:bg-core-panel">Fechados</button>
+        </div>
+
+        <!-- Lista -->
+        <div class="overflow-y-auto flex-1 custom-scrollbar bg-transparent px-2 py-2 space-y-1" id="lista-conversas">
+            {% for s in sessions %}
+            <div onclick="carregarChat({{ s.id }})"
+                 data-tipo="{% if '@g.us' in s.whatsapp_number %}grupos{% elif s.status == 'FINALIZADO' or 'AVALIACAO' in s.status %}fechados{% elif s.tecnico_responsavel_id == request.user.id %}meus{% elif s.tecnico_responsavel %}outros{% else %}pendente{% endif %}"
+                 data-setor="{{ s.setor_atual|default:'' }}"
+                 class="card-conversa relative px-3 py-3 pl-4 border border-core-line/50 cursor-pointer hover:bg-core-deep group rounded-xl
+                 {% if s.status == 'FINALIZADO' or 'AVALIACAO' in s.status %}{% if '@g.us' not in s.whatsapp_number %}opacity-55 grayscale-[0.25]{% endif %}{% endif %}">
+
+                <div class="flex gap-3 items-center">
+                    <div class="w-11 h-11 rounded-2xl bg-core-deep border border-core-line/70 overflow-hidden flex items-center justify-center text-sm font-bold text-ink shadow-inner shrink-0 relative group-hover:border-blue-500/50 transition-colors">
+                        {% if s.profile_pic %}
+                            <img src="{{ s.profile_pic }}" class="w-full h-full object-cover" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
+                            <i class="fa-solid {% if '@g.us' in s.whatsapp_number %}fa-users{% else %}fa-user{% endif %} text-xs text-ink-faint hidden"></i>
+                        {% else %}
+                            <i class="fa-solid {% if '@g.us' in s.whatsapp_number %}fa-users{% else %}fa-user{% endif %} text-xs text-ink-faint"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center gap-2 mb-1.5">
+                            <h4 class="nome-busca font-bold text-ink text-[13px] truncate group-hover:text-blue-300 transition-colors tracking-tight">{{ s.cliente.razao_social|default:s.push_name|default:s.whatsapp_number|cut:"@lid"|cut:"@s.whatsapp.net"|cut:"@g.us" }}</h4>
+                            <span class="text-[10px] text-ink-faint font-medium font-mono shrink-0">{{ s.ultima_interacao|date:"H:i" }}</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center min-w-0">
+                                {% if s.tecnico_responsavel %}
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 truncate">
+                                        <i class="fa-solid fa-user-check text-[8px]"></i> {{ s.tecnico_responsavel.first_name|default:s.tecnico_responsavel.username|upper }}
+                                    </span>
+                                {% elif s.setor_atual %}
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide bg-blue-500/10 text-blue-300 border border-blue-500/25 truncate">
+                                        <i class="fa-solid fa-users-viewfinder text-[8px]"></i> {{ s.get_setor_atual_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-300 border border-amber-500/25">
+                                        <i class="fa-solid fa-robot text-[8px] live-dot"></i> IA Triagem
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="flex gap-1.5 items-center shrink-0">
+                                {% if s.mensagens_nao_lidas > 0 %}
+                                    <span class="badge-notificacao min-w-[20px] h-5 px-1.5 bg-blue-600 text-ink rounded-full flex items-center justify-center text-[10px] font-extrabold shadow-[0_0_10px_rgba(59,130,246,0.7)]">{{ s.mensagens_nao_lidas }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ===================== ÁREA DO CHAT ===================== -->
+    <div id="chat-container" class="flex-1 flex flex-col bg-transparent items-center justify-center relative z-10">
+        <div class="text-center flex flex-col items-center px-8">
+            <div class="relative mb-6">
+                <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-500/15 to-transparent border border-blue-500/25 flex items-center justify-center shadow-[0_0_40px_-10px_rgba(59,130,246,.5)]">
+                    <i class="fa-solid fa-satellite-dish text-3xl text-blue-400 live-dot"></i>
+                </div>
+            </div>
+            <p class="font-display text-[15px] font-semibold text-ink mb-1.5">Nenhum atendimento aberto</p>
+            <p class="text-[12px] text-ink-faint max-w-[260px] leading-relaxed">Selecione uma conversa na lista ao lado para começar a responder.</p>
+        </div>
+    </div>
+
+    <!-- ===================== MODAIS ===================== -->
+    <!-- modalZoom fica no messages_list (versão completa com botão nova guia) -->
+
+    <div id="modalTransferir" class="hidden absolute inset-0 bg-core-bg  flex items-center justify-center z-[110] p-6">
+        <div class="hud-panel p-6 rounded-3xl w-full max-w-sm relative modal-pop">
+            <button onclick="fecharModal('modalTransferir')" class="absolute top-4 right-4 text-ink-faint hover:text-ink transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="w-11 h-11 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-300 mb-4"><i class="fa-solid fa-right-left"></i></div>
+            <h3 class="font-display text-ink font-bold text-base mb-0.5">Transferir atendimento</h3>
+            <p class="text-[11px] text-ink-soft mb-4">Mover para uma fila de setor ou direto para um técnico.</p>
+            <input type="hidden" id="transfer-session-id-hidden">
+
+            <!-- alternador: setor x técnico -->
+            <div class="flex gap-1 p-1 bg-core-bg border border-core-line rounded-xl mb-4">
+                <button type="button" id="tab-transf-setor" onclick="window.trocarModoTransf('setor')" class="flex-1 py-2 text-[11px] font-bold uppercase tracking-wide rounded-lg bg-blue-600 text-ink transition-all">Para setor</button>
+                <button type="button" id="tab-transf-tecnico" onclick="window.trocarModoTransf('tecnico')" class="flex-1 py-2 text-[11px] font-bold uppercase tracking-wide rounded-lg text-ink-soft hover:text-ink transition-all">Para técnico</button>
+            </div>
+
+            <!-- opção 1: setor -->
+            <select id="transfer-setor" class="clean-select w-full bg-core-bg border border-core-line rounded-xl py-3 pl-4 pr-9 text-[12px] text-ink font-semibold mb-7 outline-none focus:border-blue-500 cursor-pointer shadow-inner appearance-none">
+                <option value="SUPORTE">Suporte Técnico</option>
+                <option value="ASSISTENCIA">Assistência Técnica</option>
+                <option value="COMERCIAL">Comercial / Vendas</option>
+                <option value="FINANCEIRO">Financeiro</option>
+            </select>
+
+            <!-- opção 2: técnico (escondida por padrão) -->
+            <div id="bloco-transfer-tecnico" class="hidden mb-7">
+                <select id="transfer-tecnico" class="clean-select w-full bg-core-bg border border-core-line rounded-xl py-3 pl-4 pr-9 text-[12px] text-ink font-semibold mb-3 outline-none focus:border-blue-500 cursor-pointer shadow-inner appearance-none">
+                    <option value="">Selecione o técnico...</option>
+                    {% for t in tecnicos %}
+                    <option value="{{ t.id }}">{{ t.first_name|default:"Técnico" }} {{ t.last_name }}</option>
+                    {% endfor %}
+                </select>
+                <select id="transfer-tecnico-setor" class="clean-select w-full bg-core-bg border border-core-line rounded-xl py-3 pl-4 pr-9 text-[12px] text-ink font-semibold outline-none focus:border-blue-500 cursor-pointer shadow-inner appearance-none">
+                    <option value="SUPORTE">Setor: Suporte Técnico</option>
+                    <option value="ASSISTENCIA">Setor: Assistência Técnica</option>
+                    <option value="COMERCIAL">Setor: Comercial / Vendas</option>
+                    <option value="FINANCEIRO">Setor: Financeiro</option>
+                </select>
+                <p class="text-[10px] text-ink-faint mt-2"><i class="fa-solid fa-circle-info"></i> O cliente será avisado e o atendimento vai direto para o técnico.</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="fecharModal('modalTransferir')" class="flex-1 py-3 text-[11px] text-ink-soft font-bold uppercase tracking-wide hover:bg-core-panel rounded-xl transition-all border border-core-line/60">Cancelar</button>
+                <button onclick="confirmarTransferencia()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-ink text-[11px] font-bold uppercase tracking-wide rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.35)] transition-all">Transferir</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalEncerrar" class="hidden absolute inset-0 bg-core-bg  flex items-center justify-center z-[110] p-6">
+        <div class="hud-panel p-6 rounded-3xl w-full max-w-lg relative modal-pop">
+            <button onclick="fecharModal('modalEncerrar')" class="absolute top-4 right-4 text-ink-faint hover:text-ink transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-300 mb-4"><i class="fa-solid fa-power-off"></i></div>
+            <h3 class="font-display text-ink font-bold text-base mb-0.5">Encerrar atendimento</h3>
+            <p class="text-[11px] text-ink-soft mb-5">Selecione o motivo da finalização (registro no sistema).</p>
+            <input type="hidden" id="encerrar-session-id-hidden">
+            <div id="container-tags-motivo" class="flex flex-wrap gap-2 mb-7 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                {% for tag in tags_atendimento %}
+                    <button onclick="toggleTagMotivo(this)" class="tag-motivo px-3 py-2 rounded-xl border border-core-line bg-core-deep text-ink-soft text-[10px] font-bold uppercase tracking-wide transition-all hover:border-emerald-500/60 hover:bg-emerald-500/10">{{ tag.nome }}</button>
+                {% empty %}
+                    <p class="text-[11px] font-medium text-ink-faint">Nenhum motivo cadastrado no painel.</p>
+                {% endfor %}
+            </div>
+            <div class="flex gap-3">
+                <button onclick="fecharModal('modalEncerrar')" class="flex-1 py-3 text-[11px] text-ink-soft font-bold uppercase tracking-wide hover:bg-core-panel rounded-xl transition-all border border-core-line/60">Cancelar</button>
+                <button onclick="confirmarEncerramento()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-ink text-[11px] font-bold uppercase tracking-wide rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.35)] transition-all">Finalizar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalVincular" class="hidden absolute inset-0 bg-core-bg  flex items-center justify-center z-[110] p-6">
+        <div class="hud-panel p-6 rounded-3xl w-full max-w-sm flex flex-col relative modal-pop">
+            <button onclick="fecharModal('modalVincular')" class="absolute top-4 right-4 text-ink-faint hover:text-ink transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 mb-4"><i class="fa-solid fa-link"></i></div>
+            <h3 class="font-display text-ink font-bold text-base mb-0.5">Vincular cadastro</h3>
+            <p class="text-[11px] text-ink-soft mb-4">Atrelar este número a um cliente.</p>
+            <input type="hidden" id="vinc-session-id-hidden">
+            <input type="hidden" id="vinc-cliente-id-hidden">
+
+            <div class="relative group mb-3">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint text-xs group-focus-within:text-amber-400 transition-colors"></i>
+                <input type="text" id="busca-vincular" onkeyup="window.filtrarClientesVincular()" placeholder="Buscar nome da empresa..." class="w-full bg-core-bg border border-core-line rounded-xl py-3 pl-9 pr-3 text-[12px] font-medium text-ink outline-none focus:border-amber-500/70 shadow-inner">
+            </div>
+
+            <div id="lista-clientes-vincular" class="w-full bg-core-bg border border-core-line/70 rounded-xl overflow-y-auto max-h-48 mb-6 custom-scrollbar">
+                {% for c in clientes %}
+                    <div onclick="selecionarClienteVincular(this)" data-cliente-id="{{ c.pk }}" class="item-cliente px-4 py-3 hover:bg-core-panel cursor-pointer text-[11px] font-bold text-ink-soft border-b border-core-line/50 transition-colors">
+                        {{ c.razao_social }}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="flex gap-3">
+                <button onclick="fecharModal('modalVincular')" class="flex-1 py-3 text-[11px] text-ink-soft font-bold uppercase tracking-wide hover:bg-core-panel rounded-xl transition-all border border-core-line/60">Cancelar</button>
+                <button onclick="confirmarVinculo()" class="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-ink text-[11px] font-bold uppercase tracking-wide rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.35)] transition-all">Vincular</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalNovoChat" class="hidden absolute inset-0 bg-core-bg  flex items-center justify-center z-[110] p-6">
+        <div class="hud-panel p-6 rounded-3xl w-full max-w-sm relative modal-pop">
+            <button onclick="fecharModal('modalNovoChat')" class="absolute top-4 right-4 text-ink-faint hover:text-ink transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-300 mb-4"><i class="fa-solid fa-comment-medical"></i></div>
+            <h3 class="font-display text-ink font-bold text-base mb-0.5">Nova conversa</h3>
+            <p class="text-[11px] text-ink-soft mb-5">Digite o número com DDD (apenas números).</p>
+            <input type="text" id="novo-numero" placeholder="Ex: 47999999999" class="w-full bg-core-bg border border-core-line rounded-xl p-3.5 text-[13px] font-semibold text-ink tracking-wide mb-7 outline-none focus:border-emerald-500/70 shadow-inner text-center font-mono">
+            <div class="flex gap-3">
+                <button onclick="fecharModal('modalNovoChat')" class="flex-1 py-3 text-[11px] text-ink-soft font-bold uppercase tracking-wide hover:bg-core-panel rounded-xl transition-all border border-core-line/60">Cancelar</button>
+                <button onclick="window.iniciarNovaConversa()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-ink text-[11px] font-bold uppercase tracking-wide rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.35)] transition-all">Iniciar chat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.abrirZoom = function(src) {
+    const img   = document.getElementById('zoomImage');
+    const link  = document.getElementById('zoomAbrirGuia');
+    const modal = document.getElementById('modalZoom');
+    if (img)   img.src   = src;
+    if (link)  link.href = src;
+    if (modal) modal.classList.remove('hidden');
+};
+let sessaoAtivaId = null;
+let filtroAtivo = 'pendente';
+let currentChatRequest = null; // Controle anti-travamento
+
+// ==========================================
+// INÍCIO DA LÓGICA DE NOTIFICAÇÕES (BIP NAS FILAS)
+// ==========================================
+let notificacoesAtivas = localStorage.getItem('notificacoesAtivas') === 'true';
+let historicoNaoLidas = {};
+
+function initNotificacoes() {
+    const icon = document.getElementById('icon-notificacao');
+    if(icon) {
+        if(notificacoesAtivas) {
+            icon.classList.remove('fa-bell-slash', 'text-ink-faint');
+            icon.classList.add('fa-bell', 'text-amber-400');
+        } else {
+            icon.classList.remove('fa-bell', 'text-amber-400');
+            icon.classList.add('fa-bell-slash', 'text-ink-faint');
+        }
+    }
+}
+
+window.toggleNotificacoes = function() {
+    notificacoesAtivas = !notificacoesAtivas;
+    localStorage.setItem('notificacoesAtivas', notificacoesAtivas);
+    initNotificacoes();
+
+    if (notificacoesAtivas) {
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+        tocarSomNotificacao();
+    }
+}
+
+function tocarSomNotificacao() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.15);
+    } catch(e) { console.log("Áudio bloqueado pelo navegador"); }
+}
+
+function checarNovasNotificacoes(docHTML) {
+    if (!notificacoesAtivas) return;
+
+    let tocouSom = false;
+    docHTML.querySelectorAll('.card-conversa').forEach(card => {
+        const clickAttr = card.getAttribute('onclick');
+        if(!clickAttr) return;
+
+        const idMatch = clickAttr.match(/\d+/);
+        if(!idMatch) return;
+
+        const id = idMatch[0];
+        const tipo = card.getAttribute('data-tipo');
+        const badge = card.querySelector('.badge-notificacao');
+        const naoLidas = badge ? parseInt(badge.innerText) : 0;
+
+        if (historicoNaoLidas[id] === undefined) {
+            historicoNaoLidas[id] = naoLidas;
+            return;
+        }
+
+        if ((tipo === 'pendente' || tipo === 'meus' || tipo === 'aguardando') && naoLidas > historicoNaoLidas[id]) {
+            if(id !== String(sessaoAtivaId)) {
+                if (!tocouSom) {
+                    tocarSomNotificacao();
+                    tocouSom = true;
+
+                    if (Notification.permission === "granted") {
+                        const nomeEl = card.querySelector('.nome-busca');
+                        const nome = nomeEl ? nomeEl.innerText : 'Cliente';
+                        new Notification("LÓGICA.DESK", {
+                            body: `Nova mensagem de ${nome}`,
+                            icon: "https://cdn-icons-png.flaticon.com/512/124/124034.png"
+                        });
+                    }
+                }
+            }
+        }
+        historicoNaoLidas[id] = naoLidas;
+    });
+}
+
+window.abrirModal = function(id) {
+    document.getElementById(id).classList.remove('hidden');
+    if(id === 'modalTransferir') document.getElementById('transfer-setor').focus();
+    if(id === 'modalVincular') document.getElementById('busca-vincular').focus();
+    if(id === 'modalNovoChat') document.getElementById('novo-numero').focus();
+}
+
+window.fecharModal = function(id) { document.getElementById(id).classList.add('hidden'); }
+window.abrirModalVincular = function(id) { document.getElementById('vinc-session-id-hidden').value = id; abrirModal('modalVincular'); }
+window.abrirModalTransferir = function(id, setorAtual) {
+    document.getElementById('transfer-session-id-hidden').value = id;
+    const combo = document.getElementById('transfer-setor');
+    if(setorAtual && combo) combo.value = setorAtual;
+    abrirModal('modalTransferir');
+}
+window.abrirModalEncerrar = function(id) { document.getElementById('encerrar-session-id-hidden').value = id; abrirModal('modalEncerrar'); }
+
+window.abrirHistorico = function(sessionId) { window.open('/whatsapp-bot/historico/' + sessionId + '/', '_blank'); }
+
+window.assumirAtendimento = function(id) {
+    const form = new FormData(); form.append('session_id', id); form.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    const container = document.getElementById('chat-container');
+    if(container) container.innerHTML = `<div class="flex-1 flex flex-col items-center justify-center w-full"><i class="fa-solid fa-satellite-dish fa-spin text-blue-500 text-4xl mb-3"></i><p class="text-[11px] font-bold tracking-wide text-blue-300">Assumindo comando...</p></div>`;
+    fetch('/whatsapp-bot/assumir/', { method: 'POST', body: form }).then(r => r.json()).then(data => {
+        if(data.status === 'success') {
+            document.querySelectorAll('.aba-btn').forEach(btn => { if(btn.innerText.toLowerCase().includes('meus')) filtrarAbas('meus', btn); });
+            carregarChat(id);
+            fetch('/whatsapp-bot/chat/').then(r => r.text()).then(html => {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const novaLista = doc.getElementById('lista-conversas');
+                if (novaLista) { document.getElementById('lista-conversas').innerHTML = novaLista.innerHTML; aplicarFiltros(); }
+            });
+        }
+    });
+}
+
+function toggleTagMotivo(btn) { btn.classList.toggle('border-emerald-500'); btn.classList.toggle('bg-emerald-500/20'); btn.classList.toggle('text-emerald-400'); }
+
+function confirmarEncerramento() {
+    const id = document.getElementById('encerrar-session-id-hidden').value;
+    const tags = Array.from(document.querySelectorAll('.tag-motivo.text-emerald-400')).map(t => t.innerText);
+    if(tags.length === 0) return alert("Por favor, selecione pelo menos um motivo para encerrar o chamado.");
+    const form = new FormData(); form.append('session_id', id); form.append('motivo', tags.join(', ')); form.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    fetch('/whatsapp-bot/encerrar/', { method: 'POST', body: form }).then(() => location.reload());
+}
+
+// 🔥 FUNÇÃO DE PERFORMANCE (Anti-Travamento / AbortController)
+function carregarChat(id, silencioso = false) {
+    sessaoAtivaId = id;
+    const container = document.getElementById('chat-container');
+
+    if (currentChatRequest) { currentChatRequest.abort(); }
+    currentChatRequest = new AbortController();
+
+    if (!silencioso) {
+        container.innerHTML = `<div class="flex-1 flex flex-col items-center justify-center w-full"><i class="fa-solid fa-satellite-dish fa-spin text-blue-500 text-4xl mb-4 drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]"></i><p class="text-[11px] font-bold tracking-wide text-blue-300">Estabelecendo conexão...</p></div>`;
+    }
+
+    document.querySelectorAll('.card-conversa').forEach(c => { c.classList.remove('card-ativo'); });
+    const cardAtivo = document.querySelector(`.card-conversa[onclick="carregarChat(${id})"]`);
+    if(cardAtivo) { cardAtivo.classList.add('card-ativo'); }
+
+    fetch(`/whatsapp-bot/chat/${id}/`, { signal: currentChatRequest.signal })
+    .then(r => { if (!r.ok) throw new Error('Falha'); return r.text(); })
+    .then(html => {
+        requestAnimationFrame(() => {
+            container.innerHTML = html;
+            const chatArea = container.querySelector('#historia-mensagens');
+            if(window.agruparMensagens) window.agruparMensagens();
+            if(chatArea) { setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 50); }
+
+            const input = container.querySelector('#input-mensagem');
+            if(input) {
+                input.value = localStorage.getItem('draft_' + id) || '';
+                input.style.height = 'auto'; input.style.height = (input.scrollHeight > 40 ? input.scrollHeight : 40) + 'px';
+                input.focus();
+                input.addEventListener('input', window.detectarAtalhoRapido);
+            }
+
+            const bolha = document.querySelector(`.card-conversa[onclick="carregarChat(${id})"] .badge-notificacao`);
+            if(bolha) bolha.remove();
+
+            if(historicoNaoLidas[id]) historicoNaoLidas[id] = 0;
+            atualizarContadoresAbas();
+        });
+    })
+    .catch(e => {
+        if (e.name !== 'AbortError' && !silencioso) {
+            container.innerHTML = `<div class="flex-1 flex flex-col items-center justify-center w-full"><i class="fa-solid fa-triangle-exclamation text-rose-500 text-4xl mb-3"></i><p class="text-[11px] font-bold tracking-wide text-ink-soft">Erro na conexão.</p></div>`;
+        }
+    });
+}
+
+// alterna entre transferir para setor ou para técnico
+window.modoTransf = 'setor';
+window.trocarModoTransf = function(modo) {
+    window.modoTransf = modo;
+    const tSetor = document.getElementById('tab-transf-setor');
+    const tTec = document.getElementById('tab-transf-tecnico');
+    const blocoSetor = document.getElementById('transfer-setor');
+    const blocoTec = document.getElementById('bloco-transfer-tecnico');
+    if (modo === 'tecnico') {
+        tTec.classList.add('bg-blue-600','text-ink'); tTec.classList.remove('text-ink-soft');
+        tSetor.classList.remove('bg-blue-600','text-ink'); tSetor.classList.add('text-ink-soft');
+        blocoSetor.classList.add('hidden'); blocoTec.classList.remove('hidden');
+    } else {
+        tSetor.classList.add('bg-blue-600','text-ink'); tSetor.classList.remove('text-ink-soft');
+        tTec.classList.remove('bg-blue-600','text-ink'); tTec.classList.add('text-ink-soft');
+        blocoSetor.classList.remove('hidden'); blocoTec.classList.add('hidden');
+    }
+};
+
+function confirmarTransferencia() {
+    const id = document.getElementById('transfer-session-id-hidden').value;
+    const form = new FormData(); form.append('session_id', id);
+    form.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    if (window.modoTransf === 'tecnico') {
+        const tecEl = document.getElementById('transfer-tecnico');
+        const setorTecEl = document.getElementById('transfer-tecnico-setor');
+        if (!tecEl.value) { alert('Selecione um técnico.'); return; }
+        form.append('tecnico_id', tecEl.value);
+        form.append('setor', setorTecEl.value);
+    } else {
+        const setorEl = document.getElementById('transfer-setor');
+        if (setorEl) form.append('setor', setorEl.value);
+    }
+    fetch('/whatsapp-bot/transferir/', { method: 'POST', body: form }).then(() => location.reload());
+}
+
+function selecionarClienteVincular(el) {
+    document.getElementById('vinc-cliente-id-hidden').value = el.getAttribute('data-cliente-id');
+    document.querySelectorAll('.item-cliente').forEach(i => i.classList.remove('bg-amber-950/60', 'text-amber-400', 'border-amber-500/50'));
+    el.classList.add('bg-amber-950/60', 'text-amber-400', 'border-amber-500/50');
+}
+
+window.filtrarClientesVincular = function() {
+    const el = document.getElementById('busca-vincular'); if (!el) return;
+    const busca = el.value.toLowerCase();
+    document.querySelectorAll('#lista-clientes-vincular .item-cliente').forEach(item => {
+        const nome = item.innerText.toLowerCase();
+        item.style.display = nome.includes(busca) ? 'block' : 'none';
+    });
+}
+
+function confirmarVinculo() {
+    const sId = document.getElementById('vinc-session-id-hidden').value;
+    const cId = document.getElementById('vinc-cliente-id-hidden').value;
+    if(!cId) return alert("Por favor, selecione um cliente na lista!");
+    const form = new FormData(); form.append('session_id', sId); form.append('cliente_id', cId); form.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    fetch('/whatsapp-bot/vincular-cliente/', { method: 'POST', body: form }).then(() => location.reload());
+}
+
+function atualizarContadoresAbas() {
+    let cAguardando = 0; let cMeus = 0;
+    document.querySelectorAll('.card-conversa').forEach(card => {
+        const tipo = card.getAttribute('data-tipo');
+        const temMsgNaoLida = card.querySelector('.badge-notificacao') !== null;
+        if (tipo === 'pendente' || tipo === 'aguardando') cAguardando++;
+        if (tipo === 'meus' && temMsgNaoLida) cMeus++;
+    });
+    const bAg = document.getElementById('badge-aguardando');
+    if(bAg) { if(cAguardando > 0) { bAg.innerText = cAguardando; bAg.classList.remove('hidden'); } else bAg.classList.add('hidden'); }
+    const bMe = document.getElementById('badge-meus');
+    if(bMe) { if(cMeus > 0) { bMe.innerText = cMeus; bMe.classList.remove('hidden'); } else bMe.classList.add('hidden'); }
+}
+
+function filtrarAbas(tipo, btn) {
+    filtroAtivo = tipo;
+    document.querySelectorAll('.aba-btn').forEach(b => { b.classList.remove('bg-blue-600', 'text-ink', 'shadow-[0_0_10px_rgba(59,130,246,0.3)]', 'border-blue-500'); b.classList.add('text-ink-soft', 'border-transparent', 'hover:bg-core-panel'); });
+    if(btn) { btn.classList.remove('text-ink-soft', 'border-transparent', 'hover:bg-core-panel'); btn.classList.add('bg-blue-600', 'text-ink', 'shadow-[0_0_10px_rgba(59,130,246,0.3)]', 'border-blue-500'); }
+    aplicarFiltros();
+}
+
+function aplicarFiltros() {
+    const inputBusca = document.getElementById('busca-contato');
+    const busca = inputBusca ? inputBusca.value.toLowerCase() : "";
+    const selectSetor = document.getElementById('filtro-setor');
+    const setorFiltro = selectSetor ? selectSetor.value : "";
+
+    localStorage.setItem('filtroSetorLogica', setorFiltro);
+    localStorage.setItem('filtroAbaLogica', filtroAtivo);
+
+    document.querySelectorAll('.card-conversa').forEach(card => {
+        const t = card.getAttribute('data-tipo');
+        const setorCard = card.getAttribute('data-setor');
+        const nome = card.innerText.toLowerCase();
+
+        const bateAba = (filtroAtivo === 'geral') ? (t !== 'fechados' && t !== 'grupos') : (t === filtroAtivo);
+        const bateBusca = nome.includes(busca);
+        const bateSetor = (setorFiltro === "" || setorCard === setorFiltro);
+
+        card.style.display = (bateAba && bateBusca && bateSetor) ? 'block' : 'none';
+    });
+    atualizarContadoresAbas();
+}
+
+setInterval(() => {
+    fetch('/whatsapp-bot/chat/').then(r => r.text()).then(html => {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const novaListaEl = doc.getElementById('lista-conversas');
+        if (novaListaEl) {
+            checarNovasNotificacoes(doc);
+            document.getElementById('lista-conversas').innerHTML = novaListaEl.innerHTML;
+            aplicarFiltros();
+
+            if (sessaoAtivaId) {
+                const cardRelistado = document.querySelector(`.card-conversa[onclick="carregarChat(${sessaoAtivaId})"]`);
+                if(cardRelistado) cardRelistado.classList.add('card-ativo');
+            }
+        }
+    }).catch(e => console.log('Silenciando erro de rede'));
+
+    if (sessaoAtivaId) {
+        fetch(`/whatsapp-bot/chat/${sessaoAtivaId}/`).then(r => r.text()).then(html => {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const novaAreaEl = doc.getElementById('historia-mensagens');
+            const chatArea = document.getElementById('historia-mensagens');
+
+            if (chatArea && novaAreaEl) {
+                let isPlaying = false;
+                document.querySelectorAll('audio, video').forEach(media => { if (!media.paused && !media.ended) isPlaying = true; });
+
+                const currentTotal = chatArea.getAttribute('data-total');
+                const newTotal = novaAreaEl.getAttribute('data-total');
+
+                if (!isPlaying && currentTotal !== newTotal) {
+                    const isAtBottom = chatArea.scrollHeight - chatArea.scrollTop <= chatArea.clientHeight + 50;
+                    chatArea.innerHTML = novaAreaEl.innerHTML;
+                    chatArea.setAttribute('data-total', newTotal);
+                    if (window.agruparMensagens) window.agruparMensagens();
+                    if (isAtBottom) chatArea.scrollTop = chatArea.scrollHeight;
+                }
+            }
+        }).catch(e => console.log('Silenciando erro de chat'));
+    }
+}, 8000);
+
+const quickReplies = {{ mensagens_rapidas_json|safe|default:"[]" }};
+const nomeAtendente = "{{ request.user.first_name|default:request.user.username }}";
+
+window.detectarAtalhoRapido = function(e) {
+    const inputMsg = e.target;
+    const val = inputMsg.value;
+    const cursorPosition = inputMsg.selectionStart;
+    const textBeforeCursor = val.substring(0, cursorPosition);
+    const lastSlashIdx = textBeforeCursor.lastIndexOf('/');
+    const popup = document.getElementById('quick-reply-popup');
+
+    if (lastSlashIdx !== -1 && popup) {
+        const query = textBeforeCursor.substring(lastSlashIdx).toLowerCase();
+
+        if (!query.includes(' ') && query.length >= 1) {
+            const matches = quickReplies.filter(qr => qr.atalho.toLowerCase().startsWith(query));
+
+            if (matches.length > 0) {
+                popup.innerHTML = matches.map(qr => `
+                    <div class="p-3 border-b border-core-line/50 bg-core-deep hover:bg-blue-900/40 cursor-pointer transition-colors flex flex-col gap-1"
+                         onclick="window.usarAtalhoRapido('${qr.atalho}', '${qr.texto.replace(/\n/g, '\\n').replace(/'/g, "\\'")}')">
+                        <span class="font-extrabold text-blue-400 uppercase tracking-wide text-[10px]">${qr.atalho}</span>
+                        <span class="text-ink-soft font-medium text-[11px] truncate">${qr.titulo} - ${qr.texto}</span>
+                    </div>
+                `).join('');
+                popup.classList.remove('hidden');
+                return;
+            }
+        }
+    }
+    if(popup) popup.classList.add('hidden');
+}
+
+window.usarAtalhoRapido = function(atalho, texto) {
+    const inputMsg = document.getElementById('input-mensagem');
+    const popup = document.getElementById('quick-reply-popup');
+    const val = inputMsg.value;
+    const cursorPosition = inputMsg.selectionStart;
+    const textBeforeCursor = val.substring(0, cursorPosition);
+    const textAfterCursor = val.substring(cursorPosition);
+    const lastSlashIdx = textBeforeCursor.lastIndexOf('/');
+
+    if (lastSlashIdx !== -1) {
+        const before = textBeforeCursor.substring(0, lastSlashIdx);
+        const textoFormatado = texto.replace(/{nome}/g, nomeAtendente);
+        inputMsg.value = before + textoFormatado + ' ' + textAfterCursor;
+        inputMsg.focus();
+        if(popup) popup.classList.add('hidden');
+        window.salvarRascunho();
+        inputMsg.style.height = 'auto';
+        inputMsg.style.height = (inputMsg.scrollHeight) + 'px';
+    }
+}
+
+window.salvarRascunho = function() {
+    const input = document.getElementById('input-mensagem');
+    if(input && sessaoAtivaId) {
+        localStorage.setItem('draft_' + sessaoAtivaId, input.value);
+        input.style.height = 'auto'; input.style.height = (input.scrollHeight) + 'px';
+    }
+}
+
+window.checarEnter = function(event, id) {
+    if(event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        window.enviarMensagem(event, id);
+    }
+}
+
+window.cancelarResposta = function() {
+    const replyBox = document.getElementById('reply-preview');
+    if(replyBox) {
+        replyBox.classList.add('hidden');
+        document.getElementById('reply_to_id').value = '';
+        document.getElementById('quoted_text').value = '';
+    }
+}
+
+window.prepararResposta = function(msgId, msgText) {
+    window.cancelarEdicao();
+    const replyBox = document.getElementById('reply-preview');
+    if(replyBox) {
+        replyBox.classList.remove('hidden');
+        document.getElementById('reply-text-preview').innerText = msgText;
+        document.getElementById('reply_to_id').value = msgId;
+        document.getElementById('quoted_text').value = msgText;
+        document.getElementById('input-mensagem').focus();
+    }
+}
+
+window.cancelarEdicao = function() {
+    const editBox = document.getElementById('edit-preview');
+    if(editBox) {
+        editBox.classList.add('hidden');
+        document.getElementById('edit_message_id').value = '';
+        document.getElementById('input-mensagem').value = localStorage.getItem('draft_' + sessaoAtivaId) || '';
+    }
+}
+
+window.prepararEdicao = function(msgId, msgText) {
+    window.cancelarResposta();
+    const editBox = document.getElementById('edit-preview');
+    if(editBox) {
+        editBox.classList.remove('hidden');
+        let textoLimpo = msgText.replace(/💬 \*[^*]+\*\n/, '');
+        document.getElementById('edit-text-preview').innerText = textoLimpo;
+        document.getElementById('edit_message_id').value = msgId;
+
+        const input = document.getElementById('input-mensagem');
+        input.value = textoLimpo;
+        input.style.height = 'auto'; input.style.height = (input.scrollHeight) + 'px';
+        input.focus();
+    }
+}
+
+window.deletarMensagem = function(msgId) {
+    if(confirm("Deseja realmente apagar esta mensagem para o cliente?")) {
+        const form = new FormData();
+        form.append('message_id', msgId); form.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        fetch('/whatsapp-bot/deletar-mensagem/', { method: 'POST', body: form }).then(() => carregarChat(sessaoAtivaId));
+    }
+}
+
+window.enviarMensagem = function(event, id) {
+    if(event) event.preventDefault();
+    const input = document.getElementById('input-mensagem');
+    const internoEl = document.getElementById('check-interno');
+    const popup = document.getElementById('quick-reply-popup');
+
+    if(popup) popup.classList.add('hidden');
+
+    const isInterno = internoEl ? internoEl.checked : false;
+    const texto = input ? input.value.trim() : "";
+    if(!texto) return;
+
+    const reply_to_id = document.getElementById('reply_to_id') ? document.getElementById('reply_to_id').value : '';
+    const quoted_text = document.getElementById('quoted_text') ? document.getElementById('quoted_text').value : '';
+    const edit_message_id = document.getElementById('edit_message_id') ? document.getElementById('edit_message_id').value : '';
+
+    const form = new FormData();
+    form.append('session_id', id); form.append('texto', texto); form.append('is_interno', isInterno);
+    form.append('reply_to_id', reply_to_id); form.append('quoted_text', quoted_text);
+    form.append('edit_message_id', edit_message_id);
+    form.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    if(input) { input.value = ''; input.style.height = '40px'; }
+    localStorage.removeItem('draft_' + id);
+    window.cancelarResposta();
+    window.cancelarEdicao();
+
+    fetch('/whatsapp-bot/enviar/', { method: 'POST', body: form }).then(() => {
+        carregarChat(id, true);
+    });
+}
+
+window.iniciarNovaConversa = function() {
+    const numEl = document.getElementById('novo-numero');
+    const numero = numEl ? numEl.value.trim() : "";
+    if(!numero) return alert("Por favor, informe o número do WhatsApp do cliente.");
+
+    const form = new FormData();
+    form.append('numero', numero);
+    form.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    fetch('/whatsapp-bot/iniciar/', { method: 'POST', body: form })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') {
+            fecharModal('modalNovoChat');
+            if(numEl) numEl.value = '';
+
+            document.querySelectorAll('.aba-btn').forEach(btn => {
+                if(btn.innerText.toLowerCase().includes('meus')) filtrarAbas('meus', btn);
+            });
+            carregarChat(data.session_id);
+        } else if (data.status === 'already_open') {
+            alert(data.message);
+        } else {
+            alert("Falha ao abrir uma nova conversa com este número.");
+        }
+    });
+}
+
+window.enviarArquivoGenerico = function(file, id, loadingText="Enviando anexo...") {
+    const form = new FormData();
+    form.append('session_id', id);
+    form.append('arquivo', file);
+    form.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    const chatArea = document.getElementById('historia-mensagens');
+    const progressId = 'progresso-' + Date.now();
+
+    if(chatArea) {
+        const progressHTML = `
+            <div id="${progressId}" class="self-end bg-core-deep border border-blue-500/30 p-3 rounded-xl w-64 shadow-[0_0_10px_rgba(59,130,246,0.2)] flex flex-col gap-2 my-2 transition-all">
+                <div class="flex justify-between items-center text-[10px] font-bold text-blue-400 uppercase tracking-wide">
+                    <span class="truncate"><i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>${loadingText}</span>
+                    <span id="${progressId}-text" class="text-emerald-400 font-bold ml-2">0%</span>
+                </div>
+                <div class="w-full bg-core-bg rounded-full h-1.5 overflow-hidden border border-core-line">
+                    <div id="${progressId}-bar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-200 shadow-[0_0_8px_rgba(59,130,246,0.8)]" style="width: 0%"></div>
+                </div>
+            </div>
+        `;
+        chatArea.insertAdjacentHTML('beforeend', progressHTML);
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/whatsapp-bot/enviar-arquivo/', true);
+
+    xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            const barra = document.getElementById(`${progressId}-bar`);
+            const texto = document.getElementById(`${progressId}-text`);
+
+            if(barra) barra.style.width = percentComplete + '%';
+            if(texto) texto.innerText = percentComplete + '%';
+
+            if(percentComplete === 100 && texto) {
+                texto.innerText = "Processando...";
+                texto.classList.remove('text-emerald-400');
+                texto.classList.add('text-amber-500', 'animate-pulse');
+            }
+        }
+    };
+
+    xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            const boxProgresso = document.getElementById(progressId);
+            if(boxProgresso) boxProgresso.remove();
+            carregarChat(id, true);
+        } else {
+            const texto = document.getElementById(`${progressId}-text`);
+            if(texto) {
+                texto.innerText = "Erro no envio";
+                texto.classList.replace('text-amber-500', 'text-rose-500');
+                texto.classList.remove('animate-pulse');
+            }
+        }
+    };
+
+    xhr.onerror = function() {
+        const texto = document.getElementById(`${progressId}-text`);
+        if(texto) {
+            texto.innerText = "Falha de conexão";
+            texto.classList.add('text-rose-500');
+        }
+    };
+
+    xhr.send(form);
+}
+
+window.enviarMidiaInput = function(event, id) {
+    const fileInput = event.target;
+    if(!fileInput || !fileInput.files.length) return;
+    const nomeArquivo = fileInput.files[0].name;
+    window.enviarArquivoGenerico(fileInput.files[0], id, "Enviando " + nomeArquivo);
+    fileInput.value = '';
+}
+
+document.addEventListener('paste', function(e) {
+    if (!sessaoAtivaId) return;
+    if (e.clipboardData && e.clipboardData.files.length > 0) {
+        const file = e.clipboardData.files[0];
+        if (file.type.startsWith('image/')) {
+            e.preventDefault();
+            if(confirm("Deseja enviar a imagem colada para o cliente?")) {
+                window.enviarArquivoGenerico(file, sessaoAtivaId, "Enviando print...");
+            }
+        }
+    }
+});
+
+let mediaRecorder;
+let audioChunks = [];
+let isRecording = false;
+
+window.toggleGravacao = async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-gravar-audio');
+
+    if (isRecording) {
+        isRecording = false;
+        if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+        if(btn) {
+            btn.classList.remove('bg-rose-600', 'text-ink', 'animate-pulse', 'shadow-[0_0_15px_rgba(244,63,94,0.5)]');
+            btn.classList.add('bg-core-deep', 'text-ink-soft');
+        }
+        return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("O seu navegador não permitiu o acesso ao microfone. Verifique as configurações.");
+        return;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = ev => { if(ev.data.size > 0) audioChunks.push(ev.data); };
+
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            window.audioBlobToUpload = new File([audioBlob], "gravacao.webm", { type: 'audio/webm' });
+
+            document.getElementById('audio-preview-element').src = URL.createObjectURL(audioBlob);
+            document.getElementById('container-inputs-texto').classList.add('hidden');
+            document.getElementById('audio-preview-container').classList.remove('hidden');
+
+            stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+
+        if(btn) {
+            btn.classList.add('bg-rose-600', 'text-ink', 'animate-pulse', 'shadow-[0_0_15px_rgba(244,63,94,0.5)]');
+            btn.classList.remove('bg-core-deep', 'text-ink-soft');
+        }
+    } catch(err) {
+        alert("Não foi possível acessar o microfone.");
+    }
+}
+
+window.cancelarAudio = function() {
+    window.audioBlobToUpload = null;
+    document.getElementById('audio-preview-container').classList.add('hidden');
+    document.getElementById('container-inputs-texto').classList.remove('hidden');
+    document.getElementById('audio-preview-element').src = "";
+}
+
+window.enviarAudioGravado = function() {
+    if(window.audioBlobToUpload && sessaoAtivaId) {
+        window.enviarArquivoGenerico(window.audioBlobToUpload, sessaoAtivaId, "Enviando áudio...");
+        window.cancelarAudio();
+    }
+}
+
+window.alterarVelocidadeAudio = function(btn) {
+    const audio = btn.previousElementSibling;
+    if (audio.playbackRate === 1) {
+        audio.playbackRate = 1.5;
+        btn.innerText = "1.5x";
+        btn.classList.add('bg-blue-600', 'text-ink', 'border-blue-500');
+        btn.classList.remove('bg-core-deep', 'text-ink-soft', 'border-core-line/50');
+    } else if (audio.playbackRate === 1.5) {
+        audio.playbackRate = 2.0;
+        btn.innerText = "2x";
+        btn.classList.remove('bg-blue-600', 'border-blue-500');
+        btn.classList.add('bg-emerald-600', 'border-emerald-500');
+    } else {
+        audio.playbackRate = 1.0;
+        btn.innerText = "1x";
+        btn.classList.remove('bg-emerald-600', 'text-ink', 'border-emerald-500');
+        btn.classList.add('bg-core-deep', 'text-ink-soft', 'border-core-line/50');
+    }
+}
+</script>
+{% endblock %}

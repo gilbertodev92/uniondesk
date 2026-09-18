@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lógica UnionDESK | Gestão de Suporte e TI</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              core: { bg: '#05070c', deep: '#0a0e17', panel: '#0d1220', line: '#1b2333' },
+              accent: { DEFAULT: '#3d5afe', soft: '#7c9bff' },
+              signal: { DEFAULT: '#00d9a3' },
+            },
+            fontFamily: {
+              display: ['"Space Grotesk"', 'sans-serif'],
+              sans: ['Inter', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #05070c; color: #e4e9f2; }
+
+        .bg-grid {
+            background-image:
+                linear-gradient(rgba(61, 90, 254, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(61, 90, 254, 0.05) 1px, transparent 1px);
+            background-size: 46px 46px;
+        }
+
+        .glass-nav { background: rgba(5, 7, 12, 0.75); backdrop-filter: blur(14px); border-bottom: 1px solid #1b2333; }
+        .glass-card { background: rgba(10, 14, 23, 0.75); backdrop-filter: blur(14px); border: 1px solid #1b2333; }
+        .glass-card:hover { border-color: #2a3652; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #05070c; }
+        ::-webkit-scrollbar-thumb { background: #1b2333; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3d5afe; }
+
+        .status-ring { position: relative; }
+        .status-ring::before {
+            content: ''; position: absolute; inset: -1px; border-radius: inherit;
+            border: 1px solid #00d9a3; opacity: 0;
+            animation: pulseRing 2.6s ease-out infinite;
+        }
+        @keyframes pulseRing { 0% { opacity: .5; transform: scale(1); } 100% { opacity: 0; transform: scale(1.3); } }
+    </style>
+</head>
+<body class="antialiased overflow-x-hidden bg-core-bg">
+
+    <nav class="fixed w-full z-50 glass-nav transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="flex items-center justify-between h-[72px]">
+                <div class="flex items-center gap-3 cursor-pointer" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+                    <div class="status-ring w-9 h-9 rounded-lg bg-core-deep border border-accent/25 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-layer-group text-accent-soft text-sm"></i>
+                    </div>
+                    <span class="font-display font-semibold text-[15px] tracking-wide text-slate-100">LÓGICA<span class="text-slate-500 font-normal">.UnionDESK</span></span>
+                </div>
+
+                <div class="hidden md:flex items-center gap-10">
+                    <a href="#modulos" class="text-slate-400 hover:text-accent-soft font-mono text-[11px] uppercase tracking-[0.15em] transition-colors">Ecossistema</a>
+                    <a href="#planos" class="text-slate-400 hover:text-accent-soft font-mono text-[11px] uppercase tracking-[0.15em] transition-colors">Planos</a>
+                    <a href="#contato" class="text-slate-400 hover:text-accent-soft font-mono text-[11px] uppercase tracking-[0.15em] transition-colors">Contato</a>
+                </div>
+
+                <a href="/usuarios/login/" class="hidden md:flex items-center gap-2 bg-accent hover:bg-[#4d68ff] text-white px-5 py-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all">
+                    <i class="fa-solid fa-right-to-bracket"></i> Acesso Restrito
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="relative min-h-screen flex items-center justify-center pt-20 bg-grid">
+        <div class="absolute inset-0 z-0" style="mask-image: radial-gradient(ellipse 65% 55% at 50% 35%, black 0%, transparent 75%); background: radial-gradient(circle at 50% 20%, rgba(61,90,254,0.14) 0%, transparent 60%);"></div>
+
+        <div class="relative z-10 max-w-5xl mx-auto px-6 text-center">
+            <div class="mb-7 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-core-deep border border-signal/25">
+                <span class="w-1.5 h-1.5 rounded-full bg-signal shadow-[0_0_6px_#00d9a3]"></span>
+                <span class="font-mono text-[10.5px] text-signal uppercase tracking-[0.15em]">Fase Beta Ativa · v1.0</span>
+            </div>
+
+            <h1 class="font-display text-4xl md:text-6xl font-semibold text-white mb-6 tracking-tight leading-[1.1]">
+                O fim do caos<br>no suporte de TI.
+            </h1>
+
+            <p class="text-sm md:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed mb-10">
+                WhatsApp, chamados, equipe e clientes centralizados em um único ecossistema operacional — com visibilidade total do que está acontecendo agora.
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <a href="#contato" class="w-full sm:w-auto bg-accent hover:bg-[#4d68ff] text-white px-7 py-3.5 rounded-lg text-xs font-semibold uppercase tracking-widest transition-all">
+                    Solicitar demonstração
+                </a>
+                <a href="/usuarios/login/" class="w-full sm:w-auto bg-core-deep hover:bg-core-panel border border-core-line text-white px-7 py-3.5 rounded-lg text-xs font-semibold uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                    Área do cliente <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section id="modulos" class="py-24 relative border-t border-core-line/60">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-accent-soft text-[11px] uppercase tracking-[0.15em] mb-2">Ecossistema</p>
+                <h2 class="font-display text-2xl md:text-3xl font-semibold text-white">Módulos do sistema</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                <div class="glass-card rounded-2xl p-7 transition-colors">
+                    <div class="w-11 h-11 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center mb-5">
+                        <i class="fa-brands fa-whatsapp text-accent-soft text-lg"></i>
+                    </div>
+                    <h3 class="font-display text-base font-semibold text-white mb-1.5">Omnichannel</h3>
+                    <p class="text-[13px] text-slate-400 leading-relaxed mb-4">Acabe com chamados perdidos no WhatsApp.</p>
+                    <ul class="space-y-2 font-mono text-[11px] text-slate-400 uppercase tracking-wide">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> IA de triagem automática</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Múltiplos técnicos, 1 número</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Gestão de grupos VIP</li>
+                    </ul>
+                </div>
+
+                <div class="glass-card rounded-2xl p-7 transition-colors">
+                    <div class="w-11 h-11 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center mb-5">
+                        <i class="fa-solid fa-ticket text-accent-soft text-lg"></i>
+                    </div>
+                    <h3 class="font-display text-base font-semibold text-white mb-1.5">Tickets &amp; CRM</h3>
+                    <p class="text-[13px] text-slate-400 leading-relaxed mb-4">Visibilidade total do backlog e SLAs garantidos.</p>
+                    <ul class="space-y-2 font-mono text-[11px] text-slate-400 uppercase tracking-wide">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Kanban operacional</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Implantações e backlog</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Controle de SLA</li>
+                    </ul>
+                </div>
+
+                <div class="glass-card rounded-2xl p-7 transition-colors">
+                    <div class="w-11 h-11 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center mb-5">
+                        <i class="fa-solid fa-satellite-dish text-accent-soft text-lg"></i>
+                    </div>
+                    <h3 class="font-display text-base font-semibold text-white mb-1.5">Comando &amp; Mapas</h3>
+                    <p class="text-[13px] text-slate-400 leading-relaxed mb-4">Inteligência de dados em tempo real, georreferenciada.</p>
+                    <ul class="space-y-2 font-mono text-[11px] text-slate-400 uppercase tracking-wide">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Raio-X diário</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Mapa SC georreferenciado</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Funil operacional</li>
+                    </ul>
+                </div>
+
+                <div class="glass-card rounded-2xl p-7 transition-colors">
+                    <div class="w-11 h-11 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center mb-5">
+                        <i class="fa-solid fa-heart-pulse text-accent-soft text-lg"></i>
+                    </div>
+                    <h3 class="font-display text-base font-semibold text-white mb-1.5">Saúde &amp; NPS</h3>
+                    <p class="text-[13px] text-slate-400 leading-relaxed mb-4">Antecipe cancelamentos antes que aconteçam.</p>
+                    <ul class="space-y-2 font-mono text-[11px] text-slate-400 uppercase tracking-wide">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Health score global</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Detecção de detratores</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Curva ABC de clientes</li>
+                    </ul>
+                </div>
+
+                <div class="glass-card rounded-2xl p-7 transition-colors">
+                    <div class="w-11 h-11 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center mb-5">
+                        <i class="fa-solid fa-gamepad text-accent-soft text-lg"></i>
+                    </div>
+                    <h3 class="font-display text-base font-semibold text-white mb-1.5">Gamificação</h3>
+                    <p class="text-[13px] text-slate-400 leading-relaxed mb-4">Engaje técnicos e aumente a produtividade.</p>
+                    <ul class="space-y-2 font-mono text-[11px] text-slate-400 uppercase tracking-wide">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Sistema de níveis e XP</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Missões diárias/semanais</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Loja de recompensas</li>
+                    </ul>
+                </div>
+
+                <div class="glass-card rounded-2xl p-7 transition-colors">
+                    <div class="w-11 h-11 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center mb-5">
+                        <i class="fa-solid fa-stopwatch text-accent-soft text-lg"></i>
+                    </div>
+                    <h3 class="font-display text-base font-semibold text-white mb-1.5">Ponto Eletrônico</h3>
+                    <p class="text-[13px] text-slate-400 leading-relaxed mb-4">Controle de jornada sem planilha.</p>
+                    <ul class="space-y-2 font-mono text-[11px] text-slate-400 uppercase tracking-wide">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Apontamento em 1 clique</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Plantões e madrugadas</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-signal text-[10px]"></i> Relatórios em PDF</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="planos" class="py-24 relative border-t border-core-line/60">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="glass-card rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-10">
+                <div class="flex-1">
+                    <div class="inline-flex items-center gap-1.5 bg-signal/10 border border-signal/25 text-signal px-3 py-1 rounded font-mono text-[10px] uppercase tracking-widest mb-4">
+                        <i class="fa-solid fa-flask"></i> Acesso antecipado
+                    </div>
+                    <h3 class="font-display text-2xl md:text-3xl font-semibold text-white mb-4">Programa de Parceiros Fundadores</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                        Torne-se um dos pioneiros a homologar o sistema. Acesso irrestrito a todos os módulos, suporte direto com os desenvolvedores e poder de voto nas próximas features.
+                    </p>
+                    <ul class="space-y-2.5 font-mono text-[11px] text-slate-300 uppercase tracking-wide">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-signal"></i> Todos os módulos desbloqueados</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-signal"></i> Atualizações semanais garantidas</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-signal"></i> Vagas limitadas no servidor</li>
+                    </ul>
+                </div>
+
+                <div class="w-full md:w-auto bg-core-deep border border-core-line rounded-xl p-8 text-center shrink-0">
+                    <p class="font-mono text-[10px] text-slate-500 uppercase tracking-widest mb-2">Como participar</p>
+                    <p class="font-display text-2xl font-semibold text-white mb-6">Se inscreva</p>
+                    <a href="#contato" class="block w-full bg-white text-black hover:bg-slate-200 px-8 py-3 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-colors">
+                        Falar com a Lógica
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contato" class="py-24 relative border-t border-core-line/60">
+        <div class="max-w-3xl mx-auto px-6">
+            <div class="text-center mb-12">
+                <p class="font-mono text-accent-soft text-[11px] uppercase tracking-[0.15em] mb-2">Contato</p>
+                <h2 class="font-display text-2xl md:text-3xl font-semibold text-white">Solicite uma demonstração</h2>
+            </div>
+
+            <form class="glass-card p-8 md:p-10 rounded-2xl" onsubmit="event.preventDefault(); alert('Em desenvolvimento. Integração com backend pendente.');">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                    <div>
+                        <label class="block font-mono text-[10px] text-slate-500 uppercase tracking-widest mb-2">Nome completo</label>
+                        <input type="text" class="w-full bg-core-bg border border-core-line text-white px-4 py-3 rounded-lg focus:outline-none focus:border-accent transition-colors text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block font-mono text-[10px] text-slate-500 uppercase tracking-widest mb-2">Empresa</label>
+                        <input type="text" class="w-full bg-core-bg border border-core-line text-white px-4 py-3 rounded-lg focus:outline-none focus:border-accent transition-colors text-sm" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                    <div>
+                        <label class="block font-mono text-[10px] text-slate-500 uppercase tracking-widest mb-2">WhatsApp</label>
+                        <input type="tel" class="w-full bg-core-bg border border-core-line text-white px-4 py-3 rounded-lg focus:outline-none focus:border-accent transition-colors text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block font-mono text-[10px] text-slate-500 uppercase tracking-widest mb-2">E-mail profissional</label>
+                        <input type="email" class="w-full bg-core-bg border border-core-line text-white px-4 py-3 rounded-lg focus:outline-none focus:border-accent transition-colors text-sm" required>
+                    </div>
+                </div>
+
+                <div class="mb-7">
+                    <label class="block font-mono text-[10px] text-slate-500 uppercase tracking-widest mb-2">Qual é o maior gargalo na sua operação de suporte hoje?</label>
+                    <textarea rows="3" class="w-full bg-core-bg border border-core-line text-white px-4 py-3 rounded-lg focus:outline-none focus:border-accent transition-colors text-sm resize-none"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-accent hover:bg-[#4d68ff] text-white font-semibold uppercase tracking-widest py-3.5 rounded-lg text-xs transition-colors">
+                    Enviar solicitação
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <footer class="border-t border-core-line/60 py-10">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2.5 opacity-60 hover:opacity-100 transition-opacity">
+                <div class="w-6 h-6 rounded bg-core-deep border border-core-line flex items-center justify-center">
+                    <i class="fa-solid fa-layer-group text-accent-soft text-[10px]"></i>
+                </div>
+                <span class="font-display text-xs font-semibold text-white">LÓGICA<span class="text-slate-500 font-normal">.UnionDESK</span></span>
+            </div>
+            <p class="font-mono text-[10px] text-slate-500 uppercase tracking-widest text-center md:text-right">
+                © 2026 Lógica Informática e Automação Comercial.<br>Todos os direitos reservados.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        window.addEventListener('scroll', function() {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 50) { nav.classList.add('shadow-lg'); } else { nav.classList.remove('shadow-lg'); }
+        });
+
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', function (event) {
+            if (event.keyCode === 123) { event.preventDefault(); return false; }
+            if (event.ctrlKey && event.shiftKey && (event.keyCode === 73 || event.keyCode === 74)) { event.preventDefault(); return false; }
+            if (event.ctrlKey && event.keyCode === 85) { event.preventDefault(); return false; }
+            if (event.ctrlKey && event.keyCode === 83) { event.preventDefault(); return false; }
+        });
+    </script>
+</body>
+</html>

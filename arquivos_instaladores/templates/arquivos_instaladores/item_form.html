@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% load add_class %}
+{% block title %}{% if modo == 'Editar' %}Editar{% else %}Novo{% endif %} recurso | Hub de Instaladores{% endblock %}
+
+{% block content %}
+<div class="ai-root">
+  <div class="ai-wrap">
+
+    <header class="ai-head">
+      <a href="{% url 'arquivos_instaladores:painel' %}" class="ai-back" aria-label="Voltar ao hub">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
+      <div>
+        <h1 class="ai-title">{% if modo == 'Editar' %}Editar recurso{% else %}Novo recurso{% endif %}</h1>
+        <p class="ai-subtitle"><i class="fa-solid fa-box-archive"></i> Repositório de instaladores e documentos</p>
+      </div>
+    </header>
+
+    <form id="ai-form" class="ai-grid" novalidate>
+      {% csrf_token %}
+
+      <div class="ai-col-main">
+        <section class="ai-card">
+          <h2 class="ai-card__title"><i class="fa-solid fa-cube"></i> Dados do recurso</h2>
+
+          <div class="ai-field">
+            <label for="{{ form.titulo.id_for_label }}">Título <span class="ai-req">*</span></label>
+            {{ form.titulo|add_class:"ai-input" }}
+          </div>
+
+          <div class="ai-field-row">
+            <div class="ai-field">
+              <label for="{{ form.categoria.id_for_label }}">Categoria <span class="ai-req">*</span></label>
+              {{ form.categoria|add_class:"ai-input ai-select" }}
+            </div>
+            <div class="ai-field">
+              <label for="{{ form.versao.id_for_label }}">Versão</label>
+              {{ form.versao|add_class:"ai-input ai-mono" }}
+            </div>
+          </div>
+
+          <div class="ai-field">
+            <label for="{{ form.descricao.id_for_label }}">Descrição / notas de versão</label>
+            {{ form.descricao|add_class:"ai-input ai-textarea" }}
+          </div>
+        </section>
+      </div>
+
+      <aside class="ai-col-side">
+
+        <!-- ── UPLOAD DO ARQUIVO ── -->
+        <section class="ai-card">
+          <h2 class="ai-card__title"><i class="fa-solid fa-cloud-arrow-up"></i> Arquivo</h2>
+
+          <div id="ai-drop" class="ai-drop" tabindex="0" role="button"
+               aria-label="Selecionar arquivo para upload">
+            <input type="file" id="ai-file" class="ai-file-hidden" {% if modo == 'Editar' %}{% endif %}>
+            <i class="fa-solid fa-cloud-arrow-up ai-drop__icon"></i>
+            <p class="ai-drop__main">Arraste o arquivo aqui</p>
+            <p class="ai-drop__sub">ou clique para escolher · até 1 GB</p>
+          </div>
+
+          <!-- estado: arquivo escolhido -->
+          <div id="ai-file-info" class="ai-file-info" hidden>
+            <i class="fa-solid fa-file ai-file-info__icon"></i>
+            <div class="ai-file-info__texts">
+              <span id="ai-file-name" class="ai-file-info__name"></span>
+              <span id="ai-file-size" class="ai-file-info__size"></span>
+            </div>
+            <button type="button" id="ai-file-clear" class="ai-file-info__clear" aria-label="Remover">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- barra de progresso -->
+          <div id="ai-progress" class="ai-progress" hidden>
+            <div class="ai-progress__head">
+              <span id="ai-progress-label">Enviando...</span>
+              <span id="ai-progress-pct" class="ai-mono">0%</span>
+            </div>
+            <div class="ai-progress__track">
+              <div id="ai-progress-bar" class="ai-progress__bar" style="width:0%"></div>
+            </div>
+            <div class="ai-progress__foot">
+              <span id="ai-progress-speed" class="ai-mono">—</span>
+              <span id="ai-progress-eta" class="ai-mono">—</span>
+            </div>
+          </div>
+
+          {% if modo == 'Editar' and obj.filename %}
+          <p class="ai-current-file">
+            <i class="fa-solid fa-circle-info"></i>
+            Arquivo atual: <strong>{{ obj.filename }}</strong> ({{ obj.tamanho_legivel }}).
+            Envie um novo para substituir.
+          </p>
+          {% endif %}
+        </section>
+
+        <!-- ── LINK EXTERNO ── -->
+        <section class="ai-card">
+          <h2 class="ai-card__title ai-card__title--alt"><i class="fa-solid fa-link"></i> Ou link externo</h2>
+          <p class="ai-hint">Use quando o arquivo já está hospedado em outro lugar (Drive, site do fabricante).</p>
+          {{ form.link_externo|add_class:"ai-input ai-mono" }}
+        </section>
+
+        <!-- ── STATUS + SUBMIT ── -->
+        <section class="ai-card">
+          <label class="ai-switch-row">
+            <span>Recurso ativo</span>
+            <span class="ai-switch">
+              {{ form.is_ativo }}
+              <span class="ai-switch__track"></span>
+            </span>
+          </label>
+
+          <button type="submit" id="ai-submit" class="ai-submit">
+            <i class="fa-solid fa-floppy-disk"></i> <span>Salvar recurso</span>
+          </button>
+          <p id="ai-error" class="ai-error" role="alert" hidden></p>
+        </section>
+
+      </aside>
+    </form>
+  </div>
+</div>
+
+<style>
+.ai-root { padding: 20px 16px 40px; }
+.ai-wrap { max-width: 1100px; margin: 0 auto; }
+
+.ai-head { display:flex; align-items:center; gap:14px; padding-bottom:18px; margin-bottom:20px; border-bottom:1px solid rgb(var(--c-line)); }
+.ai-back { width:42px; height:42px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:11px; color:rgb(var(--c-ink-soft)); text-decoration:none; transition:.15s; }
+.ai-back:hover { color:rgb(var(--c-accent)); border-color:rgb(var(--c-accent) / .4); }
+.ai-title { font-size:20px; font-weight:800; color:rgb(var(--c-ink)); line-height:1.2; }
+.ai-subtitle { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:rgb(var(--c-ink-faint)); margin-top:5px; display:flex; align-items:center; gap:7px; }
+
+.ai-grid { display:grid; grid-template-columns:1fr 380px; gap:16px; align-items:start; }
+
+.ai-card { background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:14px; padding:20px; margin-bottom:14px; transition:background-color .25s, border-color .25s; }
+.ai-card__title { font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.14em; color:rgb(var(--c-ink-faint)); padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid rgb(var(--c-line)); }
+.ai-card__title i { color:rgb(var(--c-accent)); margin-right:7px; }
+.ai-card__title--alt i { color:rgb(var(--c-signal)); }
+
+.ai-field { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+.ai-field:last-child { margin-bottom:0; }
+.ai-field label { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:rgb(var(--c-ink-soft)); }
+.ai-field-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.ai-req { color:rgb(var(--c-danger)); }
+.ai-hint { font-size:11.5px; color:rgb(var(--c-ink-faint)); margin-bottom:10px; line-height:1.5; }
+
+.ai-input { width:100%; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:10px; padding:11px 13px; color:rgb(var(--c-ink)); font-size:13px; font-family:'Inter',sans-serif; outline:none; transition:border-color .15s; }
+.ai-input::placeholder { color:rgb(var(--c-ink-faint)); }
+.ai-input:focus { border-color:rgb(var(--c-accent)); box-shadow:0 0 0 2px rgb(var(--c-accent) / .18); }
+.ai-select { cursor:pointer; appearance:none; }
+.ai-select option { background:rgb(var(--c-panel)); }
+.ai-mono { font-family:'JetBrains Mono', monospace; }
+.ai-textarea { min-height:120px; resize:vertical; }
+
+/* ── Área de drop ── */
+.ai-drop { border:2px dashed rgb(var(--c-line)); border-radius:12px; padding:28px 16px; text-align:center; cursor:pointer; transition:border-color .15s, background-color .15s; position:relative; }
+.ai-drop:hover, .ai-drop:focus-visible, .ai-drop.ai-drop--over { border-color:rgb(var(--c-accent)); background:rgb(var(--c-accent) / .05); outline:none; }
+.ai-drop__icon { font-size:34px; color:rgb(var(--c-ink-faint)); margin-bottom:12px; transition:color .15s; }
+.ai-drop:hover .ai-drop__icon, .ai-drop--over .ai-drop__icon { color:rgb(var(--c-accent)); }
+.ai-drop__main { font-size:13px; font-weight:700; color:rgb(var(--c-ink)); }
+.ai-drop__sub { font-size:11px; color:rgb(var(--c-ink-faint)); margin-top:4px; }
+.ai-file-hidden { position:absolute; inset:0; opacity:0; cursor:pointer; }
+
+/* ── Arquivo escolhido ── */
+.ai-file-info { display:flex; align-items:center; gap:12px; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:10px; padding:12px 14px; margin-top:12px; }
+.ai-file-info__icon { font-size:20px; color:rgb(var(--c-accent)); flex-shrink:0; }
+.ai-file-info__texts { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.ai-file-info__name { font-size:12.5px; font-weight:700; color:rgb(var(--c-ink)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ai-file-info__size { font-size:11px; color:rgb(var(--c-ink-faint)); font-family:'JetBrains Mono', monospace; }
+.ai-file-info__clear { width:30px; height:30px; flex-shrink:0; border:none; background:none; color:rgb(var(--c-ink-faint)); cursor:pointer; border-radius:7px; transition:.15s; }
+.ai-file-info__clear:hover { background:rgb(var(--c-danger) / .12); color:rgb(var(--c-danger)); }
+
+/* ── Barra de progresso ── */
+.ai-progress { margin-top:14px; }
+.ai-progress__head, .ai-progress__foot { display:flex; justify-content:space-between; align-items:center; font-size:11px; }
+.ai-progress__head { margin-bottom:7px; font-weight:700; color:rgb(var(--c-ink-soft)); }
+.ai-progress__head #ai-progress-pct { color:rgb(var(--c-accent)); font-size:12.5px; }
+.ai-progress__track { height:8px; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:99px; overflow:hidden; }
+.ai-progress__bar { height:100%; background:rgb(var(--c-accent)); border-radius:99px; width:0; transition:width .2s ease; }
+.ai-progress__foot { margin-top:7px; color:rgb(var(--c-ink-faint)); }
+.ai-progress--done .ai-progress__bar { background:rgb(var(--c-success)); }
+.ai-progress--error .ai-progress__bar { background:rgb(var(--c-danger)); }
+
+.ai-current-file { font-size:11.5px; color:rgb(var(--c-ink-faint)); margin-top:12px; line-height:1.5; }
+.ai-current-file i { color:rgb(var(--c-signal)); margin-right:5px; }
+.ai-current-file strong { color:rgb(var(--c-ink-soft)); }
+
+/* ── Switch ── */
+.ai-switch-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:rgb(var(--c-ink-soft)); }
+.ai-switch { position:relative; width:44px; height:24px; flex-shrink:0; }
+.ai-switch input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:1; }
+.ai-switch__track { position:absolute; inset:0; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:99px; transition:.2s; }
+.ai-switch__track::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; background:rgb(var(--c-ink-faint)); border-radius:50%; transition:.2s; }
+.ai-switch input:checked ~ .ai-switch__track { background:rgb(var(--c-accent) / .25); border-color:rgb(var(--c-accent) / .5); }
+.ai-switch input:checked ~ .ai-switch__track::after { left:22px; background:rgb(var(--c-accent)); }
+
+.ai-submit { width:100%; padding:14px; display:flex; align-items:center; justify-content:center; gap:9px; background:rgb(var(--c-accent)); border:1px solid rgb(var(--c-accent)); border-radius:11px; color:#fff; font-family:'Inter',sans-serif; font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; cursor:pointer; transition:filter .15s; }
+.ai-submit:hover { filter:brightness(1.1); }
+.ai-submit:disabled { opacity:.55; cursor:not-allowed; }
+
+.ai-error { font-size:11.5px; font-weight:700; color:rgb(var(--c-danger)); margin-top:12px; text-align:center; }
+
+@media (max-width: 860px) {
+    .ai-grid { grid-template-columns:1fr; }
+    .ai-field-row { grid-template-columns:1fr; }
+}
+</style>
+
+<script>
+(function () {
+    "use strict";
+
+    const CHUNK_SIZE = 5 * 1024 * 1024;      // 5MB por pedaço
+    const MAX_BYTES  = 1024 * 1024 * 1024;   // 1GB
+
+    const form      = document.getElementById("ai-form");
+    const fileInput = document.getElementById("ai-file");
+    const drop      = document.getElementById("ai-drop");
+    const info      = document.getElementById("ai-file-info");
+    const nameEl    = document.getElementById("ai-file-name");
+    const sizeEl    = document.getElementById("ai-file-size");
+    const clearBtn  = document.getElementById("ai-file-clear");
+    const progress  = document.getElementById("ai-progress");
+    const bar       = document.getElementById("ai-progress-bar");
+    const pct       = document.getElementById("ai-progress-pct");
+    const label     = document.getElementById("ai-progress-label");
+    const speedEl   = document.getElementById("ai-progress-speed");
+    const etaEl     = document.getElementById("ai-progress-eta");
+    const submit    = document.getElementById("ai-submit");
+    const errorEl   = document.getElementById("ai-error");
+
+    const MODO_EDITAR = {% if modo == 'Editar' %}true{% else %}false{% endif %};
+    const ITEM_ID_EDIT = {% if modo == 'Editar' and obj %}{{ obj.pk }}{% else %}null{% endif %};
+
+    let arquivo = null;
+    let cancelado = false;
+
+    function csrf() {
+        const m = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
+        return m ? m.pop() : '';
+    }
+    function humano(bytes) {
+        const u = ["B","KB","MB","GB"]; let n = bytes, i = 0;
+        while (n >= 1024 && i < u.length-1) { n /= 1024; i++; }
+        return (i < 2 ? n.toFixed(0) : n.toFixed(1)) + " " + u[i];
+    }
+    function erro(msg) {
+        errorEl.textContent = msg; errorEl.hidden = false;
+        submit.disabled = false;
+        progress.classList.add("ai-progress--error");
+        label.textContent = "Falhou";
+    }
+
+    // ── seleção de arquivo ──
+    function escolher(f) {
+        if (!f) return;
+        if (f.size > MAX_BYTES) { erro("Arquivo maior que 1 GB."); return; }
+        arquivo = f;
+        errorEl.hidden = true;
+        nameEl.textContent = f.name;
+        sizeEl.textContent = humano(f.size);
+        info.hidden = false;
+        drop.style.display = "none";
+    }
+    fileInput.addEventListener("change", e => escolher(e.target.files[0]));
+    clearBtn.addEventListener("click", () => {
+        arquivo = null; fileInput.value = "";
+        info.hidden = true; drop.style.display = "";
+        progress.hidden = true; progress.className = "ai-progress";
+    });
+
+    // drag & drop
+    ["dragover","dragenter"].forEach(ev => drop.addEventListener(ev, e => {
+        e.preventDefault(); drop.classList.add("ai-drop--over");
+    }));
+    ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => {
+        e.preventDefault(); drop.classList.remove("ai-drop--over");
+    }));
+    drop.addEventListener("drop", e => { if (e.dataTransfer.files[0]) escolher(e.dataTransfer.files[0]); });
+
+    // ── envio ──
+    form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        errorEl.hidden = true;
+
+        if (!form.querySelector("#id_titulo").value.trim()) { erro("Informe o título."); return; }
+
+        const temLink = (form.querySelector("#id_link_externo")?.value || "").trim();
+        // sem arquivo novo e sem link (e não é edição com arquivo já existente)
+        if (!arquivo && !temLink && !MODO_EDITAR) {
+            erro("Envie um arquivo ou informe um link externo."); return;
+        }
+
+        submit.disabled = true;
+
+        // 1) cria/atualiza o item (metadados) e pega o pk
+        let itemId;
+        try {
+            const fd = new FormData(form);
+            const url = MODO_EDITAR
+                ? "{% if modo == 'Editar' and obj %}{% url 'arquivos_instaladores:edit' obj.pk %}{% endif %}"
+                : "{% url 'arquivos_instaladores:create' %}";
+            const r = await fetch(url, {
+                method: "POST",
+                headers: { "X-CSRFToken": csrf(), "X-Requested-With": "XMLHttpRequest" },
+                body: fd,
+            });
+            if (!r.ok) throw new Error("form");
+            const data = await r.json();
+            itemId = data.item_id;
+        } catch (err) { erro("Não foi possível salvar os dados. Verifique os campos."); return; }
+
+        // sem arquivo (só metadados/link) → encerra
+        if (!arquivo) { window.location.href = "{% url 'arquivos_instaladores:painel' %}"; return; }
+
+        // 2) sobe os chunks
+        progress.hidden = false;
+        const uploadId = crypto.randomUUID();
+        const total = Math.ceil(arquivo.size / CHUNK_SIZE);
+        const t0 = Date.now();
+
+        for (let i = 0; i < total; i++) {
+            if (cancelado) return;
+            const inicio = i * CHUNK_SIZE;
+            const pedaco = arquivo.slice(inicio, inicio + CHUNK_SIZE);
+
+            const ok = await enviarChunk(uploadId, i, pedaco);
+            if (!ok) { erro("Falha no envio. Verifique a conexão e tente de novo."); return; }
+
+            const enviados = Math.min(inicio + CHUNK_SIZE, arquivo.size);
+            const p = Math.round(enviados / arquivo.size * 100);
+            bar.style.width = p + "%";
+            pct.textContent = p + "%";
+
+            const seg = (Date.now() - t0) / 1000;
+            const vel = enviados / seg;
+            speedEl.textContent = humano(vel) + "/s";
+            const restante = (arquivo.size - enviados) / vel;
+            etaEl.textContent = isFinite(restante) ? "faltam " + formatarTempo(restante) : "—";
+        }
+
+        // 3) finaliza (junta os pedaços no servidor)
+        label.textContent = "Processando no servidor...";
+        etaEl.textContent = ""; speedEl.textContent = "";
+        try {
+            const fd = new FormData();
+            fd.append("upload_id", uploadId);
+            fd.append("item_id", itemId);
+            fd.append("total_chunks", total);
+            fd.append("filename", arquivo.name);
+            const r = await fetch("{% url 'arquivos_instaladores:finalizar_upload' %}", {
+                method: "POST",
+                headers: { "X-CSRFToken": csrf(), "X-Requested-With": "XMLHttpRequest" },
+                body: fd,
+            });
+            if (!r.ok) throw new Error("finalizar");
+            progress.classList.add("ai-progress--done");
+            label.textContent = "Concluído!";
+            pct.textContent = "100%";
+            setTimeout(() => window.location.href = "{% url 'arquivos_instaladores:painel' %}", 700);
+        } catch (err) { erro("O arquivo subiu mas falhou ao finalizar. Tente novamente."); }
+    });
+
+    function enviarChunk(uploadId, indice, pedaco) {
+        return new Promise(resolve => {
+            const fd = new FormData();
+            fd.append("upload_id", uploadId);
+            fd.append("indice", indice);
+            fd.append("chunk", pedaco);
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "{% url 'arquivos_instaladores:upload_chunk' %}");
+            xhr.setRequestHeader("X-CSRFToken", csrf());
+            xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+            xhr.onload = () => resolve(xhr.status === 200);
+            xhr.onerror = () => resolve(false);
+            xhr.send(fd);
+        });
+    }
+
+    function formatarTempo(seg) {
+        seg = Math.round(seg);
+        if (seg < 60) return seg + "s";
+        const m = Math.floor(seg / 60), s = seg % 60;
+        return m + "min " + s + "s";
+    }
+})();
+</script>
+{% endblock %}

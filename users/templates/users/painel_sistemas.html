@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Sistemas</h1>
+
+<a href="{% url 'sistema_criar' %}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Adicionar Sistema</a>
+
+<table class="min-w-full mt-4 border">
+    <thead>
+        <tr>
+            <th class="border px-4 py-2">Código</th>
+            <th class="border px-4 py-2">Nome</th>
+            <th class="border px-4 py-2">Fabricante</th>
+            <th class="border px-4 py-2">Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sistema in sistemas %}
+        <tr>
+            <td class="border px-4 py-2">{{ sistema.codigo }}</td>
+            <td class="border px-4 py-2">{{ sistema.nome }}</td>
+            <td class="border px-4 py-2">{{ sistema.fabricante }}</td>
+            <td class="border px-4 py-2">
+                <a href="{% url 'sistema_editar' sistema.pk %}" class="text-blue-600 hover:underline">Editar</a> |
+                <a href="{% url 'sistema_excluir' sistema.pk %}" class="text-red-600 hover:underline">Excluir</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

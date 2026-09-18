@@ -1,0 +1,14 @@
+[
+  {
+    "model": "controle_horas.confighoras",
+    "pk": 1,
+    "fields": {
+      "horas_dia": "8.80",
+      "pausa_almoco_min": 72,
+      "considerar_sabado": false,
+      "considerar_domingo": false,
+      "ativo": true
+    }
+  }
+]
+

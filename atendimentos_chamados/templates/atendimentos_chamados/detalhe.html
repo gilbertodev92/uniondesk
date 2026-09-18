@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* CORE LAYOUT - PADRÃO LISTAR */
+.dt-root {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    background: rgb(var(--c-bg));
+    color: rgb(var(--c-ink));
+    height: calc(100vh - 1rem);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 16px 0 0 0;
+    border-left: 1px solid rgb(var(--c-line));
+    border-top: 1px solid rgb(var(--c-line));
+}
+
+.dt-topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    background: rgb(var(--c-panel));
+    border-bottom: 1px solid rgb(var(--c-line));
+    flex-shrink: 0;
+}
+
+.dt-back-btn {
+    width: 36px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgb(var(--c-panel));
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 8px;
+    color: rgb(var(--c-ink-soft));
+    text-decoration: none;
+    transition: all 0.15s;
+}
+.dt-back-btn:hover { background: rgb(var(--c-line)); color: rgb(var(--c-ink)); }
+
+.dt-title-block { flex: 1; min-width: 0; }
+.dt-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dt-num { font-size: 11px; font-weight: 700; font-family: monospace; color: rgb(var(--c-ink-faint)); background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line)); border-radius: 6px; padding: 2px 8px; }
+.dt-title { font-size: 16px; font-weight: 700; color: rgb(var(--c-ink)); truncate: true; }
+
+.dt-meta { font-size: 12px; color: rgb(var(--c-ink-faint)); margin-top: 3px; display: flex; align-items: center; gap: 8px; }
+.dt-meta span { color: rgb(var(--c-ink-soft)); }
+
+.dt-badges { display: flex; align-items: center; gap: 8px; }
+.dt-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid; }
+
+.dt-badge--critical { color: rgb(var(--c-danger)); background: rgb(var(--c-danger) / 0.12); border-color: rgb(var(--c-danger) / 0.3); }
+.dt-badge--high     { color: rgb(var(--c-warn)); background: rgb(var(--c-warn) / 0.12); border-color: rgb(var(--c-warn))44; }
+.dt-badge--medium   { color: rgb(var(--c-accent)); background: rgb(var(--c-accent) / 0.12); border-color: rgb(var(--c-accent))44; }
+.dt-badge--low      { color: rgb(var(--c-ink-soft)); background: rgb(var(--c-line)); border-color: rgb(var(--c-line))44; }
+
+.dt-badge--done      { color: rgb(var(--c-success)); background: rgb(var(--c-success) / 0.12); border-color: rgb(var(--c-success) / 0.3); }
+.dt-badge--attending { color: rgb(var(--c-accent)); background: rgb(var(--c-accent) / 0.12); border-color: rgb(var(--c-accent) / 0.3); }
+.dt-badge--open      { color: rgb(var(--c-ink-soft)); background: rgb(var(--c-line)); border-color: rgb(var(--c-line)); }
+
+/* PANEL MATRIX CONTATOS */
+.dt-body { flex: 1; display: grid; grid-template-columns: 1fr 320px; overflow: hidden; }
+.dt-left { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid rgb(var(--c-line)); }
+.dt-tabs { display: flex; bg: rgb(var(--c-bg)); border-bottom: 1px solid rgb(var(--c-line)); padding: 0 20px; shrink-0: true; }
+
+.dt-tab-btn { padding: 12px 16px; font-size: 12px; font-weight: 700; color: rgb(var(--c-ink-faint)); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; }
+.dt-tab-btn.active { color: rgb(var(--c-accent)); border-bottom-color: rgb(var(--c-accent)); }
+
+.dt-tab-panel { display: none; flex: 1; overflow-y: auto; padding: 20px; }
+.dt-tab-panel.active { display: flex; flex-direction: column; gap: 20px; }
+
+.dt-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: rgb(var(--c-ink-faint)); display: flex; align-items: center; gap: 8px; }
+.dt-section-label::after { content: ''; flex: 1; height: 1px; background: rgb(var(--c-line)); }
+
+.dt-descricao-box { background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line)); border-radius: 8px; padding: 14px 16px; font-size: 13px; color: rgb(var(--c-ink-soft)); white-space: pre-wrap; line-height: 1.6; }
+
+.dt-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.dt-info-item { display: flex; align-items: center; gap: 12px; background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line)); padding: 12px; border-radius: 8px; }
+.dt-info-icon { width: 32px; height: 32px; bg: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line)); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: rgb(var(--c-ink-faint)); }
+.dt-info-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
+.dt-info-value { font-size: 13px; font-weight: 600; color: rgb(var(--c-ink)); }
+
+/* TAGS DE PARÂMETROS - COMPACTO */
+.dt-param-list { display: flex; flex-direction: column; gap: 6px; }
+.dt-param-tag { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; border: 1px solid; }
+.dt-param-tag--impl  { color: rgb(var(--c-special)); background: rgb(var(--c-special) / 0.12); border-color: rgb(var(--c-special) / 0.3); }
+.dt-param-tag--mod   { color: rgb(var(--c-accent)); background: rgb(var(--c-special) / 0.15); border-color: rgb(var(--c-accent))44; }
+.dt-param-tag--trein { color: rgb(var(--c-success)); background: rgb(var(--c-success) / 0.12); border-color: rgb(var(--c-success) / 0.3); }
+
+/* CHAT ENGINE */
+.dt-hist-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+.dt-hist-item { background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line)); border-radius: 8px; padding: 12px; }
+.dt-hist-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.dt-hist-user { font-size: 12px; font-weight: 700; color: rgb(var(--c-ink)); }
+.dt-hist-setor { font-size: 10px; font-weight: 700; color: rgb(var(--c-ink-faint)); text-transform: uppercase; }
+.dt-hist-text { font-size: 13px; color: rgb(var(--c-ink-soft)); white-space: pre-wrap; }
+
+.dt-chat-input { padding-top: 12px; border-t: 1px solid rgb(var(--c-line)); }
+.dt-chat-form { display: flex; gap: 8px; background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line)); border-radius: 8px; padding: 8px; }
+.dt-chat-form textarea { flex: 1; background: none; border: none; color: rgb(var(--c-ink)); font-size: 13px; resize: none; height: 36px; outline: none; }
+.dt-chat-send { width: 36px; height: 36px; background: rgb(var(--c-accent)); border: none; border-radius: 6px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+/* PAINEL LATERAL DE CONTROLE */
+.dt-right { padding: 16px; background: rgb(var(--c-panel)); overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.dt-ctrl-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: rgb(var(--c-ink-faint)); padding-bottom: 8px; border-bottom: 1px solid rgb(var(--c-line)); }
+.dt-field { display: flex; flex-direction: column; gap: 4px; }
+.dt-field label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
+.dt-field select { background: rgb(var(--c-bg)); border: 1px solid rgb(var(--c-line)); border-radius: 6px; color: rgb(var(--c-ink)); font-size: 13px; padding: 8px; outline: none; cursor: pointer; }
+.dt-save-btn { width: 100%; background: rgb(var(--c-line)); border: 1px solid rgb(var(--c-line)); border-radius: 6px; color: rgb(var(--c-ink)); padding: 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.dt-save-btn:hover { background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+
+.dt-action-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; cursor: pointer; text-decoration: none; border: 1px solid; }
+.dt-action-btn--print { color: rgb(var(--c-special)); background: rgb(var(--c-special) / 0.12); border-color: rgb(var(--c-special) / 0.3); }
+.dt-action-btn--print:hover { background: rgb(var(--c-special)); color: #fff; }
+.dt-action-btn--close { color: rgb(var(--c-success)); background: rgb(var(--c-success) / 0.12); border-color: rgb(var(--c-success) / 0.3); }
+.dt-action-btn--close:hover { background: rgb(var(--c-success)); color: #fff; }
+
+/* ══ Painel de Alocações reorganizado ══ */
+.dt-ctrl-card { background: rgb(var(--c-panel)); border: 1px solid rgb(var(--c-line)); border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+.dt-ctrl-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.09em; color: rgb(var(--c-ink-faint)); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.dt-ctrl-title i { color: rgb(var(--c-accent)); }
+
+.dt-current-tech { display: flex; align-items: center; gap: 10px; background: rgb(var(--c-accent) / 0.1); border: 1px solid rgb(var(--c-accent) / 0.25); border-radius: 10px; padding: 11px 14px; margin-bottom: 14px; }
+.dt-current-tech i { color: rgb(var(--c-accent)); font-size: 18px; }
+.dt-current-tech span { font-size: 14px; font-weight: 700; color: rgb(var(--c-ink)); }
+.dt-empty-tech { font-size: 13px; color: rgb(var(--c-ink-faint)); font-style: italic; margin-bottom: 14px; }
+
+.dt-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid; transition: filter .15s; text-decoration: none; }
+.dt-btn--primary { background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); color: #fff; }
+.dt-btn--primary:hover { filter: brightness(1.1); }
+.dt-btn--success { background: rgb(var(--c-success)); border-color: rgb(var(--c-success)); color: #fff; }
+.dt-btn--success:hover { filter: brightness(1.1); }
+.dt-btn--ghost { background: rgb(var(--c-deep)); border-color: rgb(var(--c-line)); color: rgb(var(--c-ink)); }
+.dt-btn--ghost:hover { border-color: rgb(var(--c-accent)); }
+.dt-btn--doc { background: rgb(var(--c-deep)); border-color: rgb(var(--c-line)); color: rgb(var(--c-ink-soft)); }
+.dt-btn--doc:hover { border-color: rgb(var(--c-accent)); color: rgb(var(--c-accent)); }
+
+.dt-hint { font-size: 11px; color: rgb(var(--c-ink-faint)); margin-top: 7px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.dt-hint i { color: rgb(var(--c-success)); }
+
+.dt-inline-form { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgb(var(--c-line)); }
+.dt-mini-label { font-size: 11px; font-weight: 600; color: rgb(var(--c-ink-faint)); display: block; margin-bottom: 7px; }
+.dt-row { display: flex; gap: 8px; }
+.dt-select { flex: 1; background: rgb(var(--c-deep)); border: 1px solid rgb(var(--c-line)); border-radius: 8px; color: rgb(var(--c-ink)); font-size: 13px; padding: 9px 10px; outline: none; cursor: pointer; }
+.dt-select:focus { border-color: rgb(var(--c-accent)); }
+.dt-select option { background: rgb(var(--c-panel)); }
+.dt-btn-icon { width: 40px; flex-shrink: 0; background: rgb(var(--c-accent)); border: none; border-radius: 8px; color: #fff; cursor: pointer; }
+.dt-btn-icon:hover { filter: brightness(1.1); }
+
+.dt-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.dt-status-form { margin: 0; }
+.dt-status-btn { width: 100%; padding: 10px 8px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; background: rgb(var(--c-deep)); border: 1px solid rgb(var(--c-line)); color: rgb(var(--c-ink-soft)); transition: .15s; }
+.dt-status-btn:hover { border-color: rgb(var(--c-accent) / 0.5); color: rgb(var(--c-ink)); }
+.dt-status-btn--active { background: rgb(var(--c-accent) / 0.15); border-color: rgb(var(--c-accent)); color: rgb(var(--c-accent)); font-weight: 700; }
+
+.dt-done-banner { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 10px; background: rgb(var(--c-success) / 0.12); border: 1px solid rgb(var(--c-success) / 0.3); color: rgb(var(--c-success)); font-size: 13px; font-weight: 700; }
+
+.dt-advanced { padding: 0; }
+.dt-advanced summary { padding: 18px; cursor: pointer; margin: 0; list-style: none; }
+.dt-advanced summary::-webkit-details-marker { display: none; }
+.dt-advanced summary::after { content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; float: right; font-size: 10px; color: rgb(var(--c-ink-faint)); }
+.dt-advanced[open] summary::after { content: '\f077'; }
+.dt-advanced-body { padding: 0 18px 18px; }
+
+.dt-locked { text-align: center; padding: 28px 18px; }
+.dt-locked i { font-size: 28px; color: rgb(var(--c-ink-faint)); margin-bottom: 12px; }
+.dt-locked p { font-size: 14px; font-weight: 700; color: rgb(var(--c-ink)); margin-bottom: 6px; }
+.dt-locked span { font-size: 12px; color: rgb(var(--c-ink-faint)); }
+</style>
+
+<div class="dt-root" role="main">
+    
+    <header class="dt-topbar">
+        <a href="{% url 'atendimentos_chamados:listar' %}" class="dt-back-btn"><i class="fa-solid fa-arrow-left"></i></a>
+        <div class="dt-title-block">
+            <div class="dt-title-row">
+                <span class="dt-num">#{{ atendimento.numero }}</span>
+                <h1 class="dt-title">{{ atendimento.titulo }}</h1>
+            </div>
+            <div class="dt-meta">
+                <i class="fa-solid fa-building"></i>
+                <span>{{ atendimento.cliente.razao_social }}</span>
+            </div>
+        </div>
+        <div class="dt-badges">
+            <span class="dt-badge {% if atendimento.prioridade == 'CRITICA' %}dt-badge--critical{% elif atendimento.prioridade == 'ALTA' %}dt-badge--high{% elif atendimento.prioridade == 'MEDIA' %}dt-badge--medium{% else %}dt-badge--low{% endif %}">
+                {{ atendimento.get_prioridade_display }}
+            </span>
+            <span class="dt-badge {% if atendimento.status == 'CONCLUIDO' %}dt-badge--done{% elif atendimento.status == 'EM_ATENDIMENTO' %}dt-badge--attending{% else %}dt-badge--open{% endif %}">
+                {{ atendimento.get_status_display }}
+            </span>
+        </div>
+    </header>
+
+    <div class="dt-body">
+        
+        <div class="dt-left">
+            <nav class="dt-tabs">
+                <button class="dt-tab-btn active" id="btn-visao" onclick="openTab('tab-visao', this)">Visão Geral</button>
+                <button class="dt-tab-btn" id="btn-historico" onclick="openTab('tab-historico', this)">Histórico & Chat ({{ historico|length }})</button>
+            </nav>
+
+            <div id="tab-visao" class="dt-tab-panel active">
+                <div>
+                    <div class="dt-section-label">Diagnóstico Inicial</div>
+                    <div class="dt-descricao-box">{{ atendimento.descricao }}</div>
+                </div>
+
+                <div class="dt-info-grid">
+                    <div>
+                        <div class="dt-section-label">Dados do Contato</div>
+                        <div class="space-y-2 mt-2">
+                            <div class="dt-info-item">
+                                <div class="dt-info-icon"><i class="fa-solid fa-fingerprint"></i></div>
+                                <div><div class="dt-info-label">CNPJ</div><div class="dt-info-value">{{ atendimento.cliente.cnpj|default:"Não informado" }}</div></div>
+                            </div>
+                            <div class="dt-info-item">
+                                <div class="dt-info-icon"><i class="fa-solid fa-phone"></i></div>
+                                <div><div class="dt-info-label">Fone Fixo</div><div class="dt-info-value">{{ atendimento.cliente.telefone|default:"Não informado" }}</div></div>
+                            </div>
+                            {% if atendimento.whatsapp_contato %}
+                            <div class="dt-info-item" style="border-color: rgb(var(--c-success));">
+                                <div class="dt-info-icon" style="color: rgb(var(--c-success));"><i class="fa-brands fa-whatsapp"></i></div>
+                                <div><div class="dt-info-label" style="color: rgb(var(--c-success));">WhatsApp Implantação</div><div class="dt-info-value text-success font-bold">{{ atendimento.whatsapp_contato }}</div></div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="dt-section-label">Escopo & Grades Contratadas</div>
+                        <div class="dt-param-list mt-2">
+                            {% if atendimento.implantacao_cliente_novo %}<div class="dt-param-tag dt-param-tag--impl"><i class="fa-solid fa-rocket"></i> Nova Implantação</div>{% endif %}
+                            {% if atendimento.implantacao_modulo_novo %}<div class="dt-param-tag dt-param-tag--mod"><i class="fa-solid fa-puzzle-piece"></i> Módulo Adicional</div>{% endif %}
+                            
+                            {% if atendimento.flag_conversao_dados or atendimento.flag_instalacao_equip or atendimento.flag_tef_incluso or atendimento.flag_mobilidade or atendimento.flag_backup %}
+                                <div class="text-[10px] font-bold text-sky-400 uppercase mt-2">Infraestrutura:</div>
+                                {% if atendimento.flag_conversao_dados %}<div class="dt-param-tag" style="background:rgb(var(--c-signal) / 0.12); border-color:rgb(var(--c-signal) / 0.4); color:rgb(var(--c-signal));"><i class="fa-solid fa-database"></i> Conversão de Banco</div>{% endif %}
+                                {% if atendimento.flag_instalacao_equip %}<div class="dt-param-tag" style="background:rgb(var(--c-signal) / 0.12); border-color:rgb(var(--c-signal) / 0.4); color:rgb(var(--c-signal));"><i class="fa-solid fa-print"></i> Instalação de Periféricos</div>{% endif %}
+                                {% if atendimento.flag_tef_incluso %}<div class="dt-param-tag" style="background:rgb(var(--c-signal) / 0.12); border-color:rgb(var(--c-signal) / 0.4); color:rgb(var(--c-signal));"><i class="fa-solid fa-credit-card"></i> Homologação TEF</div>{% endif %}
+                                {% if atendimento.flag_mobilidade %}<div class="dt-param-tag" style="background:rgb(var(--c-signal) / 0.12); border-color:rgb(var(--c-signal) / 0.4); color:rgb(var(--c-signal));"><i class="fa-solid fa-mobile-screen"></i> Roteador/Mód. Movel</div>{% endif %}
+                                {% if atendimento.flag_backup %}<div class="dt-param-tag" style="background:rgb(var(--c-signal) / 0.12); border-color:rgb(var(--c-signal) / 0.4); color:rgb(var(--c-signal));"><i class="fa-solid fa-cloud"></i> Cópia de Segurança</div>{% endif %}
+                                {% if atendimento.flag_data_center %}<div class="dt-param-tag" style="background:rgb(var(--c-signal) / 0.12); border-color:rgb(var(--c-signal) / 0.4); color:rgb(var(--c-signal));"><i class="fa-solid fa-server"></i> Data Center</div>{% endif %}
+                                {% endif %}
+
+                            {% if atendimento.trein_cadastros or atendimento.trein_entrada_nf or atendimento.trein_saida_nf or atendimento.trein_nfce or atendimento.trein_estoque or atendimento.trein_financeiro or atendimento.trein_boletos %}
+                                <div class="text-[10px] font-bold text-amber-500 uppercase mt-2">Aulas e Treinamentos Autorizados:</div>
+                                {% if atendimento.trein_cadastros %}<div class="dt-param-tag" style="background:rgb(var(--c-warn) / 0.12); border-color:rgb(var(--c-warn) / 0.4); color:rgb(var(--c-warn));"><i class="fa-solid fa-graduation-cap"></i> Cadastros & Estoque</div>{% endif %}
+                                {% if atendimento.trein_entrada_nf %}<div class="dt-param-tag" style="background:rgb(var(--c-warn) / 0.12); border-color:rgb(var(--c-warn) / 0.4); color:rgb(var(--c-warn));"><i class="fa-solid fa-graduation-cap"></i> Importação de XML / Notas</div>{% endif %}
+                                {% if atendimento.trein_saida_nf %}<div class="dt-param-tag" style="background:rgb(var(--c-warn) / 0.12); border-color:rgb(var(--c-warn) / 0.4); color:rgb(var(--c-warn));"><i class="fa-solid fa-graduation-cap"></i> Faturamento / NF-e</div>{% endif %}
+                                {% if atendimento.trein_nfce %}<div class="dt-param-tag" style="background:rgb(var(--c-warn) / 0.12); border-color:rgb(var(--c-warn) / 0.4); color:rgb(var(--c-warn));"><i class="fa-solid fa-graduation-cap"></i> Frente de Caixa / NFC-e</div>{% endif %}
+                                {% if atendimento.trein_estoque %}<div class="dt-param-tag" style="background:rgb(var(--c-warn) / 0.12); border-color:rgb(var(--c-warn) / 0.4); color:rgb(var(--c-warn));"><i class="fa-solid fa-graduation-cap"></i> Inventário e Saldos</div>{% endif %}
+                                {% if atendimento.trein_financeiro %}<div class="dt-param-tag" style="background:rgb(var(--c-warn) / 0.12); border-color:rgb(var(--c-warn) / 0.4); color:rgb(var(--c-warn));"><i class="fa-solid fa-graduation-cap"></i> Contas Pagar / Receber</div>{% endif %}
+                                {% if atendimento.trein_boletos %}<div class="dt-param-tag" style="background:rgb(var(--c-warn) / 0.12); border-color:rgb(var(--c-warn) / 0.4); color:rgb(var(--c-warn));"><i class="fa-solid fa-graduation-cap"></i> Config. e Remessa Bancária</div>{% endif %}
+                                {% if atendimento.trein_os_service %}<div class="dt-param-tag" style="background:rgb(var(--c-warn) / 0.12); border-color:rgb(var(--c-warn) / 0.4); color:rgb(var(--c-warn));"><i class="fa-solid fa-graduation-cap"></i> OS-Service</div>{% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-historico" class="dt-tab-panel">
+                <div class="dt-historico">
+                    <div class="dt-hist-list">
+                        {% for hist in historico %}
+                        <div class="dt-hist-item">
+                            <div class="dt-hist-header">
+                                <span class="dt-hist-user">{{ hist.usuario.first_name|default:hist.usuario.username }}</span>
+                                <span class="dt-hist-setor">{{ hist.setor.nome|default:"Sistema" }}</span>
+                            </div>
+                            <div class="dt-hist-text">{{ hist.comentario }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if atendimento.status != 'CONCLUIDO' %}
+                    <div class="dt-chat-input">
+                        <form method="post" class="dt-chat-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="acao" value="comentario">
+                            <textarea name="comentario" placeholder="Escreva um comentário técnico..." required></textarea>
+                            <button type="submit" class="dt-chat-send"><i class="fa-solid fa-paper-plane"></i></button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <aside class="dt-right">
+
+            {% if pode_editar %}
+            <!-- ══ BLOCO 1: QUEM ESTÁ CUIDANDO (o mais usado) ══ -->
+            <div class="dt-ctrl-card">
+                <div class="dt-ctrl-title"><i class="fa-solid fa-user-gear"></i> Responsável</div>
+
+                {% if atendimento.tecnico_responsavel %}
+                <div class="dt-current-tech">
+                    <i class="fa-solid fa-circle-user"></i>
+                    <span>{{ atendimento.tecnico_responsavel.get_full_name|default:atendimento.tecnico_responsavel.username }}</span>
+                </div>
+                {% else %}
+                <p class="dt-empty-tech">Ninguém assumiu este atendimento ainda.</p>
+                {% endif %}
+
+                <!-- Assumir para mim: o caso mais comum, 1 clique -->
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="tecnico" value="{{ request.user.id }}">
+                    <button type="submit" class="dt-btn dt-btn--primary">
+                        <i class="fa-solid fa-hand"></i> Assumir para mim
+                    </button>
+                    <p class="dt-hint"><i class="fa-solid fa-whatsapp"></i> avisa o responsável no WhatsApp</p>
+                </form>
+
+                <!-- Passar para outro técnico -->
+                <form method="post" class="dt-inline-form">
+                    {% csrf_token %}
+                    <label class="dt-mini-label">Ou passar para outra pessoa</label>
+                    <div class="dt-row">
+                        <select name="tecnico" class="dt-select">
+                            <option value="">— escolher —</option>
+                            {% for t in tecnicos %}
+                            <option value="{{ t.id }}" {% if atendimento.tecnico_responsavel.id == t.id %}selected{% endif %}>{{ t.get_full_name|default:t.username }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="dt-btn-icon" title="Atribuir"><i class="fa-solid fa-check"></i></button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ══ BLOCO 2: SITUAÇÃO (status como botões visuais) ══ -->
+            <div class="dt-ctrl-card">
+                <div class="dt-ctrl-title"><i class="fa-solid fa-flag"></i> Situação</div>
+                <div class="dt-status-grid">
+                    {% for s in status_list %}
+                        {% if s.0 != 'CONCLUIDO' %}
+                        <form method="post" class="dt-status-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="{{ s.0 }}">
+                            <button type="submit" class="dt-status-btn {% if atendimento.status == s.0 %}dt-status-btn--active{% endif %}">
+                                {{ s.1 }}
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Concluir: destacado e à parte, porque tem consequências -->
+                {% if atendimento.status != 'CONCLUIDO' %}
+                <form method="post" onsubmit="return confirm('Concluir este atendimento? Isso encerra o chamado{% if atendimento.abrir_cs_pos_atendimento %} e agenda a pesquisa de satisfação{% endif %}.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="CONCLUIDO">
+                    <button type="submit" class="dt-btn dt-btn--success">
+                        <i class="fa-solid fa-circle-check"></i> Concluir atendimento
+                    </button>
+                    {% if atendimento.abrir_cs_pos_atendimento %}
+                    <p class="dt-hint"><i class="fa-solid fa-star"></i> vai gerar pesquisa de satisfação (CS)</p>
+                    {% endif %}
+                </form>
+                {% else %}
+                <div class="dt-done-banner"><i class="fa-solid fa-circle-check"></i> Atendimento concluído</div>
+                {% endif %}
+            </div>
+
+            <!-- ══ BLOCO 3: TRANSFERIR / AJUSTAR (menos usado) ══ -->
+            <details class="dt-ctrl-card dt-advanced">
+                <summary class="dt-ctrl-title"><i class="fa-solid fa-arrows-turn-right"></i> Transferir ou ajustar</summary>
+
+                <form method="post" class="dt-advanced-body">
+                    {% csrf_token %}
+                    <div class="dt-field">
+                        <label>Enviar para o setor</label>
+                        <select name="setor" class="dt-select">
+                            {% for s in setores %}
+                            <option value="{{ s.id }}" {% if atendimento.setor_atual.id == s.id %}selected{% endif %}>{{ s.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="dt-field">
+                        <label>Prioridade</label>
+                        <select name="prioridade" class="dt-select">
+                            {% for p in prioridades %}
+                            <option value="{{ p.0 }}" {% if atendimento.prioridade == p.0 %}selected{% endif %}>{{ p.1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="dt-btn dt-btn--ghost"><i class="fa-solid fa-paper-plane"></i> Aplicar mudança</button>
+                    <p class="dt-hint"><i class="fa-solid fa-whatsapp"></i> transferir de setor avisa o time no WhatsApp</p>
+                </form>
+            </details>
+            {% else %}
+            <div class="dt-ctrl-card dt-locked">
+                <i class="fa-solid fa-lock"></i>
+                <p>Este atendimento pertence a outro setor.</p>
+                <span>Você pode acompanhar, mas só quem é do setor (ou gerência) pode alterar.</span>
+            </div>
+            {% endif %}
+
+            <!-- Documento / impressão -->
+            <a href="{% url 'atendimentos_chamados:resumo_implantacao_pdf' atendimento.numero %}" target="_blank" class="dt-btn dt-btn--doc">
+                <i class="fa-solid fa-print"></i> Romaneio de Entrega (A4)
+            </a>
+        </aside>
+    </div>
+</div>
+
+<script>
+function openTab(tabId, btn) {
+    document.querySelectorAll('.dt-tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.dt-tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+}
+</script>
+
+{% endblock %}

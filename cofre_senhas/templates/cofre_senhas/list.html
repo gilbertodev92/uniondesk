@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Cofre de Senhas{% endblock %}
+
+{% block content %}
+<div class="cf-root">
+  <div class="cf-wrap">
+
+    <header class="cf-topbar">
+      <div class="cf-topbar__id">
+        <span class="cf-topbar__icon" aria-hidden="true"><i class="fa-solid fa-vault"></i></span>
+        <div>
+          <h1 class="cf-title">Cofre de Senhas</h1>
+          <p class="cf-subtitle"><i class="fa-solid fa-shield-halved"></i> Ambiente criptografado</p>
+        </div>
+      </div>
+
+      <div class="cf-topbar__actions">
+        <div class="cf-search-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="cf-search" class="cf-search" placeholder="Buscar credencial..." autocomplete="off">
+        </div>
+        <a href="{% url 'cofre_senhas:create' %}" class="cf-btn cf-btn--primary">
+          <i class="fa-solid fa-plus"></i> <span>Nova</span>
+        </a>
+        <button type="button" id="cf-lock" class="cf-btn cf-btn--danger" title="Bloquear cofre agora">
+          <i class="fa-solid fa-lock"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="cf-grid" id="cf-grid">
+      {% for c in credentials %}
+      <a href="{% url 'cofre_senhas:view_plain' c.id %}"
+         class="cf-card"
+         data-title="{{ c.title|lower }}"
+         data-user="{{ c.username|default:''|lower }}"
+         data-tags="{{ c.tags|default:''|lower }}">
+
+        <div class="cf-card__top">
+          <span class="cf-card__icon" aria-hidden="true">
+            <i class="fa-solid {% if c.n_accounts %}fa-users-rectangle{% else %}fa-key{% endif %}"></i>
+          </span>
+          <div class="cf-card__flags">
+            {% if c.is_favorite %}<i class="fa-solid fa-star cf-star" title="Favorita"></i>{% endif %}
+            {% if c.n_accounts %}
+            <span class="cf-badge" title="{{ c.n_accounts }} acessos nesta credencial">
+              {{ c.n_accounts }} acesso{{ c.n_accounts|pluralize }}
+            </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <h3 class="cf-card__name" title="{{ c.title }}">{{ c.title }}</h3>
+
+        <p class="cf-card__meta">
+          {% if c.n_accounts %}
+            <i class="fa-solid fa-layer-group"></i> Múltiplos clientes
+          {% else %}
+            <i class="fa-regular fa-user"></i> {{ c.username|default:"—" }}
+          {% endif %}
+        </p>
+
+        {% if c.tags %}
+        <div class="cf-tags">
+          <span class="cf-tag">{{ c.tags|truncatechars:28 }}</span>
+        </div>
+        {% endif %}
+
+        <span class="cf-card__go">Abrir <i class="fa-solid fa-arrow-right"></i></span>
+      </a>
+      {% empty %}
+      <div class="cf-empty">
+        <i class="fa-solid fa-shield-halved"></i>
+        <p>O cofre está vazio</p>
+        <span>Cadastre sua primeira credencial para começar.</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <p class="cf-empty-filter" id="cf-empty-filter" hidden>
+      <i class="fa-solid fa-filter-circle-xmark"></i> Nenhuma credencial corresponde à busca.
+    </p>
+
+  </div>
+</div>
+
+<style>
+.cf-root { padding: 20px 16px 40px; }
+.cf-wrap { max-width: 1200px; margin: 0 auto; }
+
+.cf-topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding-bottom:18px; margin-bottom:20px; border-bottom:1px solid rgb(var(--c-line)); }
+.cf-topbar__id { display:flex; align-items:center; gap:14px; }
+.cf-topbar__icon { width:44px; height:44px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgb(var(--c-accent) / .1); border:1px solid rgb(var(--c-accent) / .25); border-radius:12px; color:rgb(var(--c-accent)); font-size:18px; }
+.cf-title { font-size:20px; font-weight:800; color:rgb(var(--c-ink)); line-height:1.2; }
+.cf-subtitle { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:rgb(var(--c-ink-faint)); margin-top:5px; display:flex; align-items:center; gap:7px; }
+
+.cf-topbar__actions { display:flex; align-items:center; gap:10px; flex:1; justify-content:flex-end; min-width:260px; }
+.cf-search-wrap { position:relative; flex:1; max-width:320px; }
+.cf-search-wrap i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:rgb(var(--c-ink-faint)); font-size:13px; pointer-events:none; }
+.cf-search { width:100%; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:11px; padding:11px 14px 11px 40px; color:rgb(var(--c-ink)); font-size:13px; font-family:'Inter', sans-serif; outline:none; transition:border-color .15s; }
+.cf-search::placeholder { color:rgb(var(--c-ink-faint)); }
+.cf-search:focus { border-color:rgb(var(--c-accent)); box-shadow:0 0 0 2px rgb(var(--c-accent) / .18); }
+
+.cf-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:42px; padding:0 16px; font-family:'Inter', sans-serif; font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; border-radius:11px; cursor:pointer; text-decoration:none; border:1px solid rgb(var(--c-line)); background:rgb(var(--c-deep)); color:rgb(var(--c-ink-soft)); transition:background-color .15s, color .15s, border-color .15s; white-space:nowrap; }
+.cf-btn--primary { background:rgb(var(--c-accent)); border-color:rgb(var(--c-accent)); color:#fff; }
+.cf-btn--primary:hover { filter:brightness(1.1); }
+.cf-btn--danger { width:42px; padding:0; color:rgb(var(--c-danger)); border-color:rgb(var(--c-danger) / .3); background:rgb(var(--c-danger) / .08); }
+.cf-btn--danger:hover { background:rgb(var(--c-danger)); color:#fff; }
+
+.cf-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px; }
+
+.cf-card { display:flex; flex-direction:column; background:rgb(var(--c-panel)); border:1px solid rgb(var(--c-line)); border-radius:14px; padding:16px; text-decoration:none; transition:border-color .15s, transform .12s, background-color .25s; position:relative; }
+.cf-card:hover { border-color:rgb(var(--c-accent) / .45); transform:translateY(-2px); }
+.cf-card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:14px; }
+.cf-card__icon { width:38px; height:38px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:10px; color:rgb(var(--c-accent)); font-size:15px; }
+.cf-card__flags { display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:flex-end; }
+.cf-star { color:rgb(var(--c-warn)); font-size:12px; }
+.cf-badge { font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:rgb(var(--c-success)); background:rgb(var(--c-success) / .12); border:1px solid rgb(var(--c-success) / .3); border-radius:999px; padding:3px 9px; white-space:nowrap; }
+
+.cf-card__name { font-size:13.5px; font-weight:700; color:rgb(var(--c-ink)); margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cf-card__meta { font-size:11px; color:rgb(var(--c-ink-faint)); font-family:'JetBrains Mono', monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cf-card__meta i { margin-right:6px; }
+
+.cf-tags { margin-top:10px; }
+.cf-tag { display:inline-block; font-size:9.5px; font-weight:700; color:rgb(var(--c-ink-faint)); background:rgb(var(--c-deep)); border:1px solid rgb(var(--c-line)); border-radius:6px; padding:2px 8px; }
+
+.cf-card__go { margin-top:14px; padding-top:12px; border-top:1px solid rgb(var(--c-line)); font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:rgb(var(--c-accent)); display:flex; align-items:center; justify-content:space-between; }
+
+.cf-empty { grid-column:1 / -1; text-align:center; padding:70px 20px; border:1px dashed rgb(var(--c-line)); border-radius:14px; }
+.cf-empty i { font-size:38px; color:rgb(var(--c-line)); display:block; margin-bottom:14px; }
+.cf-empty p { font-size:14px; font-weight:700; color:rgb(var(--c-ink-soft)); }
+.cf-empty span { font-size:12px; color:rgb(var(--c-ink-faint)); }
+.cf-empty-filter { text-align:center; padding:34px 16px; color:rgb(var(--c-ink-faint)); font-size:13px; font-weight:600; }
+
+@media (max-width: 640px) {
+    .cf-topbar__actions { min-width:0; width:100%; }
+    .cf-search-wrap { max-width:none; }
+    .cf-btn span { display:none; }
+    .cf-btn--primary { width:42px; padding:0; }
+    .cf-grid { grid-template-columns:1fr; }
+}
+</style>
+
+<script>
+(function () {
+    "use strict";
+    function getCookie(name) {
+        const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return m ? decodeURIComponent(m.pop()) : '';
+    }
+
+    const search = document.getElementById('cf-search');
+    const cards  = Array.from(document.querySelectorAll('.cf-card'));
+    const empty  = document.getElementById('cf-empty-filter');
+
+    search.addEventListener('input', function () {
+        const t = this.value.toLowerCase().trim();
+        let n = 0;
+        cards.forEach(c => {
+            const hit = !t
+                || c.dataset.title.includes(t)
+                || c.dataset.user.includes(t)
+                || c.dataset.tags.includes(t);
+            c.style.display = hit ? '' : 'none';
+            if (hit) n++;
+        });
+        if (empty) empty.hidden = n > 0 || cards.length === 0;
+    });
+
+    document.getElementById('cf-lock').addEventListener('click', function () {
+        fetch("{% url 'cofre_senhas:lock_vault' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        }).finally(() => window.location.href = "{% url 'cofre_senhas:index' %}");
+    });
+})();
+</script>
+{% endblock %}

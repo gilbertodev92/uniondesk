@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cockpit Comercial — CRM</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        :root {
+            --bg:       #080e1a;
+            --surface:  #0f1829;
+            --raised:   #162035;
+            --hover:    #1c2a45;
+            --border:   rgba(99,140,210,0.12);
+            --border-m: rgba(99,140,210,0.22);
+            --blue:     #3b82f6;
+            --green:    #10b981;
+            --purple:   #8b5cf6;
+            --amber:    #f59e0b;
+            --red:      #ef4444;
+            --t1:       #f0f4ff;
+            --t2:       #8fa8d0;
+            --t3:       #4d6a96;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--t1); min-height: 100vh; overflow-y: auto; }
+
+        /* ── TOPBAR ── */
+        .topbar {
+            height: 56px; display: flex; align-items: center;
+            justify-content: space-between; padding: 0 28px;
+            background: var(--surface); border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 50;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 14px; }
+        .logo { font-size: 13px; font-weight: 700; color: var(--t2); letter-spacing: .05em; text-transform: uppercase; text-decoration: none; }
+        .logo span { color: var(--blue); }
+        .page-badge { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: #ea580c; color: #fff; letter-spacing: .03em; }
+        .btn-back { display: flex; align-items: center; gap: 6px; padding: 0 12px; height: 32px; background: transparent; border: 1px solid var(--border-m); color: var(--t2); border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; transition: .15s; }
+        .btn-back:hover { background: var(--raised); color: var(--t1); }
+
+        /* ── FILTER BAR ── */
+        .filter-bar {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 28px; background: var(--surface);
+            border-bottom: 1px solid var(--border); flex-wrap: wrap;
+        }
+        .filter-label { font-size: 11px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .05em; margin-right: 4px; }
+        .preset-group { display: flex; background: var(--raised); padding: 3px; border-radius: 8px; border: 1px solid var(--border); gap: 2px; }
+        .btn-preset { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; color: var(--t2); background: transparent; border: none; cursor: pointer; text-decoration: none; transition: .15s; white-space: nowrap; }
+        .btn-preset:hover { color: var(--t1); background: var(--hover); }
+        .btn-preset.active { background: var(--blue); color: #fff; box-shadow: 0 2px 8px rgba(59,130,246,.3); }
+        .divider-v { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; margin: 0 4px; }
+
+        /* date range picker */
+        .date-range-wrap { display: flex; align-items: center; gap: 6px; }
+        .date-input {
+            background: var(--raised); border: 1px solid var(--border);
+            color: var(--t1); padding: 0 10px; height: 32px;
+            border-radius: 6px; font-size: 12px; font-family: inherit;
+            outline: none; transition: .15s; cursor: pointer;
+            color-scheme: dark;
+        }
+        .date-input:focus { border-color: var(--blue); }
+        .date-sep { font-size: 11px; color: var(--t3); font-weight: 700; }
+        .btn-apply {
+            height: 32px; padding: 0 14px; background: var(--blue);
+            border: none; color: #fff; border-radius: 6px;
+            font-size: 12px; font-weight: 700; cursor: pointer; transition: .15s;
+        }
+        .btn-apply:hover { background: #2563eb; }
+
+        /* periodo label */
+        .periodo-label { font-size: 12px; color: var(--t3); font-weight: 600; margin-left: auto; }
+        .periodo-label strong { color: var(--t2); }
+
+        /* ── TABS ── */
+        .tabs { display: flex; gap: 2px; padding: 16px 28px 0; border-bottom: 1px solid var(--border); }
+        .tab-btn {
+            padding: 10px 18px; border-radius: 8px 8px 0 0;
+            font-size: 12.5px; font-weight: 700; cursor: pointer;
+            border: 1px solid transparent; border-bottom: none;
+            background: transparent; color: var(--t3);
+            display: flex; align-items: center; gap: 7px;
+            transition: .15s; margin-bottom: -1px;
+        }
+        .tab-btn:hover { color: var(--t2); background: var(--raised); }
+        .tab-btn.active {
+            background: var(--surface); color: var(--t1);
+            border-color: var(--border); border-bottom-color: var(--surface);
+        }
+        .tab-content { display: none; padding: 24px 28px; animation: fadeIn .25s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── LAYOUT ── */
+        .kpi-row { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+        .kpi-box {
+            flex: 1; min-width: 150px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; padding: 16px 20px;
+        }
+        .kpi-box.accent-blue  { border-bottom: 3px solid var(--blue); }
+        .kpi-box.accent-green { border-bottom: 3px solid var(--green); }
+        .kpi-box.accent-purple{ border-bottom: 3px solid var(--purple); }
+        .kpi-box.accent-amber { border-bottom: 3px solid var(--amber); }
+        .kpi-label { font-size: 10px; font-weight: 800; color: var(--t3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+        .kpi-value { font-size: 1.8rem; font-weight: 900; color: var(--t1); letter-spacing: -1px; line-height: 1; }
+        .kpi-sub { font-size: 11px; color: var(--t3); margin-top: 6px; font-weight: 600; }
+
+        .prospect-box {
+            background: rgba(88,28,135,.08); border: 1px dashed rgba(139,92,246,.35);
+            border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;
+            display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+        }
+        .prospect-title { font-size: 10px; font-weight: 900; color: #c084fc; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .prospect-kpis { display: flex; gap: 12px; flex: 1; }
+        .prospect-kpi { flex: 1; min-width: 120px; }
+        .prospect-kpi .kpi-value { font-size: 1.5rem; color: #e9d5ff; }
+
+        .chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
+        .chart-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; padding: 20px;
+        }
+        .chart-card.full { grid-column: span 2; }
+        .card-title { font-size: 13px; font-weight: 700; color: var(--t1); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .card-title i { font-size: 12px; }
+
+        /* gauge cards */
+        .gauge-grid { display: flex; flex-wrap: wrap; gap: 14px; justify-content: flex-start; }
+        .gauge-card {
+            background: var(--raised); border: 1px solid var(--border);
+            border-radius: 12px; padding: 16px; width: 220px; text-align: center;
+        }
+        .gauge-name { font-size: 12px; font-weight: 800; color: var(--t1); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 8px; }
+        .gauge-sub { font-size: 11px; color: var(--t3); margin-top: 6px; font-weight: 600; }
+        .gauge-sub strong { color: var(--green); }
+
+        /* scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-m); border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+    <div class="topbar-left">
+        <a href="{% url 'crm_vendas:kanban' %}" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Kanban</a>
+        <a href="#" class="logo">Pipeline <span>Lógica</span></a>
+        <span class="page-badge">Cockpit</span>
+    </div>
+    <span style="font-size:12px; color:var(--t3); font-weight:600;">{{ titulo_filtro }}</span>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+    <span class="filter-label"><i class="fa-solid fa-calendar-days"></i> Período</span>
+
+    <div class="preset-group">
+        <a href="?filtro=mes" class="btn-preset {% if filtro_ativo == 'mes' %}active{% endif %}">Mês</a>
+        <a href="?filtro=3m"  class="btn-preset {% if filtro_ativo == '3m'  %}active{% endif %}">3M</a>
+        <a href="?filtro=6m"  class="btn-preset {% if filtro_ativo == '6m'  %}active{% endif %}">6M</a>
+        <a href="?filtro=1a"  class="btn-preset {% if filtro_ativo == '1a'  %}active{% endif %}">1A</a>
+    </div>
+
+    <div class="divider-v"></div>
+
+    <form method="GET" class="date-range-wrap">
+        <input type="hidden" name="filtro" value="custom">
+        <input type="date" name="data_inicio" class="date-input"
+               value="{{ request.GET.data_inicio }}" placeholder="Início">
+        <span class="date-sep">→</span>
+        <input type="date" name="data_fim" class="date-input"
+               value="{{ request.GET.data_fim }}" placeholder="Fim">
+        <button type="submit" class="btn-apply"><i class="fa-solid fa-magnifying-glass"></i> Filtrar</button>
+    </form>
+
+    {% if filtro_ativo == 'custom' %}
+    <span class="periodo-label">Personalizado: <strong>{{ request.GET.data_inicio }} → {{ request.GET.data_fim }}</strong></span>
+    {% endif %}
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+    <button class="tab-btn active" onclick="openTab('tab-funil', this)">
+        <i class="fa-solid fa-filter"></i> Oportunidades & Origens
+    </button>
+    <button class="tab-btn" onclick="openTab('tab-time', this)">
+        <i class="fa-solid fa-sack-dollar"></i> Receita & Equipe
+    </button>
+    <button class="tab-btn" onclick="openTab('tab-analise', this)">
+        <i class="fa-solid fa-chart-area"></i> Gargalos Operacionais
+    </button>
+    <button class="tab-btn" onclick="openTab('tab-relatorio', this)">
+        <i class="fa-solid fa-users"></i> Desempenho por Vendedor
+    </button>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ABA 1 — OPORTUNIDADES & ORIGENS
+════════════════════════════════════════════════ -->
+<div id="tab-funil" class="tab-content active">
+
+    <div class="prospect-box">
+        <div style="flex:1; min-width:200px;">
+            <div class="prospect-title"><i class="fa-solid fa-binoculars"></i> Prospecção (descoberta)</div>
+            <div class="prospect-kpis">
+                <div class="prospect-kpi">
+                    <div class="kpi-label" style="color:#c084fc;">Total prospectado</div>
+                    <div class="kpi-value" style="color:#e9d5ff;">{{ total_prospeccoes_brutas }}</div>
+                </div>
+                <div class="prospect-kpi">
+                    <div class="kpi-label" style="color:#c084fc;">Ativos</div>
+                    <div class="kpi-value" style="color:#e9d5ff;">{{ prospeccoes_ativas }}</div>
+                </div>
+                <div class="prospect-kpi">
+                    <div class="kpi-label" style="color:#c084fc;">Descartados</div>
+                    <div class="kpi-value" style="color:#f87171;">{{ prospeccoes_descartadas }}</div>
+                </div>
+                <div class="prospect-kpi">
+                    <div class="kpi-label" style="color:#c084fc;">Taxa de passagem</div>
+                    <div class="kpi-value" style="color:#a78bfa;">{{ taxa_conversao_prospeccao }}%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="kpi-row">
+        <div class="kpi-box accent-blue">
+            <div class="kpi-label">Oportunidades válidas</div>
+            <div class="kpi-value">{{ total_oportunidades }}</div>
+        </div>
+        <div class="kpi-box accent-green">
+            <div class="kpi-label">Win Rate real</div>
+            <div class="kpi-value" style="color:#34d399;">{{ taxa_conversao_vendas }}%</div>
+        </div>
+        <div class="kpi-box accent-purple">
+            <div class="kpi-label">Pipeline aberto</div>
+            <div class="kpi-value" style="color:#a78bfa; font-size:1.4rem;">R$ {{ valor_pipeline|floatformat:0 }}</div>
+        </div>
+    </div>
+
+    <div class="chart-grid">
+        <div class="chart-card">
+            <div class="card-title"><i class="fa-solid fa-filter" style="color:var(--blue);"></i> Funil de conversão</div>
+            <div id="chartFunil" style="height:340px;"></div>
+        </div>
+        <div class="chart-card">
+            <div class="card-title"><i class="fa-solid fa-satellite-dish" style="color:var(--purple);"></i> Origem × Receita gerada</div>
+            <div id="chartOrigemCruzada" style="height:340px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ABA 2 — RECEITA & EQUIPE
+════════════════════════════════════════════════ -->
+<div id="tab-time" class="tab-content">
+    <div class="kpi-row">
+        <div class="kpi-box accent-green">
+            <div class="kpi-label">MRR ganho (mensalidade)</div>
+            <div class="kpi-value" style="color:#34d399; font-size:1.4rem;">R$ {{ mrr_total|floatformat:0 }}</div>
+        </div>
+        <div class="kpi-box accent-blue">
+            <div class="kpi-label">Setup ganho (equip. + serviços)</div>
+            <div class="kpi-value" style="color:#60a5fa; font-size:1.4rem;">R$ {{ setup_total|floatformat:0 }}</div>
+        </div>
+        <div class="kpi-box accent-purple">
+            <div class="kpi-label">Forecast (projeção de fechamento)</div>
+            <div class="kpi-value" style="color:#a78bfa; font-size:1.4rem;">R$ {{ previsao_fechamento|floatformat:0 }}</div>
+        </div>
+    </div>
+
+    <div class="chart-card full" style="margin-bottom:0;">
+        <div class="card-title"><i class="fa-solid fa-gauge-high" style="color:var(--green);"></i> Performance dos consultores — meta do mês</div>
+        <div class="gauge-grid">
+            {% for p in desempenho_equipe %}
+            <div class="gauge-card">
+                <div class="gauge-name">{{ p.nome }}</div>
+                <div id="chartRadial_{{ forloop.counter }}" style="height:160px;"></div>
+                <div class="gauge-sub"><strong>R$ {{ p.vendido|floatformat:0 }}</strong> / R$ {{ p.meta|floatformat:0 }}</div>
+                <div class="gauge-sub" style="margin-top:4px;"><i class="fa-solid fa-briefcase" style="font-size:10px;"></i> {{ p.leads_abertos }} negociações</div>
+            </div>
+            {% empty %}
+            <p style="color:var(--t3); font-size:13px; padding:20px;">Nenhuma meta cadastrada para o período.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ABA 3 — GARGALOS OPERACIONAIS
+════════════════════════════════════════════════ -->
+<div id="tab-analise" class="tab-content">
+    <div class="chart-grid">
+        <div class="chart-card">
+            <div class="card-title"><i class="fa-solid fa-stopwatch" style="color:var(--amber);"></i> SLA estourado por etapa</div>
+            <div id="chartSla" style="height:320px;"></div>
+        </div>
+        <div class="chart-card">
+            <div class="card-title"><i class="fa-solid fa-skull-crossbones" style="color:var(--red);"></i> Principais motivos de perda</div>
+            <div id="chartPerdas" style="height:320px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ABA 4 — DESEMPENHO POR VENDEDOR
+════════════════════════════════════════════════ -->
+<div id="tab-relatorio" class="tab-content">
+    {% include 'crm_vendas/partials/_tab_relatorio_vendedores.html' %}
+</div>
+
+<script>
+    let echartsInstances = [];
+
+    function openTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
+        setTimeout(() => echartsInstances.forEach(c => c.resize()), 60);
+    }
+
+    // ── DADOS ──
+    const labelsFunil   = JSON.parse('{{ labels_funil|escapejs }}');
+    const dadosFunil    = JSON.parse('{{ dados_funil|escapejs }}');
+    const dataFunilObj  = labelsFunil.map((l, i) => ({ name: l, value: dadosFunil[i] }));
+
+    const labelsOrigem      = JSON.parse('{{ labels_origem_cruzada|escapejs }}');
+    const dadosOrigemQtd    = JSON.parse('{{ dados_origem_qtd|escapejs }}');
+    const dadosOrigemReceita= JSON.parse('{{ dados_origem_receita|escapejs }}');
+
+    const labelsSla  = JSON.parse('{{ labels_sla|escapejs }}');
+    const dadosSla   = JSON.parse('{{ dados_sla|escapejs }}');
+    const labelsMotivos = JSON.parse('{{ labels_motivos|escapejs }}');
+    const dadosMotivos  = JSON.parse('{{ dados_motivos|escapejs }}');
+
+    const TOOLTIP = { backgroundColor:'#162035', borderColor:'rgba(99,140,210,.2)', textStyle:{color:'#f0f4ff', fontSize:12} };
+
+    // ── FUNIL ──
+    let funilChart = echarts.init(document.getElementById('chartFunil'), 'dark');
+    funilChart.setOption({
+        backgroundColor:'transparent',
+        tooltip:{ trigger:'item', formatter:'{b}: {c}', ...TOOLTIP },
+        series:[{ type:'funnel', left:'8%', right:'8%', top:'4%', bottom:'4%',
+            minSize:'12%', maxSize:'100%', sort:'none', gap:5,
+            label:{ show:true, position:'inside', formatter:'{b}: {c}', fontSize:12, fontWeight:'bold' },
+            itemStyle:{ borderColor:'#080e1a', borderWidth:2 },
+            data: dataFunilObj
+        }],
+        color:['#3b82f6','#2563eb','#1d4ed8','#1e40af','#1e3a8a']
+    });
+    echartsInstances.push(funilChart);
+
+    // ── ORIGEM × RECEITA ──
+    let origemChart = echarts.init(document.getElementById('chartOrigemCruzada'), 'dark');
+    origemChart.setOption({
+        backgroundColor:'transparent',
+        tooltip:{ trigger:'axis', axisPointer:{type:'cross'}, ...TOOLTIP },
+        legend:{ data:['Leads','Receita'], bottom:0, textStyle:{color:'#8fa8d0', fontSize:11} },
+        grid:{ left:'3%', right:'6%', bottom:'14%', containLabel:true },
+        xAxis:{ type:'category', data:labelsOrigem, axisLabel:{color:'#8fa8d0', fontSize:10, fontWeight:'bold'}, axisLine:{lineStyle:{color:'#162035'}} },
+        yAxis:[
+            { type:'value', name:'Leads', nameTextStyle:{color:'#8b5cf6', fontWeight:'bold', fontSize:10}, splitLine:{lineStyle:{color:'#162035'}}, axisLabel:{color:'#8b5cf6', fontSize:10} },
+            { type:'value', name:'Receita', nameTextStyle:{color:'#10b981', fontWeight:'bold', fontSize:10}, splitLine:{show:false}, axisLabel:{color:'#10b981', fontSize:10, formatter:v=>'R$'+(v/1000).toFixed(0)+'k'} }
+        ],
+        series:[
+            { name:'Leads', type:'bar', data:dadosOrigemQtd, barWidth:'40%', itemStyle:{color:'#8b5cf6', borderRadius:[4,4,0,0]} },
+            { name:'Receita', type:'line', yAxisIndex:1, data:dadosOrigemReceita, smooth:true, itemStyle:{color:'#10b981'}, lineStyle:{width:3} }
+        ]
+    });
+    echartsInstances.push(origemChart);
+
+    // ── SLA ──
+    let slaChart = echarts.init(document.getElementById('chartSla'), 'dark');
+    slaChart.setOption({
+        backgroundColor:'transparent',
+        tooltip:{ trigger:'axis', axisPointer:{type:'shadow'}, ...TOOLTIP },
+        grid:{ left:'3%', right:'10%', bottom:'3%', containLabel:true },
+        xAxis:{ type:'value', splitLine:{lineStyle:{color:'#162035'}}, axisLabel:{color:'#8fa8d0', fontSize:10} },
+        yAxis:{ type:'category', data:labelsSla, axisLabel:{color:'#8fa8d0', fontWeight:'bold', fontSize:10}, axisLine:{lineStyle:{color:'#162035'}} },
+        series:[{ type:'bar', data:dadosSla, barWidth:'50%',
+            itemStyle:{color:'#f59e0b', borderRadius:[0,4,4,0]},
+            label:{show:true, position:'right', color:'#fff', fontWeight:'bold', fontSize:11}
+        }]
+    });
+    echartsInstances.push(slaChart);
+
+    // ── MOTIVOS PERDA ──
+    let perdasChart = echarts.init(document.getElementById('chartPerdas'), 'dark');
+    perdasChart.setOption({
+        backgroundColor:'transparent',
+        tooltip:{ trigger:'axis', axisPointer:{type:'shadow'}, ...TOOLTIP },
+        grid:{ left:'3%', right:'10%', bottom:'3%', containLabel:true },
+        xAxis:{ type:'value', splitLine:{lineStyle:{color:'#162035'}}, axisLabel:{color:'#8fa8d0', fontSize:10} },
+        yAxis:{ type:'category', data:labelsMotivos, axisLabel:{color:'#8fa8d0', fontWeight:'bold', fontSize:10, width:120, overflow:'truncate'}, axisLine:{lineStyle:{color:'#162035'}} },
+        series:[{ type:'bar', data:dadosMotivos, barWidth:'55%',
+            itemStyle:{color:'#ef4444', borderRadius:[0,4,4,0]},
+            label:{show:true, position:'right', color:'#fff', fontWeight:'bold', fontSize:11}
+        }]
+    });
+    echartsInstances.push(perdasChart);
+
+    // ── GAUGES ──
+    {% for p in desempenho_equipe %}
+    (function(){
+        let g = echarts.init(document.getElementById('chartRadial_{{ forloop.counter }}'), 'dark');
+        g.setOption({
+            backgroundColor:'transparent',
+            series:[{ type:'gauge', startAngle:180, endAngle:0,
+                min:0, max:100, radius:'100%', center:['50%','78%'],
+                axisLine:{ lineStyle:{ width:10, color:[[1,'#162035']] } },
+                progress:{ show:true, width:10, itemStyle:{ color: {% if p.porcentagem >= 100 %}'#10b981'{% elif p.porcentagem >= 60 %}'#3b82f6'{% else %}'#ef4444'{% endif %} } },
+                pointer:{show:false}, axisTick:{show:false}, splitLine:{show:false}, axisLabel:{show:false},
+                detail:{ valueAnimation:true, formatter:'{value}%', color:'#f0f4ff', fontSize:18, fontWeight:900, offsetCenter:[0,'-18%'] },
+                data:[{ value:{{ p.porcentagem|stringformat:"f" }} }]
+            }]
+        });
+        echartsInstances.push(g);
+    })();
+    {% endfor %}
+
+    window.addEventListener('resize', () => echartsInstances.forEach(c => c.resize()));
+</script>
+</body>
+</html> 

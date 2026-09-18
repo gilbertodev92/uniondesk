@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-[rgb(var(--c-bg))] text-ink-soft font-sans selection:bg-indigo-500/30">
+    <div class="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-indigo-600/10 to-transparent pointer-events-none"></div>
+
+    <div class="relative max-w-6xl mx-auto px-6 py-12">
+        
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
+                        <i class="fa-brands fa-whatsapp text-emerald-500 text-xl"></i>
+                    </div>
+                    <span class="text-xs font-bold tracking-[0.2em] text-ink-faint uppercase">Communication Hub</span>
+                </div>
+                <h1 class="text-4xl font-extrabold text-ink tracking-tight">Central de Atendimento</h1>
+                <p class="text-ink-soft mt-2">Gestão inteligente de fluxos <span class="text-indigo-400 font-medium">Union Desk</span> + Evolution API</p>
+            </div>
+
+            <div class="flex items-center gap-4 bg-core-deep/50 border border-core-line p-2 pr-4 rounded-full w-fit">
+                <div class="flex -space-x-2">
+                    <div class="w-8 h-8 rounded-full border-2 border-core-deep bg-emerald-500 flex items-center justify-center text-[10px] text-ink">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                </div>
+                <div class="text-sm">
+                    <span class="text-ink-faint block text-[10px] uppercase font-bold leading-none">Status do Sistema</span>
+                    <span class="text-emerald-400 font-medium italic">Operando Normalmente</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+            
+            <div class="group bg-core-deep/40 border border-core-line p-6 rounded-2xl hover:border-indigo-500/50 transition-all duration-300">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 bg-core-bg rounded-lg border border-core-line">
+                        <i class="fa-solid fa-server text-indigo-400"></i>
+                    </div>
+                    <span class="flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-emerald-400 opacity-20"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                </div>
+                <h3 class="text-ink-faint text-xs font-bold uppercase tracking-wider mb-1">Instância Ativa</h3>
+                <p class="text-xl font-mono text-ink group-hover:text-indigo-300 transition-colors">atendimento_suporte</p>
+            </div>
+
+            <div class="bg-core-deep/40 border border-core-line p-6 rounded-2xl">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 bg-core-bg rounded-lg border border-core-line">
+                        <i class="fa-solid fa-brain text-purple-400"></i>
+                    </div>
+                    <span class="px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-bold border border-indigo-500/20">READY</span>
+                </div>
+                <h3 class="text-ink-faint text-xs font-bold uppercase tracking-wider mb-1">Inteligência Artificial</h3>
+                <p class="text-xl font-semibold text-ink">Motor de Resposta RAG</p>
+            </div>
+
+            <div class="bg-core-deep/40 border border-core-line p-6 rounded-2xl relative overflow-hidden">
+                <div class="relative z-10">
+                    <div class="p-3 bg-core-bg rounded-lg border border-core-line w-fit mb-4">
+                        <i class="fa-solid fa-bolt text-amber-400"></i>
+                    </div>
+                    <h3 class="text-ink-faint text-xs font-bold uppercase tracking-wider mb-1">Tempo de Resposta IA</h3>
+                    <p class="text-xl font-semibold text-ink">~1.4s <span class="text-xs text-ink-faint font-normal ml-2">avg latency</span></p>
+                </div>
+                <div class="absolute bottom-0 right-0 w-24 h-12 bg-indigo-500/5 blur-2xl rounded-full"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <a href="{% url 'whatsapp_bot:chat_dashboard' %}" class="group relative bg-indigo-600 hover:bg-indigo-500 p-8 rounded-3xl transition-all duration-300 overflow-hidden shadow-xl shadow-indigo-900/20">
+                <div class="relative z-10 flex flex-col h-full justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold text-ink mb-2">Painel de Atendimento</h2>
+                        <p class="text-indigo-100 text-sm opacity-80 max-w-[240px]">Gerencie conversas em tempo real e monitore a fila de espera.</p>
+                    </div>
+                    <div class="mt-8 flex items-center gap-2 text-ink font-bold group-hover:gap-4 transition-all">
+                        Acessar Agora <i class="fa-solid fa-arrow-right text-sm"></i>
+                    </div>
+                </div>
+                <i class="fa-solid fa-comments absolute -bottom-4 -right-4 text-9xl text-ink/10 rotate-12 group-hover:rotate-6 transition-transform"></i>
+            </a>
+
+            <a href="/admin/whatsapp_bot/chatsession/" class="group bg-core-deep border border-core-line hover:border-core-line p-8 rounded-3xl transition-all duration-300 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-ink mb-2">Logs de Conversa</h2>
+                    <p class="text-ink-soft text-sm max-w-[240px]">Histórico completo de interações para auditoria e treinamento.</p>
+                </div>
+                <div class="mt-8 flex items-center gap-2 text-ink-soft font-bold group-hover:text-ink transition-colors">
+                    Ver Histórico <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                </div>
+            </a>
+        </div>
+
+        <hr class="border-core-line/50 mb-12">
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="flex gap-4">
+                <div class="text-indigo-400 text-xl mt-1"><i class="fa-solid fa-robot"></i></div>
+                <div>
+                    <h4 class="text-ink font-bold mb-1">IA no Plantão</h4>
+                    <p class="text-sm text-ink-faint leading-relaxed">Respostas automáticas fora do horário comercial baseadas na sua Knowledge Base.</p>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <div class="text-emerald-400 text-xl mt-1"><i class="fa-solid fa-user-check"></i></div>
+                <div>
+                    <h4 class="text-ink font-bold mb-1">Smart Identification</h4>
+                    <p class="text-sm text-ink-faint leading-relaxed">Sincronização imediata com o CRM Union Desk ao detectar novos números.</p>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <div class="text-amber-400 text-xl mt-1"><i class="fa-solid fa-chart-line"></i></div>
+                <div>
+                    <h4 class="text-ink font-bold mb-1">Feedback de Health Score</h4>
+                    <p class="text-sm text-ink-faint leading-relaxed">Cada interação alimenta o algoritmo de satisfação do cliente automaticamente.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Suave entrada dos elementos */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .grid > div, .grid > a {
+        animation: fadeInUp 0.5s ease forwards;
+    }
+</style>
+{% endblock %}

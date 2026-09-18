@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if editando %}Editar Usuário{% else %}Novo Usuário{% endif %} | Admin
+{% endblock %}
+
+{% block content %}
+<style>
+  /* CORREÇÃO DE LEGIBILIDADE E ESTILO 
+     Estes estilos forçam os campos do Django a ficarem visíveis e legíveis.
+  */
+  .django-form-container input[type="text"], 
+  .django-form-container input[type="email"], 
+  .django-form-container input[type="password"], 
+  .django-form-container input[type="tel"], 
+  .django-form-container select, 
+  .django-form-container textarea {
+    width: 100% !important;
+    display: block;
+    padding: 0.75rem 1rem !important;
+    background-color: #ffffff !important; /* Fundo branco para contraste */
+    border: 1px solid #cbd5e1 !important; /* Borda cinza visível */
+    border-radius: 0.75rem !important;
+    font-size: 0.875rem !important;
+    color: #1e293b !important; /* Texto Azul Escuro/Preto - Super legível */
+    line-height: 1.25rem;
+    margin-top: 0.25rem;
+    box-shadow: sm;
+  }
+
+  .django-form-container input:focus {
+    outline: none !important;
+    border-color: #2563eb !important; /* Azul destaque ao clicar */
+    ring: 2px;
+    ring-color: #bfdbfe;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+  }
+
+  /* Estilização da lista de Grupos (Checkboxes) */
+  .custom-checkbox-list ul { 
+    list-style: none !important; 
+    padding: 0 !important; 
+    margin: 0 !important;
+  }
+  
+  .custom-checkbox-list li { 
+    display: flex !important; 
+    align-items: center !important; 
+    padding: 0.5rem !important;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+  }
+
+  .custom-checkbox-list li:hover {
+    background-color: #f1f5f9;
+  }
+
+  .custom-checkbox-list input[type="checkbox"] { 
+    margin-right: 0.75rem !important; 
+    width: 1.125rem !important;
+    height: 1.125rem !important;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    border: 1px solid #cbd5e1;
+  }
+
+  .custom-checkbox-list label {
+    color: #334155 !important;
+    font-size: 0.875rem !important;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  /* Help texts do Django */
+  .help-text {
+    font-size: 0.75rem !important;
+    color: #64748b !important;
+    margin-top: 0.35rem;
+    line-height: 1.4;
+  }
+</style>
+
+<div class="min-h-screen bg-slate-50 p-4 md:p-10">
+  <div class="max-w-4xl mx-auto">
+    
+    <nav class="mb-6">
+      <a href="{% url 'painel_usuarios' %}" class="flex items-center text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Voltar para a listagem
+      </a>
+    </nav>
+
+    <div class="bg-white shadow-xl shadow-slate-200/60 rounded-2xl overflow-hidden border border-slate-200">
+      
+      <div class="bg-slate-50/50 border-b border-slate-200 px-8 py-6">
+        <h1 class="text-2xl font-bold text-slate-900">
+          {% if editando %}Editar Usuário{% else %}Criar Novo Usuário{% endif %}
+        </h1>
+        <p class="text-slate-500 text-sm mt-1">Gerencie as credenciais e o nível de acesso deste perfil.</p>
+      </div>
+
+      <form method="post" class="p-8 django-form-container">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+          
+          <div class="space-y-6">
+            <h2 class="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center">
+              <span class="w-8 h-px bg-blue-200 mr-2"></span>
+              Credenciais de Acesso
+            </h2>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-bold text-slate-700">Nome de Usuário</label>
+                {{ form.username }}
+                {% for e in form.username.errors %}<p class="text-red-500 text-xs mt-1">{{ e }}</p>{% endfor %}
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-slate-700">E-mail</label>
+                {{ form.email }}
+                {% for e in form.email.errors %}<p class="text-red-500 text-xs mt-1">{{ e }}</p>{% endfor %}
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-slate-700">Senha</label>
+                {{ form.password }}
+                {% if form.password.help_text %}
+                  <div class="help-text">{{ form.password.help_text|safe }}</div>
+                {% endif %}
+                {% for e in form.password.errors %}<p class="text-red-500 text-xs mt-1">{{ e }}</p>{% endfor %}
+              </div>
+
+              <div class="flex items-center p-4 bg-slate-50 rounded-xl border border-slate-200 mt-6">
+                <div class="flex items-center h-5">
+                  {{ form.is_active }}
+                </div>
+                <div class="ml-3">
+                  <label class="text-sm font-bold text-slate-800 cursor-pointer" for="{{ form.is_active.id_for_label }}">Conta Ativa</label>
+                  <p class="text-slate-500 text-xs">Permite que o usuário acesse o sistema.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-6">
+            <h2 class="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center">
+              <span class="w-8 h-px bg-blue-200 mr-2"></span>
+              Perfil e Grupos
+            </h2>
+
+            <div class="space-y-5">
+              <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Grupos de Permissão</label>
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-48 overflow-y-auto custom-checkbox-list shadow-inner">
+                  {{ form.groups }}
+                </div>
+                {% for e in form.groups.errors %}<p class="text-red-500 text-xs mt-1">{{ e }}</p>{% endfor %}
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-slate-700">Telefone / WhatsApp</label>
+                {{ form_profile.phone_display }}
+                <p class="help-text">Ex: (11) 99999-9999</p>
+                {% for e in form_profile.phone_display.errors %}<p class="text-red-500 text-xs mt-1">{{ e }}</p>{% endfor %}
+              </div>
+
+              <div class="flex items-start p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <div class="flex items-center h-5">
+                  {{ form_profile.whatsapp_opt_in }}
+                </div>
+                <div class="ml-3">
+                  <label class="text-sm font-bold text-blue-900 cursor-pointer" for="{{ form_profile.whatsapp_opt_in.id_for_label }}">Notificações via WhatsApp</label>
+                  <p class="text-blue-700/70 text-xs mt-0.5 leading-relaxed">Autoriza o sistema a enviar lembretes automáticos e alertas.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-12 pt-8 border-t border-slate-100 flex flex-col sm:flex-row justify-end items-center gap-4">
+          <a href="{% url 'painel_usuarios' %}"
+             class="w-full sm:w-auto px-8 py-3 rounded-xl text-slate-500 font-bold text-sm hover:bg-slate-100 transition-all text-center">
+            Cancelar e Sair
+          </a>
+          <button type="submit"
+                  class="w-full sm:w-auto px-10 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex justify-center items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            {% if editando %}Salvar Alterações{% else %}Criar Novo Usuário{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <p class="text-center text-slate-400 text-xs mt-8">
+      ID do Sistema: <span class="font-mono">{{ user.id|default:"AUTOGEN" }}</span> | Criado em: 2026
+    </p>
+  </div>
+</div>
+{% endblock %}

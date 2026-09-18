@@ -1,0 +1,114 @@
+[
+  {
+    "usuario_id": 16,
+    "saldo_moedas": 308,
+    "xp_total": 1291,
+    "nivel_atual": 4,
+    "ofensiva_diaria": 0,
+    "username": "PALOMA"
+  },
+  {
+    "usuario_id": 17,
+    "saldo_moedas": 38,
+    "xp_total": 161,
+    "nivel_atual": 2,
+    "ofensiva_diaria": 0,
+    "username": "CINTHIA"
+  },
+  {
+    "usuario_id": 7,
+    "saldo_moedas": 816,
+    "xp_total": 2010,
+    "nivel_atual": 5,
+    "ofensiva_diaria": 0,
+    "username": "JERRY"
+  },
+  {
+    "usuario_id": 20,
+    "saldo_moedas": 0,
+    "xp_total": 0,
+    "nivel_atual": 1,
+    "ofensiva_diaria": 0,
+    "username": "ALEXANDRE"
+  },
+  {
+    "usuario_id": 5,
+    "saldo_moedas": 23063,
+    "xp_total": 69058,
+    "nivel_atual": 27,
+    "ofensiva_diaria": 1,
+    "username": "LETICIA"
+  },
+  {
+    "usuario_id": 22,
+    "saldo_moedas": 10,
+    "xp_total": 10,
+    "nivel_atual": 1,
+    "ofensiva_diaria": 0,
+    "username": "ADRIANO"
+  },
+  {
+    "usuario_id": 4,
+    "saldo_moedas": 25633,
+    "xp_total": 83638,
+    "nivel_atual": 29,
+    "ofensiva_diaria": 1,
+    "username": "CARLOS"
+  },
+  {
+    "usuario_id": 25,
+    "saldo_moedas": 35,
+    "xp_total": 130,
+    "nivel_atual": 2,
+    "ofensiva_diaria": 0,
+    "username": "SANDRO"
+  },
+  {
+    "usuario_id": 19,
+    "saldo_moedas": 1135,
+    "xp_total": 5291,
+    "nivel_atual": 8,
+    "ofensiva_diaria": 0,
+    "username": "PEDRO.ARAUJO"
+  },
+  {
+    "usuario_id": 14,
+    "saldo_moedas": 17185,
+    "xp_total": 64603,
+    "nivel_atual": 26,
+    "ofensiva_diaria": 1,
+    "username": "VITOR"
+  },
+  {
+    "usuario_id": 1,
+    "saldo_moedas": 4670,
+    "xp_total": 39144,
+    "nivel_atual": 20,
+    "ofensiva_diaria": 2,
+    "username": "GILBERTO"
+  },
+  {
+    "usuario_id": 6,
+    "saldo_moedas": 1067,
+    "xp_total": 4382,
+    "nivel_atual": 7,
+    "ofensiva_diaria": 0,
+    "username": "CRISTINA"
+  },
+  {
+    "usuario_id": 3,
+    "saldo_moedas": 411,
+    "xp_total": 14555,
+    "nivel_atual": 13,
+    "ofensiva_diaria": 1,
+    "username": "DANIEL"
+  },
+  {
+    "usuario_id": 18,
+    "saldo_moedas": 113,
+    "xp_total": 353,
+    "nivel_atual": 2,
+    "ofensiva_diaria": 0,
+    "username": "MIRELLE"
+  }
+]

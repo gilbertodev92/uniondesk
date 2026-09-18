@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-6">
+        {% if editando %}Editar Grupo{% else %}Criar Grupo{% endif %}
+    </h2>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Nome do grupo -->
+        <div>
+            <label class="block text-gray-700 font-semibold mb-2">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                <p class="text-red-500 text-sm mt-1">{{ form.name.errors|striptags }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Permissões como cards -->
+        {% if form.permissions %}
+        <div>
+            <label class="block text-gray-700 font-semibold mb-2">Permissões</label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for checkbox in form.permissions %}
+                    <label class="flex items-center space-x-2 p-3 border border-gray-300 rounded hover:border-blue-500 cursor-pointer">
+                        {{ checkbox.tag }}
+                        <span>{{ checkbox.choice_label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            {% if form.permissions.errors %}
+                <p class="text-red-500 text-sm mt-1">{{ form.permissions.errors|striptags }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Botões -->
+        <div class="flex justify-end space-x-2 mt-6">
+            <a href="{% url 'painel_grupos' %}" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold">Cancelar</a>
+            <button type="submit" class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                {% if editando %}Atualizar{% else %}Salvar{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
